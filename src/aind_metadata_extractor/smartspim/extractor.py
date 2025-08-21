@@ -7,7 +7,15 @@ import re
 import requests
 
 from aind_metadata_extractor.smartspim.job_settings import JobSettings
-from aind_metadata_extractor.smartspim.utils import get_excitation_emission_waves, get_session_end, read_json_as_dict
+from aind_metadata_extractor.smartspim.utils import (
+    get_excitation_emission_waves,
+    get_session_end,
+    make_acq_tiles,
+    read_json_as_dict,
+    parse_channel_name,
+    ensure_list,
+)
+from aind_metadata_extractor.models.smartspim import SmartspimModel, ImmersionModel, AxesModel, ProcessingStepsModel
 
 REGEX_DATE = r"(20[0-9]{2})-([0-9]{2})-([0-9]{2})_([0-9]{2})-" r"([0-9]{2})-([0-9]{2})"
 REGEX_MOUSE_ID = r"([0-9]{6})"
@@ -44,37 +52,75 @@ class SmartspimExtractor:
         protocol_id = slims_metadata.get("protocol_id")
         experimenter_name = slims_metadata.get("experimenter_name")
 
-        acquisition = Acquisition(
-            specimen_id=specimen_id,
-            subject_id=subject_id,
-            session_start_timeex=session_start,
-            session_end_time=metadata_dict["session_end_time"],
-            tiles=make_acq_tiles(
-                metadata_dict=metadata_dict,
-                filter_mapping=metadata_dict["filter_mapping"],
-            ),
-            external_storage_directory="",
-            active_objectives=[active_obj] if active_obj else None,
-            instrument_id=instrument_id,
-            experimenter_full_name=([experimenter_name] if experimenter_name else []),
-            protocol_id=[protocol_id] if protocol_id else [],
-            chamber_immersion=Immersion(
-                medium=self._map_immersion_medium(slims_data.get("chamber_immersion_medium")),
-                refractive_index=slims_data.get("chamber_refractive_index"),
-            ),
-            sample_immersion=Immersion(
-                medium=self._map_immersion_medium(slims_data.get("sample_immersion_medium")),
-                refractive_index=slims_data.get("sample_refractive_index"),
-            ),
-            axes=self._map_axes(
-                x=slims_data.get("x_direction"),
-                y=slims_data.get("y_direction"),
-                z=slims_data.get("z_direction"),
-            ),
-            processing_steps=self._map_processing_steps(slims_data),
+        # get tiles
+        tiles = make_acq_tiles(
+            metadata_dict=file_metadata,
+            filter_mapping=file_metadata["filter_mapping"],
         )
 
-        return {}
+        # Create the SmartspimModel with all collected data
+        smartspim_model = SmartspimModel(
+            # Core identification
+            specimen_id=specimen_id,
+            subject_id=subject_id,
+            # Timing
+            session_start_time=session_start,
+            session_end_time=file_metadata.get("session_end_time"),
+            # Hardware configuration
+            instrument_id=instrument_id,
+            active_objectives=[active_obj] if active_obj else [],
+            external_storage_directory="",
+            # Personnel
+            experimenter_full_name=[experimenter_name] if experimenter_name else [],
+            protocol_id=[protocol_id] if protocol_id else [],
+            # Immersion settings
+            chamber_immersion=(
+                ImmersionModel(
+                    medium=slims_metadata.get("chamber_immersion_medium"),
+                    refractive_index=slims_metadata.get("chamber_refractive_index"),
+                )
+                if slims_metadata.get("chamber_immersion_medium") or slims_metadata.get("chamber_refractive_index")
+                else None
+            ),
+            sample_immersion=(
+                ImmersionModel(
+                    medium=slims_metadata.get("sample_immersion_medium"),
+                    refractive_index=slims_metadata.get("sample_refractive_index"),
+                )
+                if slims_metadata.get("sample_immersion_medium") or slims_metadata.get("sample_refractive_index")
+                else None
+            ),
+            # Spatial configuration
+            axes=(
+                AxesModel(
+                    x=slims_metadata.get("x_direction"),
+                    y=slims_metadata.get("y_direction"),
+                    z=slims_metadata.get("z_direction"),
+                )
+                if any(
+                    [
+                        slims_metadata.get("x_direction"),
+                        slims_metadata.get("y_direction"),
+                        slims_metadata.get("z_direction"),
+                    ]
+                )
+                else None
+            ),
+            # Processing information - would be populated by _map_processing_steps
+            processing_steps=[],  # TODO: implement _map_processing_steps
+            # Tile information
+            tiles=tiles,
+            # Raw metadata containers
+            file_metadata=file_metadata,
+            slims_metadata=slims_metadata,
+            # Additional microscope metadata (extracted from file_metadata)
+            session_config=file_metadata.get("session_config"),
+            wavelength_config=file_metadata.get("wavelength_config"),
+            tile_config=file_metadata.get("tile_config"),
+            filter_mapping=file_metadata.get("filter_mapping"),
+        )
+
+        return smartspim_model.model_dump()
 
     def _extract_metadata_from_microscope_files(self) -> dict:
         """
@@ -192,7 +238,7 @@ class SmartspimExtractor:
         return acquisition
 
     @staticmethod
-    def _map_processing_steps(slims_data: Dict) -> List[ProcessingSteps]:
+    def _map_processing_steps(slims_data: Dict) -> List[ProcessingStepsModel]:
         """
         Maps the channel info from SLIMS to the ProcessingSteps model.
 
@@ -203,7 +249,7 @@ class SmartspimExtractor:
 
         Returns
         -------
-        List[ProcessingSteps]
+        List[ProcessingStepsModel]
             List of processing steps mapped from SLIMS data.
         """
         imaging = ensure_list(slims_data.get("imaging_channels"))
@@ -215,16 +261,16 @@ class SmartspimExtractor:
             (
                 imaging,
                 [
-                    ProcessName.IMAGE_DESTRIPING,
-                    ProcessName.IMAGE_FLAT_FIELD_CORRECTION,
-                    ProcessName.IMAGE_TILE_FUSING,
+                    "Image destriping",
+                    "Image flat-field correction",
+                    "Image tile fusing",
                 ],
             ),
-            (stitching, [ProcessName.IMAGE_TILE_ALIGNMENT]),
-            (ccf_registration, [ProcessName.IMAGE_ATLAS_ALIGNMENT]),
-            (cell_segmentation, [ProcessName.IMAGE_CELL_SEGMENTATION]),
+            (stitching, ["Image tile alignment"]),
+            (ccf_registration, ["Image atlas alignment"]),
+            (cell_segmentation, ["Image cell segmentation"]),
         ]
-        step_map: dict[str, set[ProcessName]] = {}
+        step_map: dict[str, set[str]] = {}
 
         for channel_list, process_names in list_to_steps:
             for raw_ch in channel_list:
@@ -233,8 +279,13 @@ class SmartspimExtractor:
                     step_map[parsed] = set()
                 step_map[parsed].update(process_names)
 
-        processing_steps: List[ProcessingSteps] = []
+        processing_steps: list[ProcessingStepsModel] = []
         for channel_name, names_set in step_map.items():
-            processing_steps.append(ProcessingSteps(channel_name=channel_name, process_name=list(names_set)))
+            processing_steps.append(
+                ProcessingStepsModel(
+                    channel_name=channel_name,
+                    process_name=list(names_set)
+                )
+            )
 
         return processing_steps

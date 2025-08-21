@@ -1,7 +1,10 @@
 from datetime import datetime
 import os
 import json
+import re
 from typing import Any, List, Optional
+
+from aind_metadata_extractor.models.smartspim import TileModel, ChannelModel
 
 
 def read_json_as_dict(filepath: str) -> dict:
@@ -59,10 +62,10 @@ def get_anatomical_direction(anatomical_direction: str) -> AnatomicalDirection:
     return anatomical_direction
 
 
-def make_tile_acq_channel(wavelength_config: dict, tile_info: dict) -> dict:
+def make_tile_acq_channel(wavelength_config: dict, tile_info: dict) -> ChannelModel:
     """
     For a given tile config info and the wavelength_config,
-    create a tile.Channel object for use in acquisition.json
+    create a ChannelModel object for use in acquisition.json
 
     This is necessary to get the left/right specific power setting for
     each tile.
@@ -75,22 +78,21 @@ def make_tile_acq_channel(wavelength_config: dict, tile_info: dict) -> dict:
         wavelength,
     ).get(f"power_{side_map[side]}")
 
-    channel_data = {
-        "channel_name": wavelength,
-        "light_source_name": wavelength,
-        "filter_names": [],  # Filter names are in instrument JSON
-        "detector_name": "",  # Detector is in instrument JSON
-        "additional_device_names": [],
-        "excitation_wavelength": int(wavelength),
-        "excitation_wavelength_unit": SizeUnit.NM,
-        "excitation_power": excitation_power,
-        "excitation_power_unit": PowerUnit.PERCENT,
-        "filter_wheel_index": filter_wheel_index,
-    }
-    return channel_data
+    return ChannelModel(
+        channel_name=wavelength,
+        light_source_name=wavelength,
+        filter_names=[],  # Filter names are in instrument JSON
+        detector_name="",  # Detector is in instrument JSON
+        additional_device_names=[],
+        excitation_wavelength=int(wavelength),
+        excitation_wavelength_unit="nanometer",  # Was SizeUnit.NM
+        excitation_power=excitation_power,
+        excitation_power_unit="percent",  # Was PowerUnit.PERCENT
+        filter_wheel_index=filter_wheel_index,
+    )
 
 
-def make_acq_tiles(metadata_dict: dict, filter_mapping: dict) -> list[dict]:
+def make_acq_tiles(metadata_dict: dict, filter_mapping: dict) -> List[TileModel]:
     """
     Makes metadata for the acquired tiles of
     the dataset
@@ -106,8 +108,8 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict) -> list[dict]:
 
     Returns
     -----------
-    List[dict]
-        List with the metadata for the tiles
+    List[TileModel]
+        List with the TileModel objects for the tiles
     """
 
     # List where the metadata of the acquired
@@ -127,7 +129,9 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict) -> list[dict]:
     if x_res is None:
         x_res = y_res = session_config.get("m/pix")
         if x_res is None:
-            raise KeyError("Failed getting the x and y resolution from metadata.json")
+            raise KeyError(
+                "Failed getting the x and y resolution from metadata.json"
+            )
 
     if z_res is None:
         z_res = session_config.get("Z step (um)")
@@ -174,22 +178,24 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict) -> list[dict]:
             "z": int(tile_info_z) / 10,
         }
 
-        channel = make_tile_acq_channel(wavelength_config=wavelength_config, tile_info=tile_info)
+        channel = make_tile_acq_channel(
+            wavelength_config=wavelength_config, tile_info=tile_info
+        )
         exaltation_wave = int(tile_info["Laser"])
         emission_wave = filter_mapping[exaltation_wave]
 
-        tile_acquisition_data = {
-            "channel": channel,
-            "notes": "Laser power is in percentage of total, it needs calibration",
-            "coordinate_transformations": [tile_transform, scale],
-            "file_name": (
+        tile_model = TileModel(
+            channel=channel,
+            notes="Laser power is in percentage of total, it needs calibration",
+            coordinate_transformations=[tile_transform, scale],
+            file_name=(
                 f"Ex_{exaltation_wave}_"
                 f"Em_{emission_wave}/"
                 f"{int(tile_info_x)}/{int(tile_info_x)}_{int(tile_info_y)}/"
             ),
-        }
+        )
 
-        tile_acquisitions.append(tile_acquisition_data)
+        tile_acquisitions.append(tile_model)
 
     return tile_acquisitions
 

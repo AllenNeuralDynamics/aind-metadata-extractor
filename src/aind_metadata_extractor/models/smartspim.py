@@ -1,7 +1,7 @@
 """SmartSPIM extractor model"""
 
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from pydantic import BaseModel
 
 
@@ -27,12 +27,28 @@ class ProcessingStepsModel(BaseModel):
     process_name: List[str]
 
 
-class TileModel(BaseModel):
-    """Model for tile information"""
+class ChannelModel(BaseModel):
+    """Model for channel information in tiles"""
 
-    # This would be populated by make_acq_tiles function
-    # Structure inferred from usage
-    pass
+    channel_name: str
+    light_source_name: str
+    filter_names: List[str] = []
+    detector_name: str = ""
+    additional_device_names: List[str] = []
+    excitation_wavelength: int
+    excitation_wavelength_unit: str  # Will be SizeUnit.NM
+    excitation_power: Union[int, float]
+    excitation_power_unit: str  # Will be PowerUnit.PERCENT
+    filter_wheel_index: int
+
+
+class TileModel(BaseModel):
+    """Model for tile information from make_acq_tiles function"""
+
+    channel: ChannelModel
+    notes: str
+    coordinate_transformations: List[Dict[str, Union[int, float]]]
+    file_name: str
 
 
 class SmartspimModel(BaseModel):
