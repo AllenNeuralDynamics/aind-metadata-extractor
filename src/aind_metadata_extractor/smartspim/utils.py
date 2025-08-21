@@ -4,8 +4,6 @@ import json
 import re
 from typing import Any, List, Optional
 
-from aind_metadata_extractor.models.smartspim import TileModel, ChannelModel
-
 
 def read_json_as_dict(filepath: str) -> dict:
     """
@@ -40,7 +38,7 @@ def read_json_as_dict(filepath: str) -> dict:
     return dictionary
 
 
-def get_anatomical_direction(anatomical_direction: str) -> AnatomicalDirection:
+def get_anatomical_direction(anatomical_direction: str) -> str:
     """
     This function returns the correct anatomical
     direction defined in the aind_data_schema.
@@ -57,147 +55,11 @@ def get_anatomical_direction(anatomical_direction: str) -> AnatomicalDirection:
         Corresponding enum defined in the anatomical
         direction class
     """
-    anatomical_direction = anatomical_direction.strip().lower().replace(" ", "_")
-
-    return anatomical_direction
-
-
-def make_tile_acq_channel(wavelength_config: dict, tile_info: dict) -> ChannelModel:
-    """
-    For a given tile config info and the wavelength_config,
-    create a ChannelModel object for use in acquisition.json
-
-    This is necessary to get the left/right specific power setting for
-    each tile.
-    """
-    wavelength = tile_info.get("Laser")
-    side = tile_info.get("Side")
-    filter_wheel_index = int(tile_info.get("Filter"))
-    side_map = {"0": "left", "1": "right"}
-    excitation_power = wavelength_config.get(
-        wavelength,
-    ).get(f"power_{side_map[side]}")
-
-    return ChannelModel(
-        channel_name=wavelength,
-        light_source_name=wavelength,
-        filter_names=[],  # Filter names are in instrument JSON
-        detector_name="",  # Detector is in instrument JSON
-        additional_device_names=[],
-        excitation_wavelength=int(wavelength),
-        excitation_wavelength_unit="nanometer",  # Was SizeUnit.NM
-        excitation_power=excitation_power,
-        excitation_power_unit="percent",  # Was PowerUnit.PERCENT
-        filter_wheel_index=filter_wheel_index,
+    anatomical_direction = (
+        anatomical_direction.strip().lower().replace(" ", "_")
     )
 
-
-def make_acq_tiles(metadata_dict: dict, filter_mapping: dict) -> List[TileModel]:
-    """
-    Makes metadata for the acquired tiles of
-    the dataset
-
-    Parameters
-    -----------
-    metadata_dict: dict
-        Dictionary with the acquisition metadata
-        coming from the microscope
-
-    filter_mapping: dict
-        Dictionary with the channel names
-
-    Returns
-    -----------
-    List[TileModel]
-        List with the TileModel objects for the tiles
-    """
-
-    # List where the metadata of the acquired
-    # tiles is stored
-    tile_acquisitions = []
-
-    # Wavelength config
-    wavelength_config = metadata_dict.get("wavelength_config")
-
-    # Scale metadata
-    session_config = metadata_dict.get("session_config")
-
-    x_res = y_res = session_config.get("um/pix")
-    z_res = session_config.get("z_step_um")
-
-    # utf-8 error with micron symbol
-    if x_res is None:
-        x_res = y_res = session_config.get("m/pix")
-        if x_res is None:
-            raise KeyError(
-                "Failed getting the x and y resolution from metadata.json"
-            )
-
-    if z_res is None:
-        z_res = session_config.get("Z step (um)")
-        if z_res is None:
-            z_res = session_config.get("Z step (m)")
-            if z_res is None:
-                raise KeyError("Failed to get the Z step in microns")
-
-        z_res = float(z_res)
-
-    x_res = float(x_res)
-    y_res = float(y_res)
-    z_res = float(z_res)
-
-    scale = {
-        "x": x_res,
-        "y": y_res,
-        "z": z_res,
-    }
-
-    for _, tile_info in metadata_dict["tile_config"].items():
-
-        tile_info_x = tile_info.get("x")
-        tile_info_y = tile_info.get("y")
-        tile_info_z = tile_info.get("z")
-
-        # For some reason, Jeff changed the lower case to upper case
-        if tile_info_x is None:
-            tile_info_x = tile_info.get("X")
-
-        if tile_info_y is None:
-            tile_info_y = tile_info.get("Y")
-
-        if tile_info_z is None:
-            tile_info_z = tile_info.get("Z")
-
-        tile_info_x = float(tile_info_x)
-        tile_info_y = float(tile_info_y)
-        tile_info_z = float(tile_info_z)
-
-        tile_transform = {
-            "x": int(tile_info_x) / 10,
-            "y": int(tile_info_y) / 10,
-            "z": int(tile_info_z) / 10,
-        }
-
-        channel = make_tile_acq_channel(
-            wavelength_config=wavelength_config, tile_info=tile_info
-        )
-        exaltation_wave = int(tile_info["Laser"])
-        emission_wave = filter_mapping[exaltation_wave]
-
-        tile_model = TileModel(
-            channel=channel,
-            notes="Laser power is in percentage of total, it needs calibration",
-            coordinate_transformations=[tile_transform, scale],
-            file_name=(
-                f"Ex_{exaltation_wave}_"
-                f"Em_{emission_wave}/"
-                f"{int(tile_info_x)}/{int(tile_info_x)}_{int(tile_info_y)}/"
-            ),
-        )
-
-        tile_acquisitions.append(tile_model)
-
-    return tile_acquisitions
+    return anatomical_direction
 
 
 def digest_asi_line(line: str) -> Optional[datetime]:
@@ -217,22 +79,32 @@ def digest_asi_line(line: str) -> Optional[datetime]:
 
     if line.isspace():
         return None
-    else:
-        mdy, hms, ampm = line.split()[0:3]
+    
+    try:
+        parts = line.split()
+        if len(parts) < 3:
+            return None
+        
+        mdy, hms, ampm = parts[0:3]
 
-    mdy = [int(i) for i in mdy.split(b"/")]
-    ymd = [mdy[i] for i in [2, 0, 1]]
+        mdy_parts = [int(i) for i in mdy.split("/")]
+        ymd = [mdy_parts[i] for i in [2, 0, 1]]
 
-    hms = [int(i) for i in hms.split(b":")]
-    if ampm == b"PM":
-        hms[0] += 12
-        if hms[0] == 24:
-            hms[0] = 0
+        hms_parts = [int(i) for i in hms.split(":")]
+        
+        # Handle AM/PM conversion
+        if ampm == "PM" and hms_parts[0] != 12:
+            hms_parts[0] += 12
+        elif ampm == "AM" and hms_parts[0] == 12:
+            hms_parts[0] = 0
 
-    ymdhms = ymd + hms
+        ymdhms = ymd + hms_parts
 
-    dtime = datetime(*ymdhms)
-    return dtime
+        dtime = datetime(*ymdhms)
+        return dtime
+    except (ValueError, IndexError):
+        # Return None for lines that can't be parsed as timestamps
+        return None
 
 
 def get_session_end(asi_file: os.PathLike) -> datetime:
@@ -256,7 +128,7 @@ def get_session_end(asi_file: os.PathLike) -> datetime:
     idx = -1
     result = None
     while result is None:
-        result = digest_asi_line(asi_mdata[idx])
+        result = digest_asi_line(asi_mdata[idx].decode())
         idx -= 1
 
     return result
@@ -285,7 +157,7 @@ def get_excitation_emission_waves(channels: List) -> dict:
     for channel in channels:
         channel = channel.replace("Em_", "").replace("Ex_", "")
         splitted = channel.split("_")
-        excitation_emission_channels[int(splitted[0])] = int(splitted[1])
+        excitation_emission_channels[splitted[0]] = int(splitted[1])
 
     return excitation_emission_channels
 

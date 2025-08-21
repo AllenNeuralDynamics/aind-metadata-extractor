@@ -1,95 +1,48 @@
 """SmartSPIM extractor model"""
 
 from datetime import datetime
-from typing import List, Optional, Dict, Any, Union
+from typing import Dict, List, Optional, Any
+
 from pydantic import BaseModel
 
 
-class ImmersionModel(BaseModel):
-    """Model for immersion medium configuration"""
-
-    medium: Optional[str] = None
-    refractive_index: Optional[float] = None
-
-
-class AxesModel(BaseModel):
-    """Model for axis configuration"""
-
-    x: Optional[str] = None
-    y: Optional[str] = None
-    z: Optional[str] = None
+class FileMetadataModel(BaseModel):
+    """Model for metadata extracted from microscope files"""
+    session_config: Dict[str, Any]
+    wavelength_config: Dict[str, Any]
+    tile_config: Dict[str, Any]
+    session_start_time: datetime
+    session_end_time: datetime
+    filter_mapping: Dict[str, Any]
 
 
-class ProcessingStepsModel(BaseModel):
-    """Model for processing steps"""
-
-    channel_name: str
-    process_name: List[str]
-
-
-class ChannelModel(BaseModel):
-    """Model for channel information in tiles"""
-
-    channel_name: str
-    light_source_name: str
-    filter_names: List[str] = []
-    detector_name: str = ""
-    additional_device_names: List[str] = []
-    excitation_wavelength: int
-    excitation_wavelength_unit: str  # Will be SizeUnit.NM
-    excitation_power: Union[int, float]
-    excitation_power_unit: str  # Will be PowerUnit.PERCENT
-    filter_wheel_index: int
-
-
-class TileModel(BaseModel):
-    """Model for tile information from make_acq_tiles function"""
-
-    channel: ChannelModel
-    notes: str
-    coordinate_transformations: List[Dict[str, Union[int, float]]]
-    file_name: str
+class SlimsMetadataModel(BaseModel):
+    """Model for metadata extracted from SLIMS API response"""
+    experiment_run_created_on: Optional[str] = None
+    order_created_by: Optional[str] = None
+    order_project_id: Optional[str] = None
+    specimen_id: Optional[str] = None
+    subject_id: Optional[str] = None
+    protocol_name: Optional[str] = None
+    protocol_id: Optional[str] = None
+    date_performed: Optional[str] = None
+    chamber_immersion_medium: Optional[str] = None
+    sample_immersion_medium: Optional[str] = None
+    chamber_refractive_index: Optional[str] = None
+    sample_refractive_index: Optional[str] = None
+    instrument_id: Optional[str] = None
+    experimenter_name: Optional[str] = None
+    z_direction: Optional[str] = None
+    y_direction: Optional[str] = None
+    x_direction: Optional[str] = None
+    imaging_channels: Optional[List[str]] = None
+    stitching_channels: Optional[str] = None
+    ccf_registration_channels: Optional[str] = None
+    cell_segmentation_channels: Optional[str] = None
 
 
 class SmartspimModel(BaseModel):
     """SmartSPIM extractor model for intermediate data structure"""
+    file_metadata: FileMetadataModel
+    slims_metadata: SlimsMetadataModel
 
-    # Core identification
-    specimen_id: str
-    subject_id: str
-
-    # Timing
-    session_start_time: datetime
-    session_end_time: Optional[datetime] = None
-
-    # Hardware configuration
-    instrument_id: Optional[str] = None
-    active_objectives: Optional[List[str]] = None
-    external_storage_directory: str = ""
-
-    # Personnel
-    experimenter_full_name: List[str] = []
-    protocol_id: List[str] = []
-
-    # Immersion settings
-    chamber_immersion: Optional[ImmersionModel] = None
-    sample_immersion: Optional[ImmersionModel] = None
-
-    # Spatial configuration
-    axes: Optional[AxesModel] = None
-
-    # Processing information
-    processing_steps: List[ProcessingStepsModel] = []
-
-    # Tile information
-    tiles: Optional[List[TileModel]] = None
-
-    # Raw metadata containers
-    file_metadata: Dict[str, Any] = {}
-    slims_metadata: Dict[str, Any] = {}
-
-    # Additional microscope metadata
-    session_config: Optional[Dict[str, Any]] = None
-    wavelength_config: Optional[Dict[str, Any]] = None
-    tile_config: Optional[Dict[str, Any]] = None
-    filter_mapping: Optional[Dict[str, Any]] = None
