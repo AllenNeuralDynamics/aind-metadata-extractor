@@ -17,6 +17,7 @@ REGEX_MOUSE_ID = r"([0-9]{6})"
 
 
 class SmartspimExtractor:
+    """Extractor for SmartSPIM metadata from microscope files and SLIMS."""
 
     def __init__(self, job_settings: dict):
         """Initialize the SmartSPIM extractor with job settings."""

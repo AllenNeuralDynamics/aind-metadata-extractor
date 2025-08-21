@@ -1,3 +1,5 @@
+"""SmartSPIM job settings configuration."""
+
 from pathlib import Path
 from typing import Literal, Optional, Union
 

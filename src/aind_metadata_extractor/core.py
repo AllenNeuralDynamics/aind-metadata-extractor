@@ -1,3 +1,5 @@
+"""Core module for metadata extraction job settings."""
+
 import argparse
 import logging
 from pydantic_settings import (

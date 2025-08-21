@@ -1,3 +1,5 @@
+"""Utility functions for SmartSPIM metadata extraction."""
+
 from datetime import datetime
 import os
 import json
