@@ -54,9 +54,7 @@ def get_anatomical_direction(anatomical_direction: str) -> AnatomicalDirection:
         Corresponding enum defined in the anatomical
         direction class
     """
-    anatomical_direction = (
-        anatomical_direction.strip().lower().replace(" ", "_")
-    )
+    anatomical_direction = anatomical_direction.strip().lower().replace(" ", "_")
 
     return anatomical_direction
 
@@ -129,9 +127,7 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict) -> list[dict]:
     if x_res is None:
         x_res = y_res = session_config.get("m/pix")
         if x_res is None:
-            raise KeyError(
-                "Failed getting the x and y resolution from metadata.json"
-            )
+            raise KeyError("Failed getting the x and y resolution from metadata.json")
 
     if z_res is None:
         z_res = session_config.get("Z step (um)")
@@ -173,14 +169,12 @@ def make_acq_tiles(metadata_dict: dict, filter_mapping: dict) -> list[dict]:
         tile_info_z = float(tile_info_z)
 
         tile_transform = {
-                "x": int(tile_info_x) / 10,
-                "y": int(tile_info_y) / 10,
-                "z": int(tile_info_z) / 10,
+            "x": int(tile_info_x) / 10,
+            "y": int(tile_info_y) / 10,
+            "z": int(tile_info_z) / 10,
         }
 
-        channel = make_tile_acq_channel(
-            wavelength_config=wavelength_config, tile_info=tile_info
-        )
+        channel = make_tile_acq_channel(wavelength_config=wavelength_config, tile_info=tile_info)
         exaltation_wave = int(tile_info["Laser"])
         emission_wave = filter_mapping[exaltation_wave]
 

@@ -1,5 +1,11 @@
 import argparse
-from pydantic_settings import BaseSettings, EnvSettingsSource, InitSettingsSource, JsonConfigSettingsSource, PydanticBaseSettingsSource
+from pydantic_settings import (
+    BaseSettings,
+    EnvSettingsSource,
+    InitSettingsSource,
+    JsonConfigSettingsSource,
+    PydanticBaseSettingsSource,
+)
 from pydantic import Field
 from typing import Optional, Union, List, Type, Tuple
 from pathlib import Path
@@ -10,21 +16,15 @@ class BaseJobSettings(BaseSettings):
 
     job_settings_name: str = Field(
         ...,
-        description=(
-            "Literal name for job settings to make serialized class distinct."
-        ),
+        description=("Literal name for job settings to make serialized class distinct."),
     )
     input_source: Optional[Union[Path, str, List[str], List[Path]]] = Field(
         default=None,
-        description=(
-            "Location or locations of data sources to parse for metadata."
-        ),
+        description=("Location or locations of data sources to parse for metadata."),
     )
     output_directory: Optional[Union[Path, str]] = Field(
         default=None,
-        description=(
-            "Location to metadata file data to. None to return object."
-        ),
+        description=("Location to metadata file data to. None to return object."),
     )
 
     user_settings_config_file: Optional[Union[Path, str]] = Field(
@@ -51,9 +51,7 @@ class BaseJobSettings(BaseSettings):
         """
         Customize the order of settings sources, including JSON file.
         """
-        config_file = init_settings.init_kwargs.get(
-            "user_settings_config_file"
-        )
+        config_file = init_settings.init_kwargs.get("user_settings_config_file")
         sources = [init_settings, env_settings]
 
         if isinstance(config_file, str):

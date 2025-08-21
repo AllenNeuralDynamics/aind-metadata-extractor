@@ -1,5 +1,3 @@
-
-
 from pathlib import Path
 from typing import Literal, Optional, Union
 
@@ -24,9 +22,7 @@ class JobSettings(BaseJobSettings):
     )
     mdata_filename_json: str = Field(
         default="derivatives/metadata.json",
-        description=(
-            "Path to metadata file, expected to be a .json or .txt file."
-        ),
+        description=("Path to metadata file, expected to be a .json or .txt file."),
     )
     # Fetch info provided by microscope operators in SLIMS
     processing_manifest_path: Optional[Union[Path, str]] = Field(
