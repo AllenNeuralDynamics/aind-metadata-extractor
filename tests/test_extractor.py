@@ -125,13 +125,6 @@ class TestSmartspimExtractor(unittest.TestCase):
         mock_isdir.return_value = True
         mock_read_json.return_value = {}  # Won't be called but good to have
         
-        def side_effect():
-            """Mock side effect for Path.exists()"""
-            # Return True for ASI file, False for metadata file
-            print("Path exists check called")  # Debug print
-            print("Returning True for metadata file check")  # Debug print
-            return True
-        
         # First call should succeed (ASI file), second call should fail (metadata file)
         mock_exists.side_effect = [True, False]
         

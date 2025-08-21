@@ -124,6 +124,20 @@ class TestUtils(unittest.TestCase):
         result = digest_asi_line(test_line)
         self.assertIsNone(result)
 
+    def test_digest_asi_line_malformed_input(self):
+        """Test that malformed input returns None."""
+        # Test with insufficient parts
+        result = digest_asi_line("single_part")
+        self.assertIsNone(result)
+        
+        # Test with invalid date format
+        result = digest_asi_line("invalid/date/format 12:30:45 PM")
+        self.assertIsNone(result)
+        
+        # Test with invalid time format
+        result = digest_asi_line("8/19/2025 invalid:time PM")
+        self.assertIsNone(result)
+
     def test_get_session_end(self):
         """Test getting session end time from ASI file."""
         asi_content = [

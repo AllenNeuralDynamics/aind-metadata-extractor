@@ -56,6 +56,33 @@ class TestJobSettings(unittest.TestCase):
             )
         mock_log_warn.assert_called_once()
 
+    def test_from_args(self):
+        """Test job settings can be created from command line arguments."""
+        args = [
+            "-j",
+            '{"job_settings_name": "mock_job", "name": "Test User", "id": 42}'
+        ]
+        
+        job_settings = self.MockJobSettings.from_args(args)
+        
+        self.assertEqual(job_settings.job_settings_name, "mock_job")
+        self.assertEqual(job_settings.name, "Test User")
+        self.assertEqual(job_settings.id, 42)
+
+    def test_from_args_missing_required_arg(self):
+        """Test that from_args raises error when required argument is missing."""
+        args = []  # Missing required -j argument
+        
+        with self.assertRaises(SystemExit):
+            self.MockJobSettings.from_args(args)
+
+    def test_from_args_invalid_json(self):
+        """Test that from_args raises error when JSON is invalid."""
+        args = ["-j", "invalid json"]
+        
+        with self.assertRaises(Exception):
+            self.MockJobSettings.from_args(args)
+
 
 if __name__ == "__main__":
     unittest.main()

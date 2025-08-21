@@ -96,6 +96,4 @@ class BaseJobSettings(BaseSettings):
         )
         job_args = parser.parse_args(args)
         job_settings_from_args = cls.model_validate_json(job_args.job_settings)
-        return cls(
-            job_settings=job_settings_from_args,
-        )
+        return job_settings_from_args
