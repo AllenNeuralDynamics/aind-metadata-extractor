@@ -55,9 +55,7 @@ def get_anatomical_direction(anatomical_direction: str) -> str:
         Corresponding enum defined in the anatomical
         direction class
     """
-    anatomical_direction = (
-        anatomical_direction.strip().lower().replace(" ", "_")
-    )
+    anatomical_direction = anatomical_direction.strip().lower().replace(" ", "_")
 
     return anatomical_direction
 
@@ -79,19 +77,19 @@ def digest_asi_line(line: str) -> Optional[datetime]:
 
     if line.isspace():
         return None
-    
+
     try:
         parts = line.split()
         if len(parts) < 3:
             return None
-        
+
         mdy, hms, ampm = parts[0:3]
 
         mdy_parts = [int(i) for i in mdy.split("/")]
         ymd = [mdy_parts[i] for i in [2, 0, 1]]
 
         hms_parts = [int(i) for i in hms.split(":")]
-        
+
         # Handle AM/PM conversion
         if ampm == "PM" and hms_parts[0] != 12:
             hms_parts[0] += 12

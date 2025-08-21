@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 class FileMetadataModel(BaseModel):
     """Model for metadata extracted from microscope files"""
+
     session_config: Dict[str, Any]
     wavelength_config: Dict[str, Any]
     tile_config: Dict[str, Any]
@@ -18,6 +19,7 @@ class FileMetadataModel(BaseModel):
 
 class SlimsMetadataModel(BaseModel):
     """Model for metadata extracted from SLIMS API response"""
+
     experiment_run_created_on: Optional[str] = None
     order_created_by: Optional[str] = None
     order_project_id: Optional[str] = None
@@ -43,6 +45,6 @@ class SlimsMetadataModel(BaseModel):
 
 class SmartspimModel(BaseModel):
     """SmartSPIM extractor model for intermediate data structure"""
+
     file_metadata: FileMetadataModel
     slims_metadata: SlimsMetadataModel
-

@@ -23,21 +23,16 @@ class TestUtils(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.test_channels = [
-            "Ex_488_Em_525",
-            "Ex_561_Em_593",
-            "Ex_639_Em_667"
-        ]
+        self.test_channels = ["Ex_488_Em_525", "Ex_561_Em_593", "Ex_639_Em_667"]
         self.test_metadata = {
             "session_config": {"obj_magnification": "3.600000"},
             "wavelength_config": {"488": {"power_left": "75.00"}},
-            "tile_config": {"t_0": {"Exposure": "2"}}
+            "tile_config": {"t_0": {"Exposure": "2"}},
         }
 
     def test_read_json_as_dict_valid_file(self):
         """Test reading valid JSON file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json',
-                                         delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(self.test_metadata, f)
             temp_path = f.name
 
@@ -54,8 +49,7 @@ class TestUtils(unittest.TestCase):
 
     def test_read_json_as_dict_invalid_json(self):
         """Test reading invalid JSON file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json',
-                                         delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write("invalid json content")
             temp_path = f.name
 
@@ -67,8 +61,7 @@ class TestUtils(unittest.TestCase):
 
     def test_read_json_as_dict_unicode_error(self):
         """Test reading JSON with unicode decode errors."""
-        with tempfile.NamedTemporaryFile(mode='wb', suffix='.json',
-                                         delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".json", delete=False) as f:
             # Write some bytes that would cause UnicodeDecodeError
             f.write(b'{"test": "valid"}\xff\xfe')
             temp_path = f.name
@@ -98,7 +91,7 @@ class TestUtils(unittest.TestCase):
         """Test extracting datetime from valid ASI line."""
         test_line = b"8/19/2025 7:03:25 PM Some additional content"
         result = digest_asi_line(test_line.decode())
-        
+
         expected = datetime(2025, 8, 19, 19, 3, 25)
         self.assertEqual(result, expected)
 
@@ -106,7 +99,7 @@ class TestUtils(unittest.TestCase):
         """Test extracting AM timestamp from ASI line."""
         test_line = b"8/19/2025 7:03:25 AM Some additional content"
         result = digest_asi_line(test_line.decode())
-        
+
         expected = datetime(2025, 8, 19, 7, 3, 25)
         self.assertEqual(result, expected)
 
@@ -114,7 +107,7 @@ class TestUtils(unittest.TestCase):
         """Test extracting midnight timestamp from ASI line."""
         test_line = b"8/19/2025 12:00:00 AM Some additional content"
         result = digest_asi_line(test_line.decode())
-        
+
         expected = datetime(2025, 8, 19, 0, 0, 0)
         self.assertEqual(result, expected)
 
@@ -129,11 +122,11 @@ class TestUtils(unittest.TestCase):
         # Test with insufficient parts
         result = digest_asi_line("single_part")
         self.assertIsNone(result)
-        
+
         # Test with invalid date format
         result = digest_asi_line("invalid/date/format 12:30:45 PM")
         self.assertIsNone(result)
-        
+
         # Test with invalid time format
         result = digest_asi_line("8/19/2025 invalid:time PM")
         self.assertIsNone(result)
@@ -148,7 +141,7 @@ class TestUtils(unittest.TestCase):
             b"   \n",  # whitespace line
         ]
 
-        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="wb", delete=False) as f:
             f.writelines(asi_content)
             temp_path = f.name
 
@@ -162,28 +155,16 @@ class TestUtils(unittest.TestCase):
     def test_get_excitation_emission_waves(self):
         """Test extracting excitation and emission wavelengths."""
         result = get_excitation_emission_waves(self.test_channels)
-        
-        expected = {
-            "488": 525,
-            "561": 593,
-            "639": 667
-        }
+
+        expected = {"488": 525, "561": 593, "639": 667}
         self.assertEqual(result, expected)
 
     def test_get_excitation_emission_waves_with_prefixes(self):
         """Test extracting wavelengths with Em_ and Ex_ prefixes."""
-        channels_with_prefixes = [
-            "Em_488_Ex_525",
-            "Em_561_Ex_593",
-            "Ex_639_Em_667"
-        ]
-        
+        channels_with_prefixes = ["Em_488_Ex_525", "Em_561_Ex_593", "Ex_639_Em_667"]
+
         result = get_excitation_emission_waves(channels_with_prefixes)
-        expected = {
-            "488": 525,
-            "561": 593,
-            "639": 667
-        }
+        expected = {"488": 525, "561": 593, "639": 667}
         self.assertEqual(result, expected)
 
     def test_parse_channel_name_semicolon_format(self):
@@ -249,25 +230,17 @@ class TestUtils(unittest.TestCase):
         slims_channels = [
             "Laser = 488; Emission Filter = 525/50",
             "Laser = 561, Emission Filter = 593/40",
-            "Laser = 639; Emission Filter = 667/30"
+            "Laser = 639; Emission Filter = 667/30",
         ]
-        
+
         # Parse channel names
         parsed_channels = [parse_channel_name(ch) for ch in slims_channels]
-        expected_parsed = [
-            "Ex_488_Em_525",
-            "Ex_561_Em_593",
-            "Ex_639_Em_667"
-        ]
+        expected_parsed = ["Ex_488_Em_525", "Ex_561_Em_593", "Ex_639_Em_667"]
         self.assertEqual(parsed_channels, expected_parsed)
-        
+
         # Get excitation/emission mapping
         filter_mapping = get_excitation_emission_waves(parsed_channels)
-        expected_mapping = {
-            "488": 525,
-            "561": 593,
-            "639": 667
-        }
+        expected_mapping = {"488": 525, "561": 593, "639": 667}
         self.assertEqual(filter_mapping, expected_mapping)
 
 

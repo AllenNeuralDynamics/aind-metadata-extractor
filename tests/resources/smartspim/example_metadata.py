@@ -1,4 +1,4 @@
-""" Example of microscope metadata """
+"""Example of microscope metadata"""
 
 from datetime import datetime
 
@@ -746,28 +746,28 @@ example_metadata_info = {
 }
 
 example_imaging_info_from_slims = {
-  "experiment_run_created_on": "2025-08-19T19:03:25.961000Z",
-  "order_created_by": "PolinaKosillo",
-  "order_project_id": "Discovery-Neuromodulator circuit dynamics during foraging - Subproject 2 Molecular Anatomy Cell Types",
-  "specimen_id": "BRN00000408",
-  "subject_id": "804714",
-  "protocol_name": "Imaging cleared mouse brains on SmartSPIM",
-  "protocol_id": "https://dx.doi.org/10.17504/protocols.io.3byl4jo1rlo5/v1",
-  "date_performed": "2025-08-19T19:03:00Z",
-  "chamber_immersion_medium": "Cargille Oil 1.5200",
-  "sample_immersion_medium": "EasyIndex",
-  "chamber_refractive_index": "1.517",
-  "sample_refractive_index": "1.5205",
-  "instrument_id": "440_SmartSPIM2_20240327",
-  "experimenter_name": None,
-  "z_direction": "Superior to Inferior",
-  "y_direction": "Anterior to Posterior",
-  "x_direction": "Left to Right",
-  "imaging_channels": [
-    "Laser = 561; Emission Filter = 593/40",
-    "Laser = 639; Emission Filter = 667/30"
-  ],
-  "stitching_channels": "Laser = 639, Emission Filter = 667/30",
-  "ccf_registration_channels": "Laser = 639, Emission Filter = 667/30",
-  "cell_segmentation_channels": None
+    "experiment_run_created_on": "2025-08-19T19:03:25.961000Z",
+    "order_created_by": "PolinaKosillo",
+    "order_project_id": (
+        "Discovery-Neuromodulator circuit dynamics during foraging - Subproject"
+        "2 Molecular Anatomy Cell Types"
+    ),
+    "specimen_id": "BRN00000408",
+    "subject_id": "804714",
+    "protocol_name": "Imaging cleared mouse brains on SmartSPIM",
+    "protocol_id": "https://dx.doi.org/10.17504/protocols.io.3byl4jo1rlo5/v1",
+    "date_performed": "2025-08-19T19:03:00Z",
+    "chamber_immersion_medium": "Cargille Oil 1.5200",
+    "sample_immersion_medium": "EasyIndex",
+    "chamber_refractive_index": "1.517",
+    "sample_refractive_index": "1.5205",
+    "instrument_id": "440_SmartSPIM2_20240327",
+    "experimenter_name": None,
+    "z_direction": "Superior to Inferior",
+    "y_direction": "Anterior to Posterior",
+    "x_direction": "Left to Right",
+    "imaging_channels": ["Laser = 561; Emission Filter = 593/40", "Laser = 639; Emission Filter = 667/30"],
+    "stitching_channels": "Laser = 639, Emission Filter = 667/30",
+    "ccf_registration_channels": "Laser = 639, Emission Filter = 667/30",
+    "cell_segmentation_channels": None,
 }

@@ -23,14 +23,8 @@ class TestJobSettings(unittest.TestCase):
 
         self.assertEqual(job_settings.job_settings_name, "SmartSPIM")
         self.assertEqual(job_settings.subject_id, "804714")
-        self.assertEqual(
-            job_settings.metadata_service_path,
-            "https://api.metadata.service.com/smartspim"
-        )
-        self.assertEqual(
-            job_settings.input_source,
-            "/data/SmartSPIM_2025-08-19_15-03-00"
-        )
+        self.assertEqual(job_settings.metadata_service_path, "https://api.metadata.service.com/smartspim")
+        self.assertEqual(job_settings.input_source, "/data/SmartSPIM_2025-08-19_15-03-00")
 
     def test_job_settings_with_path_object(self):
         """Test JobSettings with Path object for input_source."""
@@ -39,26 +33,17 @@ class TestJobSettings(unittest.TestCase):
         settings_data["input_source"] = str(Path(test_path))
 
         job_settings = JobSettings.model_validate(settings_data)
-        self.assertEqual(
-            str(job_settings.input_source),
-            str(Path(test_path))
-        )
+        self.assertEqual(str(job_settings.input_source), str(Path(test_path)))
 
     def test_default_asi_filename(self):
         """Test default ASI filename."""
         job_settings = JobSettings.model_validate(self.valid_job_settings)
-        self.assertEqual(
-            job_settings.asi_filename,
-            "derivatives/ASI_logging.txt"
-        )
+        self.assertEqual(job_settings.asi_filename, "derivatives/ASI_logging.txt")
 
     def test_default_metadata_filename(self):
         """Test default metadata filename."""
         job_settings = JobSettings.model_validate(self.valid_job_settings)
-        self.assertEqual(
-            job_settings.mdata_filename_json,
-            "derivatives/metadata.json"
-        )
+        self.assertEqual(job_settings.mdata_filename_json, "derivatives/metadata.json")
 
     def test_custom_asi_filename(self):
         """Test custom ASI filename."""
@@ -74,10 +59,7 @@ class TestJobSettings(unittest.TestCase):
         settings_data["mdata_filename_json"] = "custom/metadata.json"
 
         job_settings = JobSettings.model_validate(settings_data)
-        self.assertEqual(
-            job_settings.mdata_filename_json,
-            "custom/metadata.json"
-        )
+        self.assertEqual(job_settings.mdata_filename_json, "custom/metadata.json")
 
     def test_optional_slims_datetime(self):
         """Test optional SLIMS datetime field."""
@@ -102,15 +84,10 @@ class TestJobSettings(unittest.TestCase):
     def test_deprecated_processing_manifest_path(self):
         """Test deprecated processing_manifest_path field."""
         settings_data = self.valid_job_settings.copy()
-        settings_data["processing_manifest_path"] = (
-            "derivatives/old_manifest.json"
-        )
+        settings_data["processing_manifest_path"] = "derivatives/old_manifest.json"
 
         job_settings = JobSettings.model_validate(settings_data)
-        self.assertEqual(
-            job_settings.processing_manifest_path,
-            "derivatives/old_manifest.json"
-        )
+        self.assertEqual(job_settings.processing_manifest_path, "derivatives/old_manifest.json")
 
     def test_missing_required_subject_id(self):
         """Test that missing subject_id raises validation error."""
