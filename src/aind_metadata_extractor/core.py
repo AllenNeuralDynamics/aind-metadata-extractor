@@ -1,4 +1,5 @@
 import argparse
+import logging
 from pydantic_settings import (
     BaseSettings,
     EnvSettingsSource,
@@ -58,7 +59,11 @@ class BaseJobSettings(BaseSettings):
             config_file = Path(config_file)
 
         if config_file and config_file.is_file():
-            sources.append(JsonConfigSettingsSource(settings_cls, config_file))
+            try:
+                sources.append(JsonConfigSettingsSource(settings_cls, config_file))
+            except Exception as e:
+                logging.warning(f"Failed to load JSON config file {config_file}: {e}")
+                raise
 
         return tuple(sources)
 
