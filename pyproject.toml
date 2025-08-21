@@ -18,6 +18,7 @@ dynamic = ["version"]
 
 dependencies = [
     'pydantic',
+    'pydantic-settings',
 ]
 
 [project.optional-dependencies]
@@ -31,6 +32,10 @@ dev = [
     'furo'
 ]
 
+smartspim = [
+    'requests',
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
@@ -38,7 +43,7 @@ where = ["src"]
 version = {attr = "aind_metadata_extractor.__version__"}
 
 [tool.black]
-line-length = 79
+line-length = 120
 target_version = ['py310']
 exclude = '''
 
