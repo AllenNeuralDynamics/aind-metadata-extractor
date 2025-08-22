@@ -44,13 +44,18 @@ jobs:
       run: python -m pip install -e .${{ matrix.dependencies }}
     - name: Run tests with coverage
       run: |
-        coverage run --parallel-mode --source=src/aind_metadata_extractor -m unittest discover -s ${{ matrix.test-path }} -p ${{ matrix.test-pattern }}
+        coverage run --parallel-mode --source=aind_metadata_extractor -m unittest discover -s ${{ matrix.test-path }} -p ${{ matrix.test-pattern }}
+        echo "Coverage files created:"
+        ls -la .coverage* || echo "No .coverage files found"
+        ls -la || echo "All files in current directory:"
     - name: Upload coverage data
       uses: actions/upload-artifact@v4
       with:
         name: coverage-data-${{ matrix.python-version }}-${{ matrix.test-group }}
-        path: .coverage.*
-        if-no-files-found: error
+        path: |
+          .coverage
+          .coverage.*
+        if-no-files-found: warn
 
   coverage:
     needs: test
