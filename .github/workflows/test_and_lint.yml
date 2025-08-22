@@ -63,6 +63,7 @@ jobs:
       with:
         name: coverage-data-${{ matrix.python-version }}-${{ matrix.test-group }}
         path: coverage-files/
+        include-hidden-files: true
         if-no-files-found: error
 
   coverage:
