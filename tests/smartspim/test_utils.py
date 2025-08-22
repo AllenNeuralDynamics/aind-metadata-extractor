@@ -6,6 +6,7 @@ import tempfile
 import os
 import json
 from pathlib import Path
+from unittest.mock import patch, mock_open
 
 from aind_metadata_extractor.smartspim.utils import (
     read_json_as_dict,
@@ -30,48 +31,59 @@ class TestUtils(unittest.TestCase):
             "tile_config": {"t_0": {"Exposure": "2"}},
         }
 
-    def test_read_json_as_dict_valid_file(self):
+    @patch("builtins.open", new_callable=mock_open, read_data="{}")
+    @patch("os.path.exists")
+    @patch("json.load")
+    def test_read_json_as_dict_valid_file(self, mock_json_load, mock_exists, mock_file):
         """Test reading valid JSON file."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            json.dump(self.test_metadata, f)
-            temp_path = f.name
+        mock_exists.return_value = True
+        mock_json_load.return_value = self.test_metadata
 
-        try:
-            result = read_json_as_dict(temp_path)
-            self.assertEqual(result, self.test_metadata)
-        finally:
-            os.unlink(temp_path)
+        result = read_json_as_dict("/fake/path.json")
+        self.assertEqual(result, self.test_metadata)
 
-    def test_read_json_as_dict_nonexistent_file(self):
+    @patch("os.path.exists")
+    def test_read_json_as_dict_nonexistent_file(self, mock_exists):
         """Test reading non-existent JSON file returns empty dict."""
+        mock_exists.return_value = False
         result = read_json_as_dict("/nonexistent/file.json")
         self.assertEqual(result, {})
 
-    def test_read_json_as_dict_invalid_json(self):
+    @patch("builtins.open", new_callable=mock_open, read_data="{}")
+    @patch("os.path.exists")
+    @patch("json.load")
+    def test_read_json_as_dict_invalid_json(self, mock_json_load, mock_exists, mock_file):
         """Test reading invalid JSON file."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            f.write("invalid json content")
-            temp_path = f.name
+        mock_exists.return_value = True
+        mock_json_load.side_effect = json.JSONDecodeError("Expecting value", "doc", 0)
 
-        try:
-            with self.assertRaises(json.JSONDecodeError):
-                read_json_as_dict(temp_path)
-        finally:
-            os.unlink(temp_path)
+        with self.assertRaises(json.JSONDecodeError):
+            read_json_as_dict("/fake/path.json")
 
-    def test_read_json_as_dict_unicode_error(self):
+    @patch("json.load")
+    @patch("json.loads")
+    @patch("builtins.open")
+    @patch("os.path.exists")
+    def test_read_json_as_dict_unicode_error(self, mock_exists, mock_open_func, mock_json_loads, mock_json_load):
         """Test reading JSON with unicode decode errors."""
-        with tempfile.NamedTemporaryFile(mode="wb", suffix=".json", delete=False) as f:
-            # Write some bytes that would cause UnicodeDecodeError
-            f.write(b'{"test": "valid"}\xff\xfe')
-            temp_path = f.name
+        mock_exists.return_value = True
 
-        try:
-            result = read_json_as_dict(temp_path)
-            # Should handle the error and return partial data
-            self.assertIsInstance(result, dict)
-        finally:
-            os.unlink(temp_path)
+        # Mock the first json.load call to raise UnicodeDecodeError
+        mock_json_load.side_effect = UnicodeDecodeError("utf-8", b"", 0, 1, "invalid start byte")
+
+        # Mock the second call (binary mode) to return valid JSON
+        mock_binary_file = mock_open(read_data=b'{"test": "valid"}\xff\xfe')()
+        mock_open_func.side_effect = [
+            mock_open()(),  # First call (text mode) - will raise UnicodeDecodeError via json.load
+            mock_binary_file,  # Second call (binary mode)
+        ]
+
+        # Mock json.loads to return the expected result after decoding with errors='ignore'
+        mock_json_loads.return_value = {"test": "valid"}
+
+        result = read_json_as_dict("/fake/path.json")
+        # Should handle the error and return partial data
+        self.assertEqual(result, {"test": "valid"})
 
     def test_get_anatomical_direction_basic(self):
         """Test basic anatomical direction conversion."""
