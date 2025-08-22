@@ -47,13 +47,22 @@ jobs:
         coverage run --parallel-mode --source=aind_metadata_extractor -m unittest discover -s ${{ matrix.test-path }} -p ${{ matrix.test-pattern }}
         echo "Coverage files created:"
         ls -la .coverage* || echo "No .coverage files found"
-        echo "Files to upload:"
+        echo "Current working directory:"
+        pwd
+        echo "All files in current directory:"
+        ls -la
+        echo "Files to upload (using find):"
         find . -name ".coverage*" -type f
+        # Create a directory for coverage files and move them there
+        mkdir -p coverage-files
+        find . -maxdepth 1 -name ".coverage*" -type f -exec mv {} coverage-files/ \;
+        echo "Files moved to coverage-files directory:"
+        ls -la coverage-files/
     - name: Upload coverage data
       uses: actions/upload-artifact@v4
       with:
         name: coverage-data-${{ matrix.python-version }}-${{ matrix.test-group }}
-        path: .coverage*
+        path: coverage-files/
         if-no-files-found: error
 
   coverage:
@@ -72,8 +81,18 @@ jobs:
       with:
         pattern: coverage-data-*
         merge-multiple: true
-    - name: List coverage files
-      run: ls -la .coverage*
+    - name: List downloaded artifacts
+      run: |
+        echo "Current directory contents:"
+        ls -la
+        echo "Looking for coverage files recursively:"
+        find . -name ".coverage*" -type f
+    - name: Move coverage files to root
+      run: |
+        # Move all coverage files from subdirectories to root
+        find . -name ".coverage*" -type f -exec mv {} . \;
+        echo "Coverage files in root after move:"
+        ls -la .coverage*
     - name: Combine coverage data
       run: |
         coverage combine
