@@ -33,4 +33,3 @@ class JobSettings(BaseJobSettings):
         description=("Deprecated, use metadata_service_path instead."),
     )
     metadata_service_path: str
-
