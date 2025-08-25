@@ -22,6 +22,7 @@ class TestSmartspimExtractor(unittest.TestCase):
             "subject_id": "804714",
             "metadata_service_path": "https://api.test.com/smartspim",
             "input_source": "/data/SmartSPIM_2025-08-19_15-03-00",
+            "acquisition_type": "some_acquisition_type",
         }
         self.job_settings = JobSettings(**job_settings_dict)
 
@@ -151,6 +152,7 @@ class TestSmartspimExtractor(unittest.TestCase):
             "subject_id": "804714",
             "metadata_service_path": "https://api.test.com/smartspim",
             "input_source": None,  # This will cause the error
+            "acquisition_type": "some_acquisition_type",
         }
         invalid_settings = JobSettings(**invalid_settings_dict)
 
@@ -168,6 +170,7 @@ class TestSmartspimExtractor(unittest.TestCase):
             "subject_id": "804714",
             "metadata_service_path": "https://api.test.com/smartspim",
             "input_source": ["/data/SmartSPIM_2025-08-19_15-03-00", "/data/additional_path"],
+            "acquisition_type": "some_acquisition_type",
         }
 
         list_settings = JobSettings(**list_settings_dict)
