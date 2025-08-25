@@ -18,17 +18,18 @@ class TestSmartspimExtractor(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.job_settings_dict = {
+        job_settings_dict = {
             "subject_id": "804714",
             "metadata_service_path": "https://api.test.com/smartspim",
             "input_source": "/data/SmartSPIM_2025-08-19_15-03-00",
         }
+        self.job_settings = JobSettings(**job_settings_dict)
 
         self.expected_channels = ["Ex_488_Em_525", "Ex_561_Em_593", "Ex_639_Em_667"]
 
     def test_extractor_initialization(self):
         """Test SmartspimExtractor initialization."""
-        extractor = SmartspimExtractor(self.job_settings_dict)
+        extractor = SmartspimExtractor(self.job_settings)
 
         self.assertIsInstance(extractor.job_settings, JobSettings)
         self.assertEqual(extractor.job_settings.subject_id, "804714")
@@ -50,7 +51,7 @@ class TestSmartspimExtractor(unittest.TestCase):
         mock_read_json.return_value = example_metadata_info
         mock_get_session_end.return_value = example_session_end_time
 
-        extractor = SmartspimExtractor(self.job_settings_dict)
+        extractor = SmartspimExtractor(self.job_settings)
         result = extractor._extract_metadata_from_microscope_files()
 
         # Check that all expected keys are present
@@ -94,7 +95,7 @@ class TestSmartspimExtractor(unittest.TestCase):
 
         mock_exists.side_effect = side_effect
 
-        extractor = SmartspimExtractor(self.job_settings_dict)
+        extractor = SmartspimExtractor(self.job_settings)
 
         with self.assertRaises(FileNotFoundError) as context:
             extractor._extract_metadata_from_microscope_files()
@@ -115,7 +116,7 @@ class TestSmartspimExtractor(unittest.TestCase):
         # First call should succeed (ASI file), second call should fail (metadata file)
         mock_exists.side_effect = [True, False]
 
-        extractor = SmartspimExtractor(self.job_settings_dict)
+        extractor = SmartspimExtractor(self.job_settings)
 
         with self.assertRaises(FileNotFoundError) as context:
             extractor._extract_metadata_from_microscope_files()
@@ -136,7 +137,7 @@ class TestSmartspimExtractor(unittest.TestCase):
         empty_metadata = {"session_config": None, "wavelength_config": None, "tile_config": None}
         mock_read_json.return_value = empty_metadata
 
-        extractor = SmartspimExtractor(self.job_settings_dict)
+        extractor = SmartspimExtractor(self.job_settings)
 
         with self.assertRaises(ValueError) as context:
             extractor._extract_metadata_from_microscope_files()
@@ -146,11 +147,12 @@ class TestSmartspimExtractor(unittest.TestCase):
     def test_extract_metadata_invalid_input_source(self):
         """Test extraction fails with invalid input source."""
         # Create a new dict instead of modifying original to avoid type issues
-        invalid_settings = {
+        invalid_settings_dict = {
             "subject_id": "804714",
             "metadata_service_path": "https://api.test.com/smartspim",
             "input_source": None,  # This will cause the error
         }
+        invalid_settings = JobSettings(**invalid_settings_dict)
 
         extractor = SmartspimExtractor(invalid_settings)
 
@@ -162,11 +164,13 @@ class TestSmartspimExtractor(unittest.TestCase):
     def test_extract_metadata_list_input_source(self):
         """Test extraction with list input source."""
         # Create a new dict to handle list type properly
-        list_settings = {
+        list_settings_dict = {
             "subject_id": "804714",
             "metadata_service_path": "https://api.test.com/smartspim",
             "input_source": ["/data/SmartSPIM_2025-08-19_15-03-00", "/data/additional_path"],
         }
+        
+        list_settings = JobSettings(**list_settings_dict)
 
         with (
             patch("pathlib.Path.exists") as mock_exists,
@@ -198,7 +202,7 @@ class TestSmartspimExtractor(unittest.TestCase):
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
 
-        extractor = SmartspimExtractor(self.job_settings_dict)
+        extractor = SmartspimExtractor(self.job_settings)
         result = extractor._extract_metadata_from_slims()
 
         self.assertEqual(result, example_imaging_info_from_slims)
@@ -221,7 +225,7 @@ class TestSmartspimExtractor(unittest.TestCase):
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
 
-        extractor = SmartspimExtractor(self.job_settings_dict)
+        extractor = SmartspimExtractor(self.job_settings)
 
         with self.assertRaises(ValueError) as context:
             extractor._extract_metadata_from_slims()
@@ -238,7 +242,7 @@ class TestSmartspimExtractor(unittest.TestCase):
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
 
-        extractor = SmartspimExtractor(self.job_settings_dict)
+        extractor = SmartspimExtractor(self.job_settings)
         result = extractor._extract_metadata_from_slims()
 
         self.assertEqual(result, {})
@@ -252,7 +256,7 @@ class TestSmartspimExtractor(unittest.TestCase):
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
 
-        extractor = SmartspimExtractor(self.job_settings_dict)
+        extractor = SmartspimExtractor(self.job_settings)
         result = extractor._extract_metadata_from_slims(
             start_date_gte="2025-08-19T00:00:00Z", end_date_lte="2025-08-19T23:59:59Z"
         )
@@ -281,7 +285,7 @@ class TestSmartspimExtractor(unittest.TestCase):
         mock_extract_files.return_value = mock_file_metadata
         mock_extract_slims.return_value = example_imaging_info_from_slims
 
-        extractor = SmartspimExtractor(self.job_settings_dict)
+        extractor = SmartspimExtractor(self.job_settings)
         result = extractor.extract()
 
         # Verify the result structure
@@ -338,8 +342,8 @@ class TestSmartspimExtractor(unittest.TestCase):
         mock_get_session_end.return_value = example_session_end_time
 
         # Use invalid date format in input source
-        invalid_settings = self.job_settings_dict.copy()
-        invalid_settings["input_source"] = "/data/SmartSPIM_invalid_date_format"
+        invalid_settings = self.job_settings.model_copy()
+        invalid_settings.input_source = "/data/SmartSPIM_invalid_date_format"
 
         extractor = SmartspimExtractor(invalid_settings)
 
