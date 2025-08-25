@@ -169,7 +169,7 @@ class TestSmartspimExtractor(unittest.TestCase):
             "metadata_service_path": "https://api.test.com/smartspim",
             "input_source": ["/data/SmartSPIM_2025-08-19_15-03-00", "/data/additional_path"],
         }
-        
+
         list_settings = JobSettings(**list_settings_dict)
 
         with (

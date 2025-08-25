@@ -29,7 +29,8 @@ def read_json_as_dict(filepath: str) -> dict:
 
         except UnicodeDecodeError:
             print(
-                "Error reading json with utf-8, trying different approach. This might lose data: verify the JSON encoding."
+                "Error reading json with utf-8, trying different approach."
+                " This might lose data: verify the JSON encoding."
             )
             with open(filepath, "rb") as json_file:
                 data = json_file.read()

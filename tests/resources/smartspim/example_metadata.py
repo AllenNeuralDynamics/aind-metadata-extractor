@@ -749,8 +749,7 @@ example_imaging_info_from_slims = {
     "experiment_run_created_on": "2025-08-19T19:03:25.961000Z",
     "order_created_by": "PolinaKosillo",
     "order_project_id": (
-        "Discovery-Neuromodulator circuit dynamics during foraging - Subproject"
-        "2 Molecular Anatomy Cell Types"
+        "Discovery-Neuromodulator circuit dynamics during foraging - Subproject" "2 Molecular Anatomy Cell Types"
     ),
     "specimen_id": "BRN00000408",
     "subject_id": "804714",
