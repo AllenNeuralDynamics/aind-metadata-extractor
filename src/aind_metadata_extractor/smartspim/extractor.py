@@ -33,7 +33,10 @@ class SmartspimExtractor:
         file_metadata_model = FileMetadataModel(**file_metadata)
         slims_metadata_model = SlimsMetadataModel(**slims_metadata)
 
-        smartspim_metadata = SmartspimModel(file_metadata=file_metadata_model, slims_metadata=slims_metadata_model)
+        smartspim_metadata = SmartspimModel(
+            acquisition_type=self.job_settings.acquisition_type,
+            file_metadata=file_metadata_model,
+            slims_metadata=slims_metadata_model)
 
         return smartspim_metadata.model_dump()
 
