@@ -36,6 +36,21 @@ smartspim = [
     'requests',
 ]
 
+bergamo = [
+    "scanimage-tiff-reader==1.4.1.4",
+    "numpy >= 1.26.4",
+]
+
+mesoscope = [
+    "aind-metadata-mapper[bergamo]",
+    "pillow >= 10.4.0",
+    "tifffile==2024.2.12",
+    "numpy >= 1.26.4",
+    "h5py >= 3.11.0",
+    "scipy >= 1.11.0",
+    "pandas >= 2.2.2",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
