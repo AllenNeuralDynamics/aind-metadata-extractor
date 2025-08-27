@@ -14,6 +14,7 @@ class TestJobSettings(unittest.TestCase):
         self.valid_job_settings = {
             "subject_id": "804714",
             "metadata_service_path": "https://api.metadata.service.com/smartspim",
+            "acquisition_type": "some_acquisition_type",
             "input_source": "/data/SmartSPIM_2025-08-19_15-03-00",
         }
 
@@ -23,6 +24,7 @@ class TestJobSettings(unittest.TestCase):
 
         self.assertEqual(job_settings.job_settings_name, "SmartSPIM")
         self.assertEqual(job_settings.subject_id, "804714")
+        self.assertEqual(job_settings.acquisition_type, "some_acquisition_type")
         self.assertEqual(job_settings.metadata_service_path, "https://api.metadata.service.com/smartspim")
         self.assertEqual(job_settings.input_source, "/data/SmartSPIM_2025-08-19_15-03-00")
 
@@ -60,18 +62,6 @@ class TestJobSettings(unittest.TestCase):
 
         job_settings = JobSettings.model_validate(settings_data)
         self.assertEqual(job_settings.mdata_filename_json, "custom/metadata.json")
-
-    def test_optional_slims_datetime(self):
-        """Test optional SLIMS datetime field."""
-        job_settings = JobSettings.model_validate(self.valid_job_settings)
-        self.assertIsNone(job_settings.slims_datetime)
-
-        # Test with datetime provided
-        settings_data = self.valid_job_settings.copy()
-        settings_data["slims_datetime"] = "2025-08-19T19:03:00Z"
-
-        job_settings = JobSettings.model_validate(settings_data)
-        self.assertEqual(job_settings.slims_datetime, "2025-08-19T19:03:00Z")
 
     def test_deprecated_raw_dataset_path(self):
         """Test deprecated raw_dataset_path field."""
