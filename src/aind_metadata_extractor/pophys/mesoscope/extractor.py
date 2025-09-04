@@ -10,12 +10,11 @@ from typing import Tuple, Union
 import h5py as h5
 import tifffile
 
-from aind_metadata_extractor.core import GenericEtl
 from aind_metadata_extractor.pophys.mesoscope.job_settings import JobSettings
 from aind_metadata_extractor.utils.camstim_sync.camstim import Camstim, CamstimSettings
 
 
-class MesoscopeExtract(GenericEtl[JobSettings]):
+class MesoscopeExtract:
     """Class to manage transforming mesoscope platform json and metadata into
     a Session model."""
 
@@ -32,13 +31,12 @@ class MesoscopeExtract(GenericEtl[JobSettings]):
     # TODO: Deprecate this constructor. Use GenericEtl constructor instead
     def __init__(self, job_settings: Union[JobSettings, str]):
         """
-        Class constructor for Base etl class.
+        Class constructor for MesoscopeExtract.
         Parameters
         ----------
         job_settings: Union[JobSettings, str]
           Variables for a particular session
         """
-
         if isinstance(job_settings, str):
             job_settings_model = JobSettings.model_validate_json(job_settings)
         else:
@@ -48,7 +46,7 @@ class MesoscopeExtract(GenericEtl[JobSettings]):
         camstim_output = job_settings_model.output_directory
         if job_settings_model.make_camsitm_dir:
             camstim_output = job_settings_model.output_directory / f"{job_settings_model.session_id}_behavior"
-        super().__init__(job_settings=job_settings_model)
+        self.job_settings = job_settings_model
         camstim_settings = CamstimSettings(
             input_source=self.job_settings.input_source,
             output_directory=camstim_output,

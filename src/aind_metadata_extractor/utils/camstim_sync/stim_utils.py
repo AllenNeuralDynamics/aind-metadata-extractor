@@ -10,8 +10,8 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
-import aind_metadata_mapper.open_ephys.utils.sync_utils as sync
+import aind_metadata_extractor.utils.camstim_sync.pkl_utils as pkl
+import aind_metadata_extractor.utils.camstim_sync.sync_utils as sync
 
 logger = logging.getLogger(__name__)
 

@@ -10,13 +10,12 @@ from typing import Optional
 import pandas as pd
 from pydantic import BaseModel
 
-import aind_metadata_extractor.utils.naming_utils as names
-import aind_metadata_extractor.utils.pkl_utils as pkl
-import aind_metadata_extractor.utils.sync_utils as sync
-from aind_metadata_extractor.utils import (
+from aind_metadata_extractor.utils.camstim_sync import (
     behavior_utils,
     constants,
     stim_utils,
+    sync_utils,
+    naming_utils
 )
 
 
@@ -70,7 +69,7 @@ class Camstim:
         self.fps = pkl.get_fps(self.pkl_data)
         self.stage_name = pkl.get_stage(self.pkl_data)
         self.session_start, self.session_end = self._get_sync_times()
-        self.sync_data = sync.load_sync(self.sync_path)
+        self.sync_data = sync_utils.load_sync(self.sync_path)
         self.mouse_id = self.camstim_settings.subject_id
         self.session_uuid = self.get_session_uuid()
         self.behavior = self._is_behavior()
@@ -102,8 +101,8 @@ class Camstim:
         Path
         """
         self.sync_path = next(self.input_source.glob("*.h5"))
-        self.sync_data = sync.load_sync(self.sync_path)
-        return sync.get_start_time(self.sync_data), sync.get_stop_time(
+        self.sync_data = sync_utils.load_sync(self.sync_path)
+        return sync_utils.get_start_time(self.sync_data), sync_utils.get_stop_time(
             self.sync_data
         )
 
@@ -115,7 +114,7 @@ class Camstim:
         -------
         None
         """
-        timestamps = sync.get_ophys_stimulus_timestamps(
+        timestamps = sync_utils.get_ophys_stimulus_timestamps(
             self.sync_data, self.pkl_path
         )
         behavior_table = behavior_utils.from_stimulus_file(
@@ -148,15 +147,15 @@ class Camstim:
         stim_table_seconds = stim_utils.convert_frames_to_seconds(
             stim_table_sweeps, frame_times, self.fps, True
         )
-        stim_table_seconds = names.collapse_columns(stim_table_seconds)
-        stim_table_seconds = names.drop_empty_columns(stim_table_seconds)
-        stim_table_seconds = names.standardize_movie_numbers(
+        stim_table_seconds = naming_utils.collapse_columns(stim_table_seconds)
+        stim_table_seconds = naming_utils.drop_empty_columns(stim_table_seconds)
+        stim_table_seconds = naming_utils.standardize_movie_numbers(
             stim_table_seconds
         )
-        stim_table_seconds = names.add_number_to_shuffled_movie(
+        stim_table_seconds = naming_utils.add_number_to_shuffled_movie(
             stim_table_seconds
         )
-        stim_table_seconds = names.map_stimulus_names(
+        stim_table_seconds = naming_utils.map_stimulus_names(
             stim_table_seconds, name_map
         )
         return stim_table_seconds
@@ -186,10 +185,10 @@ class Camstim:
             List of constant parameters to drop, by default stim.DROP_PARAMS
         stimulus_name_map : dict[str, str], optional
             Map of stimulus names to rename, by default
-            names.default_stimulus_renames
+            naming_utils.default_stimulus_renames
         column_name_map : dict[str, str], optional
             Map of column names to rename, by default
-            names.default_column_renames
+            naming_utils.default_column_renames
 
         """
         assert (
@@ -239,7 +238,7 @@ class Camstim:
             stim_table_seconds = self.get_stim_table_seconds(
                 stim_table_sweeps, time, stimulus_name_map
             )
-            stim_table_final = names.map_column_names(
+            stim_table_final = naming_utils.map_column_names(
                 stim_table_seconds, column_name_map, ignore_case=False
             )
             if i == 0:

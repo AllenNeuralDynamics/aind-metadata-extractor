@@ -7,10 +7,10 @@ from typing import Dict, List, Optional, Set, Tuple, Union
 import numpy as np
 import pandas as pd
 
-import aind_metadata_mapper.open_ephys.utils.constants as constants
-import aind_metadata_mapper.open_ephys.utils.naming_utils as names
-import aind_metadata_mapper.open_ephys.utils.pkl_utils as pkl
-import aind_metadata_mapper.open_ephys.utils.stim_utils as stim
+import aind_metadata_extractor.utils.camstim_sync.constants as constants
+import aind_metadata_extractor.utils.camstim_sync.naming_utils as names
+import aind_metadata_extractor.utils.camstim_sync.pkl_utils as pkl
+import aind_metadata_extractor.utils.camstim_sync.stim_utils as stim
 
 INT_NULL = -99
 

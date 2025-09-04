@@ -9,7 +9,7 @@ import h5py
 import numpy as np
 import scipy.spatial.distance as distance
 
-import aind_metadata_extractor.utils.pkl_utils as pkl
+import aind_metadata_extractor.utils.camstim_sync.pkl_utils as pkl
 
 logger = logging.getLogger(__name__)
 

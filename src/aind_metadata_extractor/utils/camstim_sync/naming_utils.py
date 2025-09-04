@@ -5,7 +5,7 @@ import warnings
 
 import numpy as np
 
-import aind_metadata_mapper.open_ephys.utils.constants as constants
+import aind_metadata_extractor.utils.camstim_sync.constants as constants
 
 logger = logging.getLogger(__name__)
 

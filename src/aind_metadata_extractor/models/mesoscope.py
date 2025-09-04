@@ -1,8 +1,8 @@
 """Mesoscope metadata model"""
 
-from pydanitic import BaseSettings, Field
+from pydanitic import BaseModel, Field
 
-class MesoscopeExtractModel(BaseSettings):
+class MesoscopeExtractModel(BaseModel):
     """Mesoscope model for extracting metadata."""
 
     tiff_header: dict = Field(title="Header information from TIFF files")
