@@ -46,5 +46,6 @@ class SlimsMetadataModel(BaseModel):
 class SmartspimModel(BaseModel):
     """SmartSPIM extractor model for intermediate data structure"""
 
+    acquisition_type: str
     file_metadata: FileMetadataModel
     slims_metadata: SlimsMetadataModel
