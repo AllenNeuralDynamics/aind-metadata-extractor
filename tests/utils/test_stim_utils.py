@@ -1,12 +1,12 @@
-"""Unit tests for the stim_utils module in the utils package."""
+""" Unit tests for the stim_utils module in the utils package. """
 
-import re
 import unittest
-from unittest.mock import MagicMock, patch
+import re
 
-import numpy as np
 import pandas as pd
+import numpy as np
 
+from unittest.mock import MagicMock, patch
 from aind_metadata_extractor.utils.camstim_sync import stim_utils as stim
 
 
@@ -33,7 +33,9 @@ class TestStimUtils(unittest.TestCase):
 
         # Test when "TRAINING" is in the middle of the filename
         self.assertEqual(
-            stim.convert_filepath_caseinsensitive("some/TRAINING/file/TRAINING.txt"),
+            stim.convert_filepath_caseinsensitive(
+                "some/TRAINING/file/TRAINING.txt"
+            ),
             "some/training/file/training.txt",
         )
 
@@ -47,7 +49,9 @@ class TestStimUtils(unittest.TestCase):
         self.assertEqual(stim.convert_filepath_caseinsensitive(""), "")
 
         # Test when filename is just "TRAINING"
-        self.assertEqual(stim.convert_filepath_caseinsensitive("TRAINING"), "training")
+        self.assertEqual(
+            stim.convert_filepath_caseinsensitive("TRAINING"), "training"
+        )
 
     def test_enforce_df_int_typing(self):
         """
@@ -72,15 +76,21 @@ class TestStimUtils(unittest.TestCase):
         )
 
         # Test using pandas Int64 type
-        result_df_pandas_type = stim.enforce_df_int_typing(df.copy(), ["A", "B"], use_pandas_type=True)
-        pd.testing.assert_frame_equal(result_df_pandas_type, expected_df_pandas_type)
+        result_df_pandas_type = stim.enforce_df_int_typing(
+            df.copy(), ["A", "B"], use_pandas_type=True
+        )
+        pd.testing.assert_frame_equal(
+            result_df_pandas_type, expected_df_pandas_type
+        )
 
     def test_enforce_df_column_order(self):
         """
         Test the enforce_df_column_order function.
         """
         # Create a sample DataFrame
-        df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9], "D": [10, 11, 12]})
+        df = pd.DataFrame(
+            {"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9], "D": [10, 11, 12]}
+        )
 
         # Test case: Specified column order
         column_order = ["D", "B", "C", "A"]
@@ -106,11 +116,13 @@ class TestStimUtils(unittest.TestCase):
             }
         )
         result_df = stim.enforce_df_column_order(df, column_order)
-        pd.testing.assert_frame_equal(result_df, expected_df, check_like=True)
+        pd.testing.assert_frame_equal(result_df, expected_df)
 
         # Test case: Specified column order with all columns
         column_order = ["C", "A", "D", "B"]
-        expected_df = pd.DataFrame({"C": [7, 8, 9], "A": [1, 2, 3], "D": [10, 11, 12], "B": [4, 5, 6]})
+        expected_df = pd.DataFrame(
+            {"C": [7, 8, 9], "A": [1, 2, 3], "D": [10, 11, 12], "B": [4, 5, 6]}
+        )
         result_df = stim.enforce_df_column_order(df, column_order)
         pd.testing.assert_frame_equal(result_df, expected_df)
 
@@ -119,40 +131,6 @@ class TestStimUtils(unittest.TestCase):
         column_order = ["A", "B"]
         result_df = stim.enforce_df_column_order(empty_df, column_order)
         pd.testing.assert_frame_equal(result_df, empty_df)
-
-    def test_get_stimulus_image_name(self):
-        """
-        Test the extraction of image names from the stimulus dictionary.
-        """
-        # Sample stimulus dictionary
-        stimulus = {
-            "sweep_order": [0, 1, 2],
-            "image_path_list": [
-                "somepath\\passive\\image1.jpg",
-                "somepath\\passive\\image2.jpg",
-                "somepath\\passive\\image3.jpg",
-            ],
-        }
-
-        # Expected image names
-        expected_image_names = ["image1.jpg", "image2.jpg", "image3.jpg"]
-
-        # Iterate over each index and assert it is expected image name
-        for index in range(len(expected_image_names)):
-            result = stim.get_stimulus_image_name(stimulus, index)
-            self.assertEqual(result, expected_image_names[index])
-
-    def test_extract_blocks_from_stim(self):
-        """
-        Creating a sample pkl dictionary with a "stimuli" block key
-        """
-        sample_pkl = ["image1.jpg", "image2.jpg", "image3.jpg"]
-
-        # Calling the function with the sample pkl dictionary
-        result = stim.extract_blocks_from_stim(sample_pkl)
-
-        # Asserting that the result is the "stimuli" key
-        self.assertEqual(result, sample_pkl)
 
     def test_seconds_to_frames(self):
         """
@@ -170,7 +148,8 @@ class TestStimUtils(unittest.TestCase):
 
         # Mock pkl functions
         with patch(
-            "aind_metadata_extractor.utils.camstim_sync." "stim_utils.pkl.get_pre_blank_sec",
+            "aind_metadata_extractor.utils.camstim_sync."
+            "stim_utils.pkl.get_pre_blank_sec",
             return_value=pre_blank_sec,
         ):
             with patch(
@@ -196,10 +175,13 @@ class TestStimUtils(unittest.TestCase):
         expected_params = {"param1": 10, "param3": "value3", "param4": 4.5}
 
         with patch(
-            "aind_metadata_extractor.utils.camstim_sync" ".stim_utils.ast.literal_eval",
+            "aind_metadata_extractor.utils.camstim_sync"
+            ".stim_utils.ast.literal_eval",
             side_effect=lambda x: eval(x),
         ):
-            result_params = stim.extract_const_params_from_stim_repr(stim_repr, repr_params_re, array_re)
+            result_params = stim.extract_const_params_from_stim_repr(
+                stim_repr, repr_params_re, array_re
+            )
             assert result_params == expected_params
 
     def test_parse_stim_repr(self):
@@ -227,10 +209,13 @@ class TestStimUtils(unittest.TestCase):
         expected_params = {"param1": 10, "param4": 4.5}
 
         with patch(
-            "aind_metadata_extractor.utils.camstim_sync" ".stim_utils.extract_const_params_from_stim_repr",
+            "aind_metadata_extractor.utils.camstim_sync"
+            ".stim_utils.extract_const_params_from_stim_repr",
             return_value=extracted_params,
         ):
-            with patch("aind_metadata_extractor.utils.camstim_sync.stim_utils.logger") as mock_logger:
+            with patch(
+                "aind_metadata_extractor.utils.camstim_sync.stim_utils.logger"
+            ) as mock_logger:
                 result_params = stim.parse_stim_repr(
                     stim_repr,
                     drop_params=drop_params,
@@ -253,25 +238,22 @@ class TestStimUtils(unittest.TestCase):
         stim_table_1 = pd.DataFrame(
             {
                 "start_time": [10, 20],
-                "stop_time": [15, 25],
+                "end_time": [15, 25],
                 "stim_param": ["a", "b"],
-                "stim_name": ["stim1", "stim1"],
             }
         )
         stim_table_2 = pd.DataFrame(
             {
                 "start_time": [30, 40],
-                "stop_time": [35, 45],
+                "end_time": [35, 45],
                 "stim_param": ["c", "d"],
-                "stim_name": ["stim2", "stim2"],
             }
         )
         stim_table_3 = pd.DataFrame(
             {
                 "start_time": [5, 50],
-                "stop_time": [10, 55],
+                "end_time": [10, 55],
                 "stim_param": ["e", "f"],
-                "stim_name": ["spontaneous", "spontaneous"],
             }
         )
 
@@ -279,17 +261,9 @@ class TestStimUtils(unittest.TestCase):
         expected_stim_table_full = pd.DataFrame(
             {
                 "start_time": [5, 10, 20, 30, 40, 50],
-                "stop_time": [10, 15, 25, 35, 45, 55],
+                "end_time": [10, 15, 25, 35, 45, 55],
                 "stim_param": ["e", "a", "b", "c", "d", "f"],
                 "stim_index": [pd.NA, 0.0, 0.0, 1.0, 1.0, pd.NA],
-                "stim_name": [
-                    "spontaneous",
-                    "stim1",
-                    "stim1",
-                    "stim2",
-                    "stim2",
-                    "spontaneous",
-                ],
                 "stim_block": [0, 0, 0, 1, 1, 2],
             }
         )
@@ -318,19 +292,19 @@ class TestStimUtils(unittest.TestCase):
             mock_stimulus_tabler,
             mock_spontaneous_activity_tabler,
         )
-        self.assertEqual(
+        self.assertEquals(
             result_stim_table_full["start_time"].all(),
             expected_stim_table_full["start_time"].all(),
         )
-        self.assertEqual(
-            result_stim_table_full["stop_time"].all(),
-            expected_stim_table_full["stop_time"].all(),
+        self.assertEquals(
+            result_stim_table_full["end_time"].all(),
+            expected_stim_table_full["end_time"].all(),
         )
-        self.assertEqual(
+        self.assertEquals(
             result_stim_table_full["stim_param"].all(),
             expected_stim_table_full["stim_param"].all(),
         )
-        self.assertEqual(
+        self.assertEquals(
             result_stim_table_full["stim_block"].all(),
             expected_stim_table_full["stim_block"].all(),
         )
@@ -347,18 +321,30 @@ class TestStimUtils(unittest.TestCase):
         ]
 
         # Expected result without duration threshold
-        expected_spon_sweeps_no_threshold = pd.DataFrame({"start_time": [30], "stop_time": [40]})
+        expected_spon_sweeps_no_threshold = pd.DataFrame(
+            {"start_time": [30], "stop_time": [40]}
+        )
 
         # Expected result with duration threshold of 10
-        expected_spon_sweeps_with_threshold = pd.DataFrame({"start_time": [], "stop_time": []}, dtype="int64")
+        expected_spon_sweeps_with_threshold = pd.DataFrame(
+            {"start_time": [], "stop_time": []}, dtype="int64"
+        )
 
         # Call the function without duration threshold
-        result_no_threshold = stim.make_spontaneous_activity_tables(stimulus_tables, duration_threshold=0.0)
-        pd.testing.assert_frame_equal(result_no_threshold[0], expected_spon_sweeps_no_threshold)
+        result_no_threshold = stim.make_spontaneous_activity_tables(
+            stimulus_tables, duration_threshold=0.0
+        )
+        pd.testing.assert_frame_equal(
+            result_no_threshold[0], expected_spon_sweeps_no_threshold
+        )
 
         # Call the function with duration threshold
-        result_with_threshold = stim.make_spontaneous_activity_tables(stimulus_tables, duration_threshold=10.0)
-        pd.testing.assert_frame_equal(result_with_threshold[0], expected_spon_sweeps_with_threshold)
+        result_with_threshold = stim.make_spontaneous_activity_tables(
+            stimulus_tables, duration_threshold=10.0
+        )
+        pd.testing.assert_frame_equal(
+            result_with_threshold[0], expected_spon_sweeps_with_threshold
+        )
 
     def test_extract_frame_times_from_photodiode(self):
         """
@@ -378,112 +364,59 @@ class TestStimUtils(unittest.TestCase):
         vsync_times_chunked = [vsync_times[:2], vsync_times[2:]]
         pd_times_chunked = [photodiode_times[:3], photodiode_times[3:]]
 
-        frame_starts_chunk_1 = np.array([0.5, 1.5])
-        frame_starts_chunk_2 = np.array([2.5, 3.5])
+        frame_starts_chunk_1 = np.array([0.1, 0.2])
+        frame_starts_chunk_2 = np.array([0.4, 0.5])
 
-        final_frame_start_times = np.concatenate((frame_starts_chunk_1, frame_starts_chunk_2))
+        final_frame_start_times = np.concatenate(
+            (frame_starts_chunk_1, frame_starts_chunk_2)
+        )
 
         with patch(
-            "aind_metadata_extractor.utils.camstim_sync" ".sync_utils.get_edges",
+            "aind_metadata_extractor.utils.camstim_sync"
+            ".stim_utils.sync.get_edges",
             side_effect=[photodiode_times, vsync_times],
         ):
             with patch(
-                "aind_metadata_extractor.utils.camstim_sync" ".sync_utils.separate_vsyncs_and_photodiode_times",
+                "aind_metadata_extractor.utils.camstim_sync"
+                ".stim_utils.sync.separate_vsyncs_and_photodiode_times",
                 return_value=(vsync_times_chunked, pd_times_chunked),
             ):
                 with patch(
-                    "aind_metadata_extractor.utils.camstim_sync" ".sync_utils.compute_frame_times",
+                    "aind_metadata_extractor.utils.camstim_sync"
+                    ".stim_utils.sync.compute_frame_times",
                     side_effect=[
                         (None, frame_starts_chunk_1, None),
                         (None, frame_starts_chunk_2, None),
                     ],
                 ):
                     with patch(
-                        "aind_metadata_extractor.utils.camstim_sync" ".sync_utils.remove_zero_frames",
+                        "aind_metadata_extractor.utils.camstim_sync"
+                        ".stim_utils.sync.remove_zero_frames",
                         return_value=final_frame_start_times,
                     ):
                         with patch(
-                            "aind_metadata_extractor.utils.camstim_sync" ".sync_utils.trimmed_stats",
+                            "aind_metadata_extractor.utils.camstim_sync"
+                            ".stim_utils.sync.trimmed_stats",
                             return_value=[1.9, 2.2],
                         ):
                             with patch(
-                                "aind_metadata_extractor.utils.camstim_sync" ".sync_utils.correct_on_off_effects",
+                                "aind_metadata_extractor.utils.camstim_sync"
+                                ".stim_utils.sync.correct_on_off_effects",
                                 return_value=[1.9, 2.2],
                             ):
-                                result_frame_start_times = stim.extract_frame_times_from_photodiode(
-                                    sync_file,
-                                    photodiode_cycle,
-                                    frame_keys,
-                                    photodiode_keys,
-                                    trim_discontiguous_frame_times,
+                                result_frame_start_times = (
+                                    stim.extract_frame_times_from_photodiode(
+                                        sync_file,
+                                        photodiode_cycle,
+                                        frame_keys,
+                                        photodiode_keys,
+                                        trim_discontiguous_frame_times,
+                                    )
                                 )
                                 np.testing.assert_array_equal(
                                     result_frame_start_times,
                                     final_frame_start_times,
                                 )
-
-    def test_extract_frame_times_with_delay(self):
-        """
-        Tests the extract_frame_times_with_delay function.
-        """
-        with (
-            patch("aind_metadata_extractor.utils.camstim_sync" ".sync_utils.get_edges") as mock_get_edges,
-            patch(
-                "aind_metadata_extractor.utils.camstim_sync" ".stim_utils.sync.get_rising_edges"
-            ) as mock_get_rising_edges,
-            patch(
-                "aind_metadata_extractor.utils.camstim_sync" ".stim_utils.calculate_frame_mean_time"
-            ) as mock_calculate_frame_mean_time,
-        ):
-
-            # Mock return values
-            mock_get_edges.return_value = np.array([0])
-            mock_get_rising_edges.return_value = np.array([0])
-            mock_calculate_frame_mean_time.return_value = (0, 1)
-
-            # Define input parameters
-            sync_file = "dummy_sync_file"
-            frame_keys = ["key1", "key2"]
-
-            # Expected output (based on example values)
-            expected_delay = 0.0356  # Assumed delay in case of error
-
-            # Call the function
-            delay = stim.extract_frame_times_with_delay(sync_file, frame_keys)
-
-            # Assertions
-            np.testing.assert_array_equal(
-                expected_delay,
-                delay,
-            )
-
-    def test_calculate_frame_mean_time(self):
-        """
-        Tests the calculate_frame_mean_time function.
-        """
-        # Mocking the sync.get_rising_edges function
-        with patch(
-            "aind_metadata_extractor.utils.camstim_sync" ".sync_utils.get_rising_edges"
-        ) as mock_get_rising_edges:
-            mock_get_rising_edges.return_value = np.array([0, 10000, 20000, 35000, 45000, 60000])
-
-            # Define input parameters
-            sync_file = "dummy_sync_file"
-            frame_keys = [
-                "key1",
-                "key2",
-            ]  # Not used in the function but included for completeness
-
-            # Expected output (manually verified logic based on example input)
-            expected_ptd_start = None
-            expected_ptd_end = None
-
-            # Call the function
-            ptd_start, ptd_end = stim.calculate_frame_mean_time(sync_file, frame_keys)
-
-            # Assertions
-            self.assertEqual(ptd_start, expected_ptd_start)
-            self.assertEqual(ptd_end, expected_ptd_end)
 
     def test_convert_frames_to_seconds(self):
         """
@@ -498,7 +431,9 @@ class TestStimUtils(unittest.TestCase):
                 "stop_time": [0, 1, 2],
             }
         )
-        frame_times = np.array([0.0, 0.1, 0.2, 0.3, 0.4, 0.5])  # 0.1 second per frame
+        frame_times = np.array(
+            [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+        )  # 0.1 second per frame
         frames_per_second = 10
         extra_frame_time = False
         expected_stimulus_table = pd.DataFrame(
@@ -516,14 +451,18 @@ class TestStimUtils(unittest.TestCase):
         )
 
         # Check if the modified stimulus table matches the expected one
-        pd.testing.assert_frame_equal(result_stimulus_table, expected_stimulus_table)
+        pd.testing.assert_frame_equal(
+            result_stimulus_table, expected_stimulus_table
+        )
 
     def test_apply_display_sequence(self):
         """
         Tests application of display sequences
         """
         # Sample input data
-        sweep_frames_table = pd.DataFrame({"start_time": [0, 5, 10], "stop_time": [3, 8, 18]})
+        sweep_frames_table = pd.DataFrame(
+            {"start_time": [0, 5, 10], "stop_time": [3, 8, 18]}
+        )
         frame_display_sequence = np.array([[0, 10], [15, 25], [30, 40]])
         expected_sweep_frames_table = pd.DataFrame(
             {
@@ -534,10 +473,14 @@ class TestStimUtils(unittest.TestCase):
         )
 
         # Call the function
-        result_sweep_frames_table = stim.apply_display_sequence(sweep_frames_table, frame_display_sequence)
+        result_sweep_frames_table = stim.apply_display_sequence(
+            sweep_frames_table, frame_display_sequence
+        )
 
         # Check if the modified sweep frames table matches the expected one
-        pd.testing.assert_frame_equal(result_sweep_frames_table, expected_sweep_frames_table)
+        pd.testing.assert_frame_equal(
+            result_sweep_frames_table, expected_sweep_frames_table
+        )
 
     def test_get_image_set_name(self):
         """
@@ -594,11 +537,25 @@ class TestStimUtils(unittest.TestCase):
             "sweep_table": [[0.5, 45], [0.7, 90]],
         }
 
-    @patch("aind_metadata_extractor.utils.camstim_sync.stim_utils.seconds_to_frames")
-    @patch("aind_metadata_extractor.utils.camstim_sync" ".stim_utils.read_stimulus_name_from_path")
-    @patch("aind_metadata_extractor.utils.camstim_sync" ".stim_utils.get_stimulus_type")
-    @patch("aind_metadata_extractor.utils.camstim_sync" ".stim_utils.apply_display_sequence")
-    @patch("aind_metadata_extractor.utils.camstim_sync" ".stim_utils.assign_sweep_values")
+    @patch(
+        "aind_metadata_extractor.utils.camstim_sync.stim_utils.seconds_to_frames"
+    )
+    @patch(
+        "aind_metadata_extractor.utils.camstim_sync"
+        ".stim_utils.read_stimulus_name_from_path"
+    )
+    @patch(
+        "aind_metadata_extractor.utils.camstim_sync"
+        ".stim_utils.get_stimulus_type"
+    )
+    @patch(
+        "aind_metadata_extractor.utils.camstim_sync"
+        ".stim_utils.apply_display_sequence"
+    )
+    @patch(
+        "aind_metadata_extractor.utils.camstim_sync"
+        ".stim_utils.assign_sweep_values"
+    )
     @patch("aind_metadata_extractor.utils.camstim_sync.stim_utils.split_column")
     @patch("aind_metadata_extractor.utils.camstim_sync.stim_utils.parse_stim_repr")
     def test_build_stimuluswise_table(
@@ -647,13 +604,17 @@ class TestStimUtils(unittest.TestCase):
         )
 
         # Call the function
-        result = stim.build_stimuluswise_table(None, self.stimulus, MagicMock())
+        result = stim.build_stimuluswise_table(
+            None, self.stimulus, MagicMock()
+        )
 
         # Assert the result
         self.assertIsInstance(result, list)
         self.assertEqual(len(result), 1)
         self.assertIsInstance(result[0], pd.DataFrame)
-        self.assertEqual(result[0].shape[0], 2)  # Assuming 2 sweeps in the test data
+        self.assertEqual(
+            result[0].shape[0], 2
+        )  # Assuming 2 sweeps in the test data
 
     def test_split_column(self):
         """

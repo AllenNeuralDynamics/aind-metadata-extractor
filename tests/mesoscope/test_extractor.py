@@ -181,9 +181,8 @@ class TestMesoscopeExtract(unittest.TestCase):
                 "make_camsitm_dir": False,
             }
         )
-        with patch("aind_metadata_extractor.pophys.mesoscope.extractor.Camstim", autospec=True):
-            extractor = MesoscopeExtract(job_settings_json)
-            self.assertEqual(extractor.job_settings.session_id, "0123456789")
+        extractor = MesoscopeExtract(job_settings_json)
+        self.assertEqual(extractor.job_settings.session_id, "0123456789")
 
     def test_constructor_with_make_camstim_dir_true(self):
         """test constructor with make_camstim_dir=True"""
@@ -199,9 +198,8 @@ class TestMesoscopeExtract(unittest.TestCase):
             experimenter_full_name=["John Doe"],
             make_camsitm_dir=True,
         )
-        with patch("aind_metadata_extractor.pophys.mesoscope.extractor.Camstim", autospec=True):
-            extractor = MesoscopeExtract(job_settings)
-            self.assertEqual(extractor.job_settings.make_camsitm_dir, True)
+        extractor = MesoscopeExtract(job_settings)
+        self.assertEqual(extractor.job_settings.make_camsitm_dir, True)
 
     def test_constructor_with_string_behavior_source(self):
         """test constructor with string behavior_source"""
@@ -217,9 +215,8 @@ class TestMesoscopeExtract(unittest.TestCase):
             experimenter_full_name=["John Doe"],
             make_camsitm_dir=False,
         )
-        with patch("aind_metadata_extractor.pophys.mesoscope.extractor.Camstim", autospec=True):
-            extractor = MesoscopeExtract(job_settings)
-            self.assertIsInstance(extractor.job_settings.behavior_source, Path)
+        extractor = MesoscopeExtract(job_settings)
+        self.assertIsInstance(extractor.job_settings.behavior_source, Path)
 
     def test_extract_platform_metadata_file_not_found(self):
         """test extract platform metadata when platform.json not found"""
@@ -308,8 +305,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         }
         mock_parse_args.return_value = mock_args
 
-        with patch("aind_metadata_extractor.pophys.mesoscope.extractor.Camstim", autospec=True):
-            result = MesoscopeExtract.from_args(["-u", "{}"])
+        result = MesoscopeExtract.from_args(["-u", "{}"])
 
         # Check that deprecation warning was logged
         mock_warning.assert_called_once_with(
@@ -319,6 +315,25 @@ class TestMesoscopeExtract(unittest.TestCase):
         # Check that extractor was created successfully
         self.assertIsInstance(result, MesoscopeExtract)
         self.assertEqual(result.job_settings.session_id, "0123456789")
+
+    def test_constructor_with_string_behavior_source_manual_assignment(self):
+        """test constructor with behavior_source manually set to string"""
+        job_settings = JobSettings(
+            input_source=self.resource_dir,
+            output_directory=self.resource_dir,
+            session_id="0123456789",
+            behavior_source=self.resource_dir,
+            session_start_time=datetime.datetime.now().isoformat(),
+            session_end_time=datetime.datetime.now().isoformat(),
+            subject_id="subject1",
+            project="test_project",
+            experimenter_full_name=["John Doe"],
+            make_camsitm_dir=False,
+        )
+        # Manually set behavior_source to string to force the conversion in MesoscopeExtract
+        job_settings.behavior_source = str(self.resource_dir)
+        extractor = MesoscopeExtract(job_settings)
+        self.assertIsInstance(extractor.job_settings.behavior_source, Path)
 
 
 if __name__ == "__main__":

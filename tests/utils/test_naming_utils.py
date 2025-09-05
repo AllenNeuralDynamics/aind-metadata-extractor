@@ -1,9 +1,9 @@
-"""Unit tests for the naming_utils module in the utils package."""
+""" Unit tests for the naming_utils module in the utils package. """
 
 import unittest
 
-import numpy as np
 import pandas as pd
+import numpy as np
 
 from aind_metadata_extractor.utils.camstim_sync import naming_utils as naming
 
@@ -314,11 +314,15 @@ class TestDropEmptyColumns(unittest.TestCase):
         name_map = {"stim1": "new_stim1", "stim3": "new_stim3"}
 
         # Expected DataFrame with names modified to the mapping
-        expected_data = {"custom_stimulus_name": ["new_stim1", "stim2", "new_stim3"]}
+        expected_data = {
+            "custom_stimulus_name": ["new_stim1", "stim2", "new_stim3"]
+        }
         expected_df = pd.DataFrame(expected_data)
 
         # Call the function with the custom column name and assert the result
-        result_df = naming.map_stimulus_names(df, name_map=name_map, stim_colname="custom_stimulus_name")
+        result_df = naming.map_stimulus_names(
+            df, name_map=name_map, stim_colname="custom_stimulus_name"
+        )
         pd.testing.assert_frame_equal(result_df, expected_df)
 
     def test_map_column_names_with_mapping(self):
@@ -353,7 +357,9 @@ class TestDropEmptyColumns(unittest.TestCase):
         expected_data = {"X": [1, 2, 3], "Y": [4, 5, 6], "Z": [7, 8, 9]}
         expected_df = pd.DataFrame(expected_data)
 
-        result_df = naming.map_column_names(df, name_map=name_map, ignore_case=True)
+        result_df = naming.map_column_names(
+            df, name_map=name_map, ignore_case=True
+        )
         pd.testing.assert_frame_equal(result_df, expected_df)
 
     def test_map_column_names_with_ignore_case_false(self):
@@ -370,7 +376,9 @@ class TestDropEmptyColumns(unittest.TestCase):
         expected_df = df.copy()
 
         # Call the function with ignore_case=False and assert the result
-        result_df = naming.map_column_names(df, name_map=name_map, ignore_case=False)
+        result_df = naming.map_column_names(
+            df, name_map=name_map, ignore_case=False
+        )
         pd.testing.assert_frame_equal(result_df, expected_df)
 
 

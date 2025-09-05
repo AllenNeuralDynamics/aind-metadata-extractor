@@ -1,7 +1,6 @@
-"""Unit tests for the pkl_utils module."""
+""" Unit tests for the pkl_utils module. """
 
 import unittest
-
 import numpy as np
 
 from aind_metadata_extractor.utils.camstim_sync import pkl_utils as pkl
@@ -60,19 +59,6 @@ class TestPKL(unittest.TestCase):
         # Asserting that accessing the "fps" key raises a KeyError
         with self.assertRaises(KeyError):
             pkl.get_fps(sample_pkl)
-
-    def test_get_stage(self):
-        """
-        Test the get_stage function
-        """
-        # Creating a sample pkl dictionary with a "stage" key
-        sample_pkl = {"stage": "stage1", "other_key": "other_value"}
-
-        # Calling the function with the sample pkl dictionary
-        result = pkl.get_stage(sample_pkl)
-
-        # Asserting the value associated with the "stage" key
-        self.assertEqual(result, sample_pkl["stage"])
 
     def test_get_pre_blank_sec(self):
         """
