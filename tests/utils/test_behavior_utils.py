@@ -1,4 +1,4 @@
-""" Unit tests for the behavior_utils module in the utils package. """
+"""Unit tests for the behavior_utils module in the utils package."""
 
 import unittest
 
@@ -14,12 +14,8 @@ class TestBehaviorUtils(unittest.TestCase):
     Tests Behavior utils
     """
 
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync"
-        ".behavior_utils.get_visual_stimuli_df"
-    )
-    def test_get_stimulus_presentations(self,
-                                        mock_get_visual_stimuli_df):
+    @patch("aind_metadata_extractor.utils.camstim_sync" ".behavior_utils.get_visual_stimuli_df")
+    def test_get_stimulus_presentations(self, mock_get_visual_stimuli_df):
         """
         Tests the get_stimulus_presentations function
         """
@@ -47,9 +43,7 @@ class TestBehaviorUtils(unittest.TestCase):
         )
 
         # Call the function to test
-        result_df = behavior.get_stimulus_presentations(
-            data, stimulus_timestamps
-        )
+        result_df = behavior.get_stimulus_presentations(data, stimulus_timestamps)
 
         # Assert DataFrame equality
         pd.testing.assert_frame_equal(result_df, expected_df)
@@ -72,17 +66,15 @@ class TestBehaviorUtils(unittest.TestCase):
         }
 
         # Check if the function exists; if not, skip the test
-        if hasattr(behavior, 'get_gratings_metadata'):
+        if hasattr(behavior, "get_gratings_metadata"):
             result_grating_df = behavior.get_gratings_metadata(stimuli_with_gratings)
             self.assertIsInstance(result_grating_df, pd.DataFrame)
         else:
             self.skipTest("get_gratings_metadata function is not available")
 
-        stimuli_without_gratings = {
-            "other_stimuli": {"some_key": "some_value"}
-        }
+        stimuli_without_gratings = {"other_stimuli": {"some_key": "some_value"}}
 
-        if hasattr(behavior, 'get_gratings_metadata'):
+        if hasattr(behavior, "get_gratings_metadata"):
             result_empty_df = behavior.get_gratings_metadata(stimuli_without_gratings)
             self.assertIsInstance(result_empty_df, pd.DataFrame)
 
@@ -103,7 +95,7 @@ class TestBehaviorUtils(unittest.TestCase):
                             "draw_log": [0] * 30,  # Make sure it's long enough
                         }
                     },
-                    "omitted_flash_frame_log": {}
+                    "omitted_flash_frame_log": {},
                 }
             }
         }
@@ -115,7 +107,7 @@ class TestBehaviorUtils(unittest.TestCase):
 
         # Should return a DataFrame
         self.assertIsInstance(result_df, pd.DataFrame)
-        self.assertIn('omitted', result_df.columns)
+        self.assertIn("omitted", result_df.columns)
 
     def test_get_visual_stimuli_df_no_omitted_log(self):
         """
@@ -201,7 +193,7 @@ class TestBehaviorUtils(unittest.TestCase):
         trials_table = pd.DataFrame({"start_time": [0, 10], "stop_time": [20, 40]})
 
         result = behavior.compute_trials_id_for_stimulus(stim_pres_table, trials_table)
-        
+
         # Should return trials_ids with basic mapping only
         self.assertEqual(result.name, "trials_id")
         self.assertEqual(len(result), len(stim_pres_table))
@@ -218,18 +210,9 @@ class TestBehaviorUtils(unittest.TestCase):
         result2 = behavior.compute_trials_id_for_stimulus(stim_pres_table2, trials_table)
         self.assertEqual(result2.name, "trials_id")
 
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync"
-        ".behavior_utils.get_images_dict"
-    )
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync"
-        ".stim_utils.convert_filepath_caseinsensitive"
-    )
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync"
-        ".stim_utils.get_image_set_name"
-    )
+    @patch("aind_metadata_extractor.utils.camstim_sync" ".behavior_utils.get_images_dict")
+    @patch("aind_metadata_extractor.utils.camstim_sync" ".stim_utils.convert_filepath_caseinsensitive")
+    @patch("aind_metadata_extractor.utils.camstim_sync" ".stim_utils.get_image_set_name")
     def test_get_stimulus_metadata(
         self,
         mock_get_image_set_name,
@@ -286,9 +269,7 @@ class TestBehaviorUtils(unittest.TestCase):
         }
 
         # Mock the stim.convert_filepath_caseinsensitive function
-        mock_convert_filepath_caseinsensitive.return_value = (
-            "path/to/images.pkl"
-        )
+        mock_convert_filepath_caseinsensitive.return_value = "path/to/images.pkl"
 
         # Mock the stim.get_image_set_name function
         mock_get_image_set_name.return_value = "image_set_name"
@@ -367,18 +348,14 @@ class TestBehaviorUtils(unittest.TestCase):
         current_set_index = 0
         start_frame = 10
         expected_output = (10, 20)
-        result = behavior.get_stimulus_epoch(
-            set_log, current_set_index, start_frame, n_frames
-        )
+        result = behavior.get_stimulus_epoch(set_log, current_set_index, start_frame, n_frames)
         self.assertEqual(result, expected_output)
 
         # Test case where current_set_index is the last one
         current_set_index = 2
         start_frame = 30
         expected_output = (30, 40)
-        result = behavior.get_stimulus_epoch(
-            set_log, current_set_index, start_frame, n_frames
-        )
+        result = behavior.get_stimulus_epoch(set_log, current_set_index, start_frame, n_frames)
         self.assertEqual(result, expected_output)
 
         # Test case where there is only one stimulus in set_log
@@ -386,9 +363,7 @@ class TestBehaviorUtils(unittest.TestCase):
         current_set_index = 0
         start_frame = 10
         expected_output = (10, 40)
-        result = behavior.get_stimulus_epoch(
-            set_log_single, current_set_index, start_frame, n_frames
-        )
+        result = behavior.get_stimulus_epoch(set_log_single, current_set_index, start_frame, n_frames)
         self.assertEqual(result, expected_output)
 
     def test_get_draw_epochs(self):
@@ -415,9 +390,7 @@ class TestBehaviorUtils(unittest.TestCase):
         start_frame = 0
         stop_frame = 4
         expected_output_no_active = []
-        result_no_active = behavior.get_draw_epochs(
-            draw_log_no_active, start_frame, stop_frame
-        )
+        result_no_active = behavior.get_draw_epochs(draw_log_no_active, start_frame, stop_frame)
         self.assertEqual(result_no_active, expected_output_no_active)
 
         # Test case where all frames are active
@@ -425,9 +398,7 @@ class TestBehaviorUtils(unittest.TestCase):
         start_frame = 0
         stop_frame = 4
         expected_output_all_active = [(0, 4)]
-        result_all_active = behavior.get_draw_epochs(
-            draw_log_all_active, start_frame, stop_frame
-        )
+        result_all_active = behavior.get_draw_epochs(draw_log_all_active, start_frame, stop_frame)
         self.assertEqual(result_all_active, expected_output_all_active)
 
         # Test case with mixed active and inactive frames
@@ -435,9 +406,7 @@ class TestBehaviorUtils(unittest.TestCase):
         start_frame = 0
         stop_frame = 6
         expected_output_mixed = [(0, 1), (2, 3), (4, 5)]
-        result_mixed = behavior.get_draw_epochs(
-            draw_log_mixed, start_frame, stop_frame
-        )
+        result_mixed = behavior.get_draw_epochs(draw_log_mixed, start_frame, stop_frame)
         self.assertEqual(result_mixed, expected_output_mixed)
 
     def test_unpack_change_log(self):
@@ -483,16 +452,9 @@ class TestBehaviorUtils(unittest.TestCase):
         result2 = behavior.unpack_change_log(change2)
         self.assertEqual(result2, expected_output2)
 
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync"
-        ".behavior_utils.get_stimulus_epoch"
-    )
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync.behavior_utils.get_draw_epochs"
-    )
-    def test_get_visual_stimuli_df(
-        self, mock_get_draw_epochs, mock_get_stimulus_epoch
-    ):
+    @patch("aind_metadata_extractor.utils.camstim_sync" ".behavior_utils.get_stimulus_epoch")
+    @patch("aind_metadata_extractor.utils.camstim_sync.behavior_utils.get_draw_epochs")
+    def test_get_visual_stimuli_df(self, mock_get_draw_epochs, mock_get_stimulus_epoch):
         """
         Tests the get_visual_stimuli_df function
         Mocks some intermediary functions
@@ -529,9 +491,7 @@ class TestBehaviorUtils(unittest.TestCase):
             0,
             2,
         )  # Mocking epoch start and end
-        mock_get_draw_epochs.side_effect = lambda *args, **kwargs: [
-            (0, 2)
-        ]  # Mocking draw epochs
+        mock_get_draw_epochs.side_effect = lambda *args, **kwargs: [(0, 2)]  # Mocking draw epochs
 
         # Call the function under test
         result_df = behavior.get_visual_stimuli_df(mock_data, mock_time)
@@ -630,9 +590,7 @@ class TestBehaviorUtils(unittest.TestCase):
         expected_output_no_images = set()
 
         # Call the function
-        result_no_images = behavior.get_image_names(
-            behavior_stimulus_file_no_images
-        )
+        result_no_images = behavior.get_image_names(behavior_stimulus_file_no_images)
 
         # Assert equality
         self.assertEqual(result_no_images, expected_output_no_images)
@@ -720,9 +678,7 @@ class TestBehaviorUtils(unittest.TestCase):
         )
 
         # Expected output
-        expected_output = pd.Series(
-            [0, 1, 0, 1, 0, 0, 1, 0], name="flashes_since_change"
-        )
+        expected_output = pd.Series([0, 1, 0, 1, 0, 0, 1, 0], name="flashes_since_change")
 
         # Call the function
         result = behavior.get_flashes_since_change(stimulus_presentations)
@@ -756,9 +712,7 @@ class TestBehaviorUtils(unittest.TestCase):
         trials = pd.DataFrame({"start_time": [0, 10], "stop_time": [20, 40]})
 
         # Expected output
-        expected_active = pd.Series(
-            [True, True, True, True, True, True, True], name="active"
-        )
+        expected_active = pd.Series([True, True, True, True, True, True, True], name="active")
         expected_output = stim_pres_table.copy()
         expected_output["active"] = expected_active
 
@@ -806,9 +760,7 @@ class TestBehaviorUtils(unittest.TestCase):
         )
 
         # Mock data for trials table
-        trials_table = pd.DataFrame(
-            {"start_time": [0, 10], "stop_time": [20, 40]}
-        )
+        trials_table = pd.DataFrame({"start_time": [0, 10], "stop_time": [20, 40]})
 
         # Expected output
         expected_trials_id = pd.Series(
@@ -818,9 +770,7 @@ class TestBehaviorUtils(unittest.TestCase):
         ).astype("int")
 
         # Call the function
-        result = behavior.compute_trials_id_for_stimulus(
-            stim_pres_table, trials_table
-        )
+        result = behavior.compute_trials_id_for_stimulus(stim_pres_table, trials_table)
 
         # Assert the trials_id series is correctly assigned
         pd.testing.assert_series_equal(result, expected_trials_id)
@@ -839,21 +789,15 @@ class TestBehaviorUtils(unittest.TestCase):
         )
 
         # Calculate expected median stimulus frame duration
-        median_stim_frame_duration = np.nanmedian(
-            stim_pres_table["end_frame"] - stim_pres_table["start_frame"]
-        )
+        median_stim_frame_duration = np.nanmedian(stim_pres_table["end_frame"] - stim_pres_table["start_frame"])
 
         # Expected output
         expected_end_frame = stim_pres_table["end_frame"].copy()
-        expected_end_frame.iloc[3] = (
-            stim_pres_table["start_frame"].iloc[3] + median_stim_frame_duration
-        )
+        expected_end_frame.iloc[3] = stim_pres_table["start_frame"].iloc[3] + median_stim_frame_duration
 
         expected_stim_pres_table = stim_pres_table.copy()
         expected_stim_pres_table["end_frame"] = expected_end_frame
-        expected_stim_pres_table = expected_stim_pres_table.astype(
-            {"start_frame": int, "end_frame": int}
-        )
+        expected_stim_pres_table = expected_stim_pres_table.astype({"start_frame": int, "end_frame": int})
 
         # Call the function
         result = behavior.fix_omitted_end_frame(stim_pres_table)
@@ -876,9 +820,7 @@ class TestBehaviorUtils(unittest.TestCase):
         )
 
         # Create a sample trials DataFrame
-        trials = pd.DataFrame(
-            {"catch": [False, False, True], "change_frame": [10, 40, 60]}
-        )
+        trials = pd.DataFrame({"catch": [False, False, True], "change_frame": [10, 40, 60]})
 
         expected_stim_df = stim_df_no_active.copy()
 
@@ -977,40 +919,15 @@ class TestBehaviorUtils(unittest.TestCase):
         pd.testing.assert_frame_equal(result, expected_df)
 
     @patch("aind_metadata_extractor.utils.camstim_sync.pkl_utils.load_pkl")
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync.behavior_utils"
-        ".get_stimulus_presentations"
-    )
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync.behavior_utils"
-        ".check_for_errant_omitted_stimulus"
-    )
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync.behavior_utils"
-        ".get_stimulus_metadata"
-    )
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync.behavior_utils"
-        ".is_change_event"
-    )
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync.behavior_utils"
-        ".get_flashes_since_change"
-    )
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync.behavior_utils"
-        ".get_stimulus_name"
-    )
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync.behavior_utils"
-        ".fix_omitted_end_frame"
-    )
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync.behavior_utils"
-        ".add_fingerprint_stimulus"
-    )
-    @patch("aind_metadata_extractor.utils.camstim_sync"
-           ".behavior_utils.postprocess")
+    @patch("aind_metadata_extractor.utils.camstim_sync.behavior_utils" ".get_stimulus_presentations")
+    @patch("aind_metadata_extractor.utils.camstim_sync.behavior_utils" ".check_for_errant_omitted_stimulus")
+    @patch("aind_metadata_extractor.utils.camstim_sync.behavior_utils" ".get_stimulus_metadata")
+    @patch("aind_metadata_extractor.utils.camstim_sync.behavior_utils" ".is_change_event")
+    @patch("aind_metadata_extractor.utils.camstim_sync.behavior_utils" ".get_flashes_since_change")
+    @patch("aind_metadata_extractor.utils.camstim_sync.behavior_utils" ".get_stimulus_name")
+    @patch("aind_metadata_extractor.utils.camstim_sync.behavior_utils" ".fix_omitted_end_frame")
+    @patch("aind_metadata_extractor.utils.camstim_sync.behavior_utils" ".add_fingerprint_stimulus")
+    @patch("aind_metadata_extractor.utils.camstim_sync" ".behavior_utils.postprocess")
     def test_from_stimulus_file(
         self,
         mock_postprocess,
@@ -1136,14 +1053,10 @@ class TestBehaviorUtils(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data, columns=expected_columns)
 
         # Assert that the result matches the expected DataFrame
-        self.assertEqual(
-            expected_df["start_time"].all(), result["start_time"].all()
-        )
+        self.assertEqual(expected_df["start_time"].all(), result["start_time"].all())
 
     @patch("aind_metadata_extractor.utils.camstim_sync.pkl_utils.load_pkl")
-    def test_from_stimulus_file_with_all_null_orientations_and_images(
-        self, mock_load_pkl
-    ):
+    def test_from_stimulus_file_with_all_null_orientations_and_images(self, mock_load_pkl):
         """
         Tests from_stimulus_file when both image_name and orientation are null
         """
@@ -1151,61 +1064,45 @@ class TestBehaviorUtils(unittest.TestCase):
         stimulus_timestamps = [0.0, 1.0, 2.0]
 
         # Create mock data with null image_name and orientation
-        mock_data = {
-            "items": {
-                "behavior": {
-                    "stimuli": {},
-                    "items": {}
-                }
-            }
-        }
+        mock_data = {"items": {"behavior": {"stimuli": {}, "items": {}}}}
         mock_load_pkl.return_value = mock_data
 
         # Mock stimulus presentations with null values
-        patch_path = ('aind_metadata_extractor.utils.camstim_sync.'
-                      'behavior_utils._load_and_validate_stimulus_presentations')
+        patch_path = (
+            "aind_metadata_extractor.utils.camstim_sync." "behavior_utils._load_and_validate_stimulus_presentations"
+        )
         with patch(patch_path) as mock_load_validate:
-            mock_load_validate.return_value = pd.DataFrame({
-                "start_time": [0, 1, 2],
-                "image_name": [None, None, None],
-                "orientation": [None, None, None],
-                "index": [0, 1, 2]
-            })
+            mock_load_validate.return_value = pd.DataFrame(
+                {
+                    "start_time": [0, 1, 2],
+                    "image_name": [None, None, None],
+                    "orientation": [None, None, None],
+                    "index": [0, 1, 2],
+                }
+            )
 
             # Should raise ValueError when both are null
             with self.assertRaises(ValueError):
                 behavior.from_stimulus_file(stimulus_file, stimulus_timestamps)
 
     @patch("aind_metadata_extractor.utils.camstim_sync.pkl_utils.load_pkl")
-    def test_from_stimulus_file_with_grating_orientations(
-        self, mock_load_pkl
-    ):
+    def test_from_stimulus_file_with_grating_orientations(self, mock_load_pkl):
         """
         Tests from_stimulus_file when image_name is null but orientation is not
         """
         stimulus_file = MagicMock()
         stimulus_timestamps = [0.0, 1.0, 2.0]
 
-        mock_data = {
-            "items": {
-                "behavior": {
-                    "stimuli": {},
-                    "items": {}
-                }
-            }
-        }
+        mock_data = {"items": {"behavior": {"stimuli": {}, "items": {}}}}
         mock_load_pkl.return_value = mock_data
 
-        load_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                      'behavior_utils._load_and_validate_stimulus_presentations')
-        meta_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                      'behavior_utils.get_stimulus_metadata')
-        name_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                      'behavior_utils.get_stimulus_name')
-        omitted_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                         'behavior_utils.fix_omitted_end_frame')
-        process_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                         'behavior_utils.postprocess')
+        load_patch = (
+            "aind_metadata_extractor.utils.camstim_sync." "behavior_utils._load_and_validate_stimulus_presentations"
+        )
+        meta_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.get_stimulus_metadata"
+        name_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.get_stimulus_name"
+        omitted_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.fix_omitted_end_frame"
+        process_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.postprocess"
 
         with patch(load_patch) as mock_load_validate:
             with patch(meta_patch) as mock_get_metadata:
@@ -1214,25 +1111,29 @@ class TestBehaviorUtils(unittest.TestCase):
                         with patch(process_patch) as mock_postprocess:
 
                             # Mock data with null image_name but valid orientation
-                            presentations_df = pd.DataFrame({
-                                "start_time": [0, 1, 2],
-                                "image_name": [None, None, None],
-                                "orientation": [0, 90, 180],
-                                "duration": [0.25, 0.25, 0.25],
-                                "index": [0, 1, 2]
-                            })
+                            presentations_df = pd.DataFrame(
+                                {
+                                    "start_time": [0, 1, 2],
+                                    "image_name": [None, None, None],
+                                    "orientation": [0, 90, 180],
+                                    "duration": [0.25, 0.25, 0.25],
+                                    "index": [0, 1, 2],
+                                }
+                            )
                             presentations_df.index.name = "stimulus_presentations_id"
 
                             mock_load_validate.return_value = presentations_df
-                            mock_get_metadata.return_value = pd.DataFrame({
-                                "image_name": ["gratings_0", "gratings_90", "gratings_180"],
-                                "image_set": ["grating"] * 3,
-                                "image_index": [0, 1, 2],
-                                "phase": [np.nan] * 3,
-                                "size": [np.nan] * 3,
-                                "orientation": [0, 90, 180],
-                                "spatial_frequency": [np.nan] * 3
-                            }).set_index("image_index")
+                            mock_get_metadata.return_value = pd.DataFrame(
+                                {
+                                    "image_name": ["gratings_0", "gratings_90", "gratings_180"],
+                                    "image_set": ["grating"] * 3,
+                                    "image_index": [0, 1, 2],
+                                    "phase": [np.nan] * 3,
+                                    "size": [np.nan] * 3,
+                                    "orientation": [0, 90, 180],
+                                    "spatial_frequency": [np.nan] * 3,
+                                }
+                            ).set_index("image_index")
                             mock_get_name.return_value = "grating"
                             mock_fix_omitted.return_value = presentations_df
                             mock_postprocess.return_value = presentations_df
@@ -1338,9 +1239,7 @@ class TestBehaviorUtils(unittest.TestCase):
         }
         expected_df = pd.DataFrame(expected_data)
         # Assert that the result matches the expected DataFrame
-        self.assertEqual(
-            processed_df["omitted"].all(), expected_df["omitted"].all()
-        )
+        self.assertEqual(processed_df["omitted"].all(), expected_df["omitted"].all())
 
     def test_fill_missing_values_for_omitted_flashes(self):
         """
@@ -1356,9 +1255,7 @@ class TestBehaviorUtils(unittest.TestCase):
         df = pd.DataFrame(data)
 
         # Call the function under test
-        processed_df = behavior.fill_missing_values_for_omitted_flashes(
-            df, omitted_time_duration=0.25
-        )
+        processed_df = behavior.fill_missing_values_for_omitted_flashes(df, omitted_time_duration=0.25)
 
         # Define expected output based on the expected behavior of the function
         expected_data = {
@@ -1408,9 +1305,7 @@ class TestBehaviorUtils(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data)
 
         # Assert that the result matches the expected DataFrame
-        self.assertEqual(
-            processed_df["start_frame"].all(), expected_df["start_frame"].all()
-        )
+        self.assertEqual(processed_df["start_frame"].all(), expected_df["start_frame"].all())
 
     def test_add_fingerprint_stimulus(self):
         """
@@ -1473,9 +1368,7 @@ class TestBehaviorUtils(unittest.TestCase):
         expected_df = pd.DataFrame(expected_data)
 
         # Assert that the result matches the expected DataFrame
-        self.assertEqual(
-            processed_df["start_frame"].all(), expected_df["start_frame"].all()
-        )
+        self.assertEqual(processed_df["start_frame"].all(), expected_df["start_frame"].all())
 
     def test_get_spontaneous_block_indices(self):
         """
@@ -1515,40 +1408,43 @@ class TestBehaviorUtils(unittest.TestCase):
         Tests the remove_short_sandwiched_spontaneous function
         """
         # Test case with short spontaneous stimulus between identical stimuli
-        df = pd.DataFrame({
-            'start_time': [0.0, 1.0, 1.4, 2.0],
-            'image_name': ['img1', 'spontaneous', 'img1', 'img2'],
-            'stim_name': ['stim1', 'spontaneous', 'stim1', 'stim2'],
-            'duration': [1.0, 0.4, 0.6, 1.0]
-        })
-        
+        df = pd.DataFrame(
+            {
+                "start_time": [0.0, 1.0, 1.4, 2.0],
+                "image_name": ["img1", "spontaneous", "img1", "img2"],
+                "stim_name": ["stim1", "spontaneous", "stim1", "stim2"],
+                "duration": [1.0, 0.4, 0.6, 1.0],
+            }
+        )
+
         result = behavior.remove_short_sandwiched_spontaneous(df)
-        
+
         # The short spontaneous stimulus should be removed
-        expected_df = pd.DataFrame({
-            'start_time': [0.0, 1.4, 2.0],
-            'image_name': ['img1', 'img1', 'img2'],
-            'stim_name': ['stim1', 'stim1', 'stim2'],
-            'duration': [1.0, 0.6, 1.0]
-        }).reset_index(drop=True)
-        
+        expected_df = pd.DataFrame(
+            {
+                "start_time": [0.0, 1.4, 2.0],
+                "image_name": ["img1", "img1", "img2"],
+                "stim_name": ["stim1", "stim1", "stim2"],
+                "duration": [1.0, 0.6, 1.0],
+            }
+        ).reset_index(drop=True)
+
         pd.testing.assert_frame_equal(result, expected_df)
 
         # Test case with no spontaneous stimuli to remove
-        df2 = pd.DataFrame({
-            'start_time': [0.0, 1.0, 2.0],
-            'image_name': ['img1', 'img2', 'img3'],
-            'stim_name': ['stim1', 'stim2', 'stim3'],
-            'duration': [1.0, 1.0, 1.0]
-        })
-        
+        df2 = pd.DataFrame(
+            {
+                "start_time": [0.0, 1.0, 2.0],
+                "image_name": ["img1", "img2", "img3"],
+                "stim_name": ["stim1", "stim2", "stim3"],
+                "duration": [1.0, 1.0, 1.0],
+            }
+        )
+
         result2 = behavior.remove_short_sandwiched_spontaneous(df2)
         pd.testing.assert_frame_equal(result2, df2.reset_index(drop=True))
 
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync"
-        ".stim_utils.convert_filepath_caseinsensitive"
-    )
+    @patch("aind_metadata_extractor.utils.camstim_sync" ".stim_utils.convert_filepath_caseinsensitive")
     @patch("aind_metadata_extractor.utils.camstim_sync.pkl_utils.load_img_pkl")
     @patch("builtins.open")
     def test_get_images_dict(self, mock_open, mock_load_img_pkl, mock_convert_filepath):
@@ -1556,30 +1452,15 @@ class TestBehaviorUtils(unittest.TestCase):
         Tests the get_images_dict function
         """
         # Mock pkl_dict input
-        pkl_dict = {
-            "items": {
-                "behavior": {
-                    "stimuli": {
-                        "images": {
-                            "image_path": "/path/to/images.pkl"
-                        }
-                    }
-                }
-            }
-        }
+        pkl_dict = {"items": {"behavior": {"stimuli": {"images": {"image_path": "/path/to/images.pkl"}}}}}
 
         # Mock the file path conversion
         mock_convert_filepath.return_value = "/path/to/images.pkl"
 
         # Mock image set data
         mock_image_set = {
-            "category1": {
-                "image1.jpg": np.array([1, 2, 3]),
-                "image2.jpg": np.array([4, 5, 6])
-            },
-            "category2": {
-                "image3.jpg": np.array([7, 8, 9])
-            }
+            "category1": {"image1.jpg": np.array([1, 2, 3]), "image2.jpg": np.array([4, 5, 6])},
+            "category2": {"image3.jpg": np.array([7, 8, 9])},
         }
         mock_load_img_pkl.return_value = mock_image_set
 
@@ -1587,101 +1468,80 @@ class TestBehaviorUtils(unittest.TestCase):
         result = behavior.get_images_dict(pkl_dict)
 
         # Verify the structure
-        self.assertIn('metadata', result)
-        self.assertIn('images', result)
-        self.assertIn('image_attributes', result)
+        self.assertIn("metadata", result)
+        self.assertIn("images", result)
+        self.assertIn("image_attributes", result)
 
         # Check metadata
-        self.assertEqual(result['metadata']['image_set'], "/path/to/images.pkl")
+        self.assertEqual(result["metadata"]["image_set"], "/path/to/images.pkl")
 
         # Check that images and attributes are populated
-        self.assertEqual(len(result['images']), 3)
-        self.assertEqual(len(result['image_attributes']), 3)
+        self.assertEqual(len(result["images"]), 3)
+        self.assertEqual(len(result["image_attributes"]), 3)
 
         # Check image attributes structure
-        for attr in result['image_attributes']:
-            self.assertIn('image_category', attr)
-            self.assertIn('image_name', attr)
-            self.assertIn('image_index', attr)
+        for attr in result["image_attributes"]:
+            self.assertIn("image_category", attr)
+            self.assertIn("image_name", attr)
+            self.assertIn("image_index", attr)
 
     def test_clean_position_and_contrast(self):
         """
         Tests the clean_position_and_contrast function
         """
         # Test with Pos column
-        df = pd.DataFrame({
-            'Pos': [[1.0, 2.0], [3.0, 4.0]],
-            'contrast': [[0.5], [0.8]],
-            'other_col': ['a', 'b']
-        })
-        
+        df = pd.DataFrame({"Pos": [[1.0, 2.0], [3.0, 4.0]], "contrast": [[0.5], [0.8]], "other_col": ["a", "b"]})
+
         result = behavior.clean_position_and_contrast(df)
-        
+
         # Check that Pos is split into pos_x and pos_y
-        self.assertIn('pos_x', result.columns)
-        self.assertIn('pos_y', result.columns)
-        self.assertNotIn('Pos', result.columns)
-        
+        self.assertIn("pos_x", result.columns)
+        self.assertIn("pos_y", result.columns)
+        self.assertNotIn("Pos", result.columns)
+
         # Check values
-        self.assertEqual(result['pos_x'].iloc[0], 1.0)
-        self.assertEqual(result['pos_y'].iloc[0], 2.0)
-        self.assertEqual(result['pos_x'].iloc[1], 3.0)
-        self.assertEqual(result['pos_y'].iloc[1], 4.0)
-        
+        self.assertEqual(result["pos_x"].iloc[0], 1.0)
+        self.assertEqual(result["pos_y"].iloc[0], 2.0)
+        self.assertEqual(result["pos_x"].iloc[1], 3.0)
+        self.assertEqual(result["pos_y"].iloc[1], 4.0)
+
         # Check contrast is extracted from list
-        self.assertEqual(result['contrast'].iloc[0], 0.5)
-        self.assertEqual(result['contrast'].iloc[1], 0.8)
+        self.assertEqual(result["contrast"].iloc[0], 0.5)
+        self.assertEqual(result["contrast"].iloc[1], 0.8)
 
         # Test with invalid Pos data
-        df2 = pd.DataFrame({
-            'Pos': ['invalid', [1.0]],  # Invalid position data
-            'other_col': ['a', 'b']
-        })
-        
-        result2 = behavior.clean_position_and_contrast(df2)
-        self.assertTrue(np.isnan(result2['pos_x'].iloc[0]))
-        self.assertTrue(np.isnan(result2['pos_y'].iloc[0]))
+        df2 = pd.DataFrame({"Pos": ["invalid", [1.0]], "other_col": ["a", "b"]})  # Invalid position data
 
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync"
-        ".behavior_utils.get_stimulus_presentations"
-    )
-    @patch(
-        "aind_metadata_extractor.utils.camstim_sync"
-        ".behavior_utils.check_for_errant_omitted_stimulus"
-    )
-    def test_load_and_validate_stimulus_presentations(
-        self, mock_check_errant, mock_get_stimulus_presentations
-    ):
+        result2 = behavior.clean_position_and_contrast(df2)
+        self.assertTrue(np.isnan(result2["pos_x"].iloc[0]))
+        self.assertTrue(np.isnan(result2["pos_y"].iloc[0]))
+
+    @patch("aind_metadata_extractor.utils.camstim_sync" ".behavior_utils.get_stimulus_presentations")
+    @patch("aind_metadata_extractor.utils.camstim_sync" ".behavior_utils.check_for_errant_omitted_stimulus")
+    def test_load_and_validate_stimulus_presentations(self, mock_check_errant, mock_get_stimulus_presentations):
         """
         Tests the _load_and_validate_stimulus_presentations function
         """
         # Mock data and timestamps
         data = {"test": "data"}
         stimulus_timestamps = [0.0, 0.5, 1.0]
-        
+
         # Mock return values
-        mock_df = pd.DataFrame({
-            'start_time': [0.0, 0.5],
-            'image_name': ['img1', 'img2'],
-            'index': [0, 1]
-        })
+        mock_df = pd.DataFrame({"start_time": [0.0, 0.5], "image_name": ["img1", "img2"], "index": [0, 1]})
         mock_get_stimulus_presentations.return_value = mock_df
-        
-        cleaned_df = mock_df.drop(columns=['index'])
+
+        cleaned_df = mock_df.drop(columns=["index"])
         mock_check_errant.return_value = cleaned_df
-        
+
         # Call the function
-        result = behavior._load_and_validate_stimulus_presentations(
-            data, stimulus_timestamps
-        )
-        
+        result = behavior._load_and_validate_stimulus_presentations(data, stimulus_timestamps)
+
         # Verify mocks were called
         mock_get_stimulus_presentations.assert_called_once_with(data, stimulus_timestamps)
         mock_check_errant.assert_called_once()
-        
+
         # Check result doesn't have index column
-        self.assertNotIn('index', result.columns)
+        self.assertNotIn("index", result.columns)
 
     def test_get_is_image_novel(self):
         """
@@ -1690,9 +1550,9 @@ class TestBehaviorUtils(unittest.TestCase):
         # Test the function returns False as per current implementation
         image_names = ["img1", "img2", "img3"]
         behavior_session_id = 12345
-        
+
         result = behavior.get_is_image_novel(image_names, behavior_session_id)
-        
+
         # Current implementation always returns False
         self.assertEqual(result, False)
 
@@ -1701,36 +1561,40 @@ class TestBehaviorUtils(unittest.TestCase):
         Tests the make_spontaneous_stimulus function
         """
         # Test with gaps between stimuli
-        df = pd.DataFrame({
-            'start_time': [0.0, 2.0, 5.0],
-            'stop_time': [1.0, 3.0, 6.0],
-            'start_frame': [0, 20, 50],
-            'end_frame': [10, 30, 60],
-            'stim_block': [0, 1, 2],
-            'stim_name': ['stim1', 'stim2', 'stim3']
-        })
-        
+        df = pd.DataFrame(
+            {
+                "start_time": [0.0, 2.0, 5.0],
+                "stop_time": [1.0, 3.0, 6.0],
+                "start_frame": [0, 20, 50],
+                "end_frame": [10, 30, 60],
+                "stim_block": [0, 1, 2],
+                "stim_name": ["stim1", "stim2", "stim3"],
+            }
+        )
+
         result = behavior.make_spontaneous_stimulus(df)
-        
+
         # Should have added spontaneous stimuli in the gaps
         self.assertTrue(len(result) > len(df))
-        
+
         # Check for spontaneous entries
-        spontaneous_entries = result[result['stim_name'] == 'spontaneous']
+        spontaneous_entries = result[result["stim_name"] == "spontaneous"]
         self.assertTrue(len(spontaneous_entries) > 0)
 
         # Test with no gaps
-        df_no_gaps = pd.DataFrame({
-            'start_time': [0.0, 1.0, 2.0],
-            'stop_time': [1.0, 2.0, 3.0],
-            'start_frame': [0, 10, 20],
-            'end_frame': [10, 20, 30],
-            'stim_block': [0, 1, 2],
-            'stim_name': ['stim1', 'stim2', 'stim3']
-        })
-        
+        df_no_gaps = pd.DataFrame(
+            {
+                "start_time": [0.0, 1.0, 2.0],
+                "stop_time": [1.0, 2.0, 3.0],
+                "start_frame": [0, 10, 20],
+                "end_frame": [10, 20, 30],
+                "stim_block": [0, 1, 2],
+                "stim_name": ["stim1", "stim2", "stim3"],
+            }
+        )
+
         result_no_gaps = behavior.make_spontaneous_stimulus(df_no_gaps)
-        
+
         # Should return the same dataframe when no gaps
         self.assertEqual(len(result_no_gaps), len(df_no_gaps))
 
@@ -1739,62 +1603,26 @@ class TestBehaviorUtils(unittest.TestCase):
         Tests the get_stimulus_name function
         """
         # Test case 1: With images in behavior
-        stim_file1 = {
-            "items": {
-                "behavior": {
-                    "images": {
-                        "image_set": "/path/to/natural_scenes.pkl"
-                    }
-                }
-            }
-        }
-        
+        stim_file1 = {"items": {"behavior": {"images": {"image_set": "/path/to/natural_scenes.pkl"}}}}
+
         result1 = behavior.get_stimulus_name(stim_file1)
         self.assertEqual(result1, "natural_scenes")
 
         # Test case 2: With images in stimuli - due to logic flow issue, returns "behavior"
-        stim_file2 = {
-            "items": {
-                "behavior": {
-                    "stimuli": {
-                        "images": {
-                            "image_set": "/path/to/gabor_patches.pkl"
-                        }
-                    }
-                }
-            }
-        }
-        
+        stim_file2 = {"items": {"behavior": {"stimuli": {"images": {"image_set": "/path/to/gabor_patches.pkl"}}}}}
+
         result2 = behavior.get_stimulus_name(stim_file2)
         self.assertEqual(result2, "behavior")  # Current behavior due to logic flow
 
         # Test case 3: No images but has grating
-        stim_file3 = {
-            "items": {
-                "behavior": {
-                    "stimuli": {
-                        "grating": {
-                            "orientation": [0, 90, 180]
-                        }
-                    }
-                }
-            }
-        }
-        
+        stim_file3 = {"items": {"behavior": {"stimuli": {"grating": {"orientation": [0, 90, 180]}}}}}
+
         result3 = behavior.get_stimulus_name(stim_file3)
         self.assertEqual(result3, "grating")
 
         # Test case 4: No images or gratings
-        stim_file4 = {
-            "items": {
-                "behavior": {
-                    "stimuli": {
-                        "other": {}
-                    }
-                }
-            }
-        }
-        
+        stim_file4 = {"items": {"behavior": {"stimuli": {"other": {}}}}}
+
         result4 = behavior.get_stimulus_name(stim_file4)
         self.assertEqual(result4, "behavior")
 
@@ -1802,15 +1630,17 @@ class TestBehaviorUtils(unittest.TestCase):
         """
         Tests get_flashes_since_change with NA omitted values
         """
-        stimulus_presentations = pd.DataFrame({
-            "image_name": ["A", "omitted", "B", "C"],
-            "omitted": [False, np.nan, False, False],
-            "start_time": [0, 1, 2, 3],
-            "is_change": [True, False, True, False]
-        })
-        
+        stimulus_presentations = pd.DataFrame(
+            {
+                "image_name": ["A", "omitted", "B", "C"],
+                "omitted": [False, np.nan, False, False],
+                "start_time": [0, 1, 2, 3],
+                "is_change": [True, False, True, False],
+            }
+        )
+
         result = behavior.get_flashes_since_change(stimulus_presentations)
-        
+
         expected = pd.Series([0, 0, 0, 1], name="flashes_since_change")
         pd.testing.assert_series_equal(result, expected)
 
@@ -1818,22 +1648,20 @@ class TestBehaviorUtils(unittest.TestCase):
         """
         Tests compute_trials_id_for_stimulus with passive blocks
         """
-        stim_df = pd.DataFrame({
-            "stimulus_block": [1, 1, 2, 2, 3, 3],
-            "image_name": ["A", "B", "A", "B", "A", "B"],
-            "active": [True, True, False, False, True, True],
-            "start_frame": [0, 10, 20, 30, 40, 50],
-            "start_time": [0, 1, 2, 3, 4, 5]
-        })
-        
-        trials = pd.DataFrame({
-            "change_frame": [0, 40],
-            "stop_time": [5, 55],
-            "start_time": [0, 4]
-        })
-        
+        stim_df = pd.DataFrame(
+            {
+                "stimulus_block": [1, 1, 2, 2, 3, 3],
+                "image_name": ["A", "B", "A", "B", "A", "B"],
+                "active": [True, True, False, False, True, True],
+                "start_frame": [0, 10, 20, 30, 40, 50],
+                "start_time": [0, 1, 2, 3, 4, 5],
+            }
+        )
+
+        trials = pd.DataFrame({"change_frame": [0, 40], "stop_time": [5, 55], "start_time": [0, 4]})
+
         result = behavior.compute_trials_id_for_stimulus(stim_df, trials)
-        
+
         # Should assign trial IDs and copy to matching passive blocks
         self.assertIsInstance(result, pd.Series)
         self.assertEqual(len(result), 6)
@@ -1842,21 +1670,20 @@ class TestBehaviorUtils(unittest.TestCase):
         """
         Tests compute_is_sham_change function
         """
-        stim_df = pd.DataFrame({
-            "trials_id": [0, 0, 1, 1],
-            "stimulus_block": [1, 1, 2, 2],
-            "image_name": ["A", "B", "C", "D"],
-            "start_frame": [0, 10, 20, 30],
-            "active": [True, True, False, False]
-        })
-        
-        trials = pd.DataFrame({
-            "catch": [False, True],
-            "change_frame": [10, 30]
-        })
-        
+        stim_df = pd.DataFrame(
+            {
+                "trials_id": [0, 0, 1, 1],
+                "stimulus_block": [1, 1, 2, 2],
+                "image_name": ["A", "B", "C", "D"],
+                "start_frame": [0, 10, 20, 30],
+                "active": [True, True, False, False],
+            }
+        )
+
+        trials = pd.DataFrame({"catch": [False, True], "change_frame": [10, 30]})
+
         result = behavior.compute_is_sham_change(stim_df, trials)
-        
+
         self.assertIn("is_sham_change", result.columns)
         self.assertEqual(result["is_sham_change"].sum(), 1)  # Only one sham change
 
@@ -1866,82 +1693,76 @@ class TestBehaviorUtils(unittest.TestCase):
         """
         stimulus_file = MagicMock()
         stimulus_timestamps = [0.0, 1.0, 2.0]
-        
-        mock_data = {
-            "items": {
-                "behavior": {
-                    "stimuli": {},
-                    "items": {}
-                }
-            }
-        }
-        
-        with patch('aind_metadata_extractor.utils.camstim_sync.pkl_utils.load_pkl') as mock_load:
+
+        mock_data = {"items": {"behavior": {"stimuli": {}, "items": {}}}}
+
+        with patch("aind_metadata_extractor.utils.camstim_sync.pkl_utils.load_pkl") as mock_load:
             mock_load.return_value = mock_data
-            
-            load_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                          'behavior_utils._load_and_validate_stimulus_presentations')
-            meta_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                          'behavior_utils.get_stimulus_metadata')
-            name_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                          'behavior_utils.get_stimulus_name')
-            omitted_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                             'behavior_utils.fix_omitted_end_frame')
-            process_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                             'behavior_utils.postprocess')
+
+            load_patch = (
+                "aind_metadata_extractor.utils.camstim_sync." "behavior_utils._load_and_validate_stimulus_presentations"
+            )
+            meta_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.get_stimulus_metadata"
+            name_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.get_stimulus_name"
+            omitted_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.fix_omitted_end_frame"
+            process_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.postprocess"
 
             with patch(load_patch) as mock_load_validate:
                 with patch(meta_patch) as mock_get_metadata:
                     with patch(name_patch) as mock_get_name:
                         with patch(omitted_patch) as mock_fix_omitted:
                             with patch(process_patch) as mock_postprocess:
-                                
-                                presentations_df = pd.DataFrame({
-                                    "start_time": [0, 1, 2],
-                                    "image_name": ["image1", "image2", "image3"],
-                                    "duration": [0.25, 0.25, 0.25],
-                                    "orientation": [0, 90, 180],
-                                    "index": [0, 1, 2]
-                                })
+
+                                presentations_df = pd.DataFrame(
+                                    {
+                                        "start_time": [0, 1, 2],
+                                        "image_name": ["image1", "image2", "image3"],
+                                        "duration": [0.25, 0.25, 0.25],
+                                        "orientation": [0, 90, 180],
+                                        "index": [0, 1, 2],
+                                    }
+                                )
                                 presentations_df.index.name = "stimulus_presentations_id"
-                                
+
                                 mock_load_validate.return_value = presentations_df
-                                mock_get_metadata.return_value = pd.DataFrame({
-                                    "image_name": ["image1", "image2", "image3"],
-                                    "image_set": ["set1"] * 3,
-                                    "image_index": [0, 1, 2],
-                                    "phase": [np.nan] * 3,
-                                    "size": [np.nan] * 3,
-                                    "orientation": [0, 90, 180],
-                                    "spatial_frequency": [np.nan] * 3
-                                }).set_index("image_index")
+                                mock_get_metadata.return_value = pd.DataFrame(
+                                    {
+                                        "image_name": ["image1", "image2", "image3"],
+                                        "image_set": ["set1"] * 3,
+                                        "image_index": [0, 1, 2],
+                                        "phase": [np.nan] * 3,
+                                        "size": [np.nan] * 3,
+                                        "orientation": [0, 90, 180],
+                                        "spatial_frequency": [np.nan] * 3,
+                                    }
+                                ).set_index("image_index")
                                 mock_get_name.return_value = "test_stimulus"
                                 mock_fix_omitted.return_value = presentations_df
                                 mock_postprocess.return_value = presentations_df
-                                
+
                                 # Test with limit_to_images
                                 result = behavior.from_stimulus_file(
-                                    stimulus_file,
-                                    stimulus_timestamps,
-                                    limit_to_images=["image1", "image2"]
+                                    stimulus_file, stimulus_timestamps, limit_to_images=["image1", "image2"]
                                 )
-                                
+
                                 self.assertIsInstance(result, tuple)
 
     def test_get_spontaneous_stimulus_detailed(self):
         """
         Tests get_spontaneous_stimulus function - detailed version
         """
-        stimulus_presentations = pd.DataFrame({
-            "stim_block": [1, 1, 2, 2],
-            "start_time": [300, 301, 302, 303],  # Start after 285s to trigger spontaneous
-            "stop_time": [301, 302, 303, 304],
-            "start_frame": [100, 110, 120, 130],  # Start after frame 0
-            "end_frame": [109, 119, 129, 139]
-        })
-        
+        stimulus_presentations = pd.DataFrame(
+            {
+                "stim_block": [1, 1, 2, 2],
+                "start_time": [300, 301, 302, 303],  # Start after 285s to trigger spontaneous
+                "stop_time": [301, 302, 303, 304],
+                "start_frame": [100, 110, 120, 130],  # Start after frame 0
+                "end_frame": [109, 119, 129, 139],
+            }
+        )
+
         result = behavior.get_spontaneous_stimulus(stimulus_presentations)
-        
+
         # Should return the original table with potentially added spontaneous blocks
         self.assertIsInstance(result, pd.DataFrame)
         # Check that it has at least the original rows
@@ -1951,16 +1772,18 @@ class TestBehaviorUtils(unittest.TestCase):
         """
         Tests check_for_errant_omitted_stimulus normal operation
         """
-        stim_df = pd.DataFrame({
-            "image_name": ["omitted", "A", "B"],  # Start with omitted
-            "duration": [0.25, 0.25, 0.25],
-            "omitted": [True, False, False],
-            "stimulus_block": [1, 1, 1]
-        })
-        
+        stim_df = pd.DataFrame(
+            {
+                "image_name": ["omitted", "A", "B"],  # Start with omitted
+                "duration": [0.25, 0.25, 0.25],
+                "omitted": [True, False, False],
+                "stimulus_block": [1, 1, 1],
+            }
+        )
+
         # This should remove the first omitted stimulus
         result = behavior.check_for_errant_omitted_stimulus(stim_df)
-        
+
         # Should have one less row (omitted removed)
         self.assertEqual(len(result), 2)
         self.assertFalse(result.iloc[0]["omitted"])
@@ -1969,22 +1792,21 @@ class TestBehaviorUtils(unittest.TestCase):
         """
         Tests compute_is_sham_change when passive block images match active block
         """
-        stim_df = pd.DataFrame({
-            "trials_id": [0, 0, 1, 1],
-            "stimulus_block": [1, 1, 2, 2],
-            "image_name": ["A", "B", "A", "B"],  # Same images in both blocks
-            "start_frame": [0, 10, 20, 30],
-            "active": [True, True, False, False],  # Block 1 active, Block 2 passive
-            "is_sham_change": [False, True, False, False]
-        })
-        
-        trials = pd.DataFrame({
-            "catch": [False, True],
-            "change_frame": [10, 30]
-        })
-        
+        stim_df = pd.DataFrame(
+            {
+                "trials_id": [0, 0, 1, 1],
+                "stimulus_block": [1, 1, 2, 2],
+                "image_name": ["A", "B", "A", "B"],  # Same images in both blocks
+                "start_frame": [0, 10, 20, 30],
+                "active": [True, True, False, False],  # Block 1 active, Block 2 passive
+                "is_sham_change": [False, True, False, False],
+            }
+        )
+
+        trials = pd.DataFrame({"catch": [False, True], "change_frame": [10, 30]})
+
         result = behavior.compute_is_sham_change(stim_df, trials)
-        
+
         # The passive block should copy is_sham_change from active block
         self.assertIn("is_sham_change", result.columns)
         # Both blocks should have the same sham change pattern
@@ -1998,7 +1820,7 @@ class TestBehaviorUtils(unittest.TestCase):
         """
         stimulus_file = MagicMock()
         stimulus_timestamps = [0.0, 1.0, 2.0]
-        
+
         mock_data = {
             "items": {
                 "behavior": {
@@ -2015,64 +1837,62 @@ class TestBehaviorUtils(unittest.TestCase):
                             },
                             "frame_indices": [0, 1, 2, 3],
                         }
-                    }
+                    },
                 }
             }
         }
-        
-        with patch('aind_metadata_extractor.utils.camstim_sync.pkl_utils.load_pkl') as mock_load:
+
+        with patch("aind_metadata_extractor.utils.camstim_sync.pkl_utils.load_pkl") as mock_load:
             mock_load.return_value = mock_data
-            
-            fingerprint_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                                 'behavior_utils.add_fingerprint_stimulus')
+
+            fingerprint_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.add_fingerprint_stimulus"
             with patch(fingerprint_patch) as mock_add_fingerprint:
-                load_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                              'behavior_utils._load_and_validate_stimulus_presentations')
-                meta_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                              'behavior_utils.get_stimulus_metadata')
-                name_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                              'behavior_utils.get_stimulus_name')
-                omitted_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                                 'behavior_utils.fix_omitted_end_frame')
-                process_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                                 'behavior_utils.postprocess')
+                load_patch = (
+                    "aind_metadata_extractor.utils.camstim_sync."
+                    "behavior_utils._load_and_validate_stimulus_presentations"
+                )
+                meta_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.get_stimulus_metadata"
+                name_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.get_stimulus_name"
+                omitted_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.fix_omitted_end_frame"
+                process_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.postprocess"
 
                 with patch(load_patch) as mock_load_validate:
                     with patch(meta_patch) as mock_get_metadata:
                         with patch(name_patch) as mock_get_name:
                             with patch(omitted_patch) as mock_fix_omitted:
                                 with patch(process_patch) as mock_postprocess:
-                                    
-                                    presentations_df = pd.DataFrame({
-                                        "start_time": [0, 1, 2],
-                                        "image_name": ["image1", "image2", "image3"],
-                                        "duration": [0.25, 0.25, 0.25],
-                                        "orientation": [0, 90, 180],
-                                        "index": [0, 1, 2]
-                                    })
+
+                                    presentations_df = pd.DataFrame(
+                                        {
+                                            "start_time": [0, 1, 2],
+                                            "image_name": ["image1", "image2", "image3"],
+                                            "duration": [0.25, 0.25, 0.25],
+                                            "orientation": [0, 90, 180],
+                                            "index": [0, 1, 2],
+                                        }
+                                    )
                                     presentations_df.index.name = "stimulus_presentations_id"
-                                    
+
                                     mock_load_validate.return_value = presentations_df
-                                    mock_get_metadata.return_value = pd.DataFrame({
-                                        "image_name": ["image1", "image2", "image3"],
-                                        "image_set": ["set1"] * 3,
-                                        "image_index": [0, 1, 2],
-                                        "phase": [np.nan] * 3,
-                                        "size": [np.nan] * 3,
-                                        "orientation": [0, 90, 180],
-                                        "spatial_frequency": [np.nan] * 3
-                                    }).set_index("image_index")
+                                    mock_get_metadata.return_value = pd.DataFrame(
+                                        {
+                                            "image_name": ["image1", "image2", "image3"],
+                                            "image_set": ["set1"] * 3,
+                                            "image_index": [0, 1, 2],
+                                            "phase": [np.nan] * 3,
+                                            "size": [np.nan] * 3,
+                                            "orientation": [0, 90, 180],
+                                            "spatial_frequency": [np.nan] * 3,
+                                        }
+                                    ).set_index("image_index")
                                     mock_get_name.return_value = "test_stimulus"
                                     mock_fix_omitted.return_value = presentations_df
                                     mock_postprocess.return_value = presentations_df
                                     mock_add_fingerprint.return_value = presentations_df
-                                    
+
                                     # This should trigger the fingerprint handling code
-                                    result = behavior.from_stimulus_file(
-                                        stimulus_file,
-                                        stimulus_timestamps
-                                    )
-                                    
+                                    result = behavior.from_stimulus_file(stimulus_file, stimulus_timestamps)
+
                                     # Verify fingerprint stimulus was added
                                     mock_add_fingerprint.assert_called_once()
                                     self.assertIsInstance(result, tuple)
@@ -2083,75 +1903,66 @@ class TestBehaviorUtils(unittest.TestCase):
         """
         stimulus_file = MagicMock()
         stimulus_timestamps = [0.0, 1.0, 2.0, 3.0]
-        
-        mock_data = {
-            "items": {
-                "behavior": {
-                    "stimuli": {},
-                    "items": {}
-                }
-            }
-        }
-        
-        with patch('aind_metadata_extractor.utils.camstim_sync.pkl_utils.load_pkl') as mock_load:
+
+        mock_data = {"items": {"behavior": {"stimuli": {}, "items": {}}}}
+
+        with patch("aind_metadata_extractor.utils.camstim_sync.pkl_utils.load_pkl") as mock_load:
             mock_load.return_value = mock_data
-            
-            load_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                          'behavior_utils._load_and_validate_stimulus_presentations')
-            meta_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                          'behavior_utils.get_stimulus_metadata')
-            name_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                          'behavior_utils.get_stimulus_name')
-            omitted_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                             'behavior_utils.fix_omitted_end_frame')
-            process_patch = ('aind_metadata_extractor.utils.camstim_sync.'
-                             'behavior_utils.postprocess')
+
+            load_patch = (
+                "aind_metadata_extractor.utils.camstim_sync." "behavior_utils._load_and_validate_stimulus_presentations"
+            )
+            meta_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.get_stimulus_metadata"
+            name_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.get_stimulus_name"
+            omitted_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.fix_omitted_end_frame"
+            process_patch = "aind_metadata_extractor.utils.camstim_sync." "behavior_utils.postprocess"
 
             with patch(load_patch) as mock_load_validate:
                 with patch(meta_patch) as mock_get_metadata:
                     with patch(name_patch) as mock_get_name:
                         with patch(omitted_patch) as mock_fix_omitted:
                             with patch(process_patch) as mock_postprocess:
-                                
+
                                 # Create data with duplicates and pkl files
-                                presentations_df = pd.DataFrame({
-                                    "start_time": [0, 1, 1, 2],  # Duplicate at time 1
-                                    "image_name": ["image1", "image2", "image2", "image3"],
-                                    "image_set": ["set1", "set2.pkl", "set2", "set3"],  # pkl vs non-pkl
-                                    "duration": [0.25, 0.25, 0.25, 0.25],
-                                    "orientation": [0, 90, 90, 180],
-                                    "Phase": [np.nan, 1.0, np.nan, np.nan],  # Will be renamed to "phase"
-                                    "size": [np.nan] * 4,
-                                    "spatial_frequency": [np.nan] * 4,
-                                    "some_bool_col": [True, False, True, False],  # Object dtype boolean-like
-                                    "index": [0, 1, 2, 3]
-                                })
+                                presentations_df = pd.DataFrame(
+                                    {
+                                        "start_time": [0, 1, 1, 2],  # Duplicate at time 1
+                                        "image_name": ["image1", "image2", "image2", "image3"],
+                                        "image_set": ["set1", "set2.pkl", "set2", "set3"],  # pkl vs non-pkl
+                                        "duration": [0.25, 0.25, 0.25, 0.25],
+                                        "orientation": [0, 90, 90, 180],
+                                        "Phase": [np.nan, 1.0, np.nan, np.nan],  # Will be renamed to "phase"
+                                        "size": [np.nan] * 4,
+                                        "spatial_frequency": [np.nan] * 4,
+                                        "some_bool_col": [True, False, True, False],  # Object dtype boolean-like
+                                        "index": [0, 1, 2, 3],
+                                    }
+                                )
                                 # Add another Phase column to test duplicate column merging after renaming
                                 presentations_df["phase"] = [1.0, np.nan, 2.0, 3.0]  # Duplicate after renaming
                                 # Make boolean column object dtype to trigger type coercion
                                 presentations_df["some_bool_col"] = presentations_df["some_bool_col"].astype(object)
                                 presentations_df.index.name = "stimulus_presentations_id"
-                                
+
                                 mock_load_validate.return_value = presentations_df
-                                mock_get_metadata.return_value = pd.DataFrame({
-                                    "image_name": ["image1", "image2", "image3"],
-                                    "image_set": ["set1", "set2", "set3"],
-                                    "image_index": [0, 1, 2],
-                                    "phase": [np.nan] * 3,
-                                    "size": [np.nan] * 3,
-                                    "orientation": [0, 90, 180],
-                                    "spatial_frequency": [np.nan] * 3
-                                }).set_index("image_index")
+                                mock_get_metadata.return_value = pd.DataFrame(
+                                    {
+                                        "image_name": ["image1", "image2", "image3"],
+                                        "image_set": ["set1", "set2", "set3"],
+                                        "image_index": [0, 1, 2],
+                                        "phase": [np.nan] * 3,
+                                        "size": [np.nan] * 3,
+                                        "orientation": [0, 90, 180],
+                                        "spatial_frequency": [np.nan] * 3,
+                                    }
+                                ).set_index("image_index")
                                 mock_get_name.return_value = "test_stimulus"
                                 mock_fix_omitted.return_value = presentations_df
                                 mock_postprocess.return_value = presentations_df
-                                
+
                                 # This should trigger duplicate handling and column merging
-                                result = behavior.from_stimulus_file(
-                                    stimulus_file,
-                                    stimulus_timestamps
-                                )
-                                
+                                result = behavior.from_stimulus_file(stimulus_file, stimulus_timestamps)
+
                                 self.assertIsInstance(result, tuple)
 
     def test_remove_short_sandwiched_spontaneous_edge_case(self):
@@ -2159,26 +1970,30 @@ class TestBehaviorUtils(unittest.TestCase):
         Tests remove_short_sandwiched_spontaneous with edge cases (first/last row)
         """
         # Test with only 1 row (edge case)
-        df_single = pd.DataFrame({
-            "stimulus_block": [0],
-            "stim_name": ["spontaneous"],
-            "image_name": ["spontaneous"],
-            "duration": [0.4],
-            "start_time": [0.0]
-        })
-        
+        df_single = pd.DataFrame(
+            {
+                "stimulus_block": [0],
+                "stim_name": ["spontaneous"],
+                "image_name": ["spontaneous"],
+                "duration": [0.4],
+                "start_time": [0.0],
+            }
+        )
+
         result_single = behavior.remove_short_sandwiched_spontaneous(df_single)
         pd.testing.assert_frame_equal(result_single, df_single)  # Should remain unchanged
-        
+
         # Test with first and last rows as spontaneous (edge case)
-        df_edge = pd.DataFrame({
-            "stimulus_block": [0, 1, 2],
-            "stim_name": ["spontaneous", "stimulus", "spontaneous"],
-            "image_name": ["spontaneous", "image1", "spontaneous"],
-            "duration": [0.4, 1.0, 0.4],
-            "start_time": [0.0, 1.0, 2.0]
-        })
-        
+        df_edge = pd.DataFrame(
+            {
+                "stimulus_block": [0, 1, 2],
+                "stim_name": ["spontaneous", "stimulus", "spontaneous"],
+                "image_name": ["spontaneous", "image1", "spontaneous"],
+                "duration": [0.4, 1.0, 0.4],
+                "start_time": [0.0, 1.0, 2.0],
+            }
+        )
+
         result_edge = behavior.remove_short_sandwiched_spontaneous(df_edge)
         # First and last rows should not be removed even if short
         self.assertEqual(len(result_edge), 3)

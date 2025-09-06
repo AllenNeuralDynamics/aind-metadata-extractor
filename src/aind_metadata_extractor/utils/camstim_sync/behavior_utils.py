@@ -145,10 +145,10 @@ def get_images_dict(pkl_dict) -> Dict:
             meta = {
                 "image_category": cat,
                 "image_name": img_name,
-                "orientation": np.NaN,
-                "phase": np.NaN,
-                "size": np.NaN,
-                "spatial_frequency": np.NaN,
+                "orientation": np.nan,
+                "phase": np.nan,
+                "size": np.nan,
+                "spatial_frequency": np.nan,
                 "image_index": img_index,
             }
 
@@ -232,10 +232,10 @@ def get_stimulus_metadata(pkl) -> pd.DataFrame:
             "image_category": ["omitted"],
             "image_name": ["omitted"],
             "image_set": ["omitted"],
-            "orientation": np.NaN,
-            "phase": np.NaN,
-            "size": np.NaN,
-            "spatial_frequency": np.NaN,
+            "orientation": np.nan,
+            "phase": np.nan,
+            "size": np.nan,
+            "spatial_frequency": np.nan,
             "image_index": len(stimulus_index_df),
         }
     )
@@ -1043,18 +1043,20 @@ def from_stimulus_file(
     # print("stimulus_index_df")
     # print(stimulus_index_df.head(100))
 
+    # Only select columns that actually exist in the DataFrame
+    required_columns = [
+        "image_set",
+        "image_index",
+        "start_time",
+        "phase",
+        "size",
+        "orientation",
+        "spatial_frequency",
+    ]
+    available_columns = [col for col in required_columns if col in stimulus_index_df.columns]
+    
     stimulus_index_df = (
-        stimulus_index_df[
-            [
-                "image_set",
-                "image_index",
-                "start_time",
-                "phase",
-                "size",
-                "orientation",
-                "spatial_frequency",
-            ]
-        ]
+        stimulus_index_df[available_columns]
         .rename(columns={"start_time": "timestamps"})
         .sort_index()
         .set_index("timestamps", drop=True)

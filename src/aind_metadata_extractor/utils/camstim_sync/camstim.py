@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from aind_metadata_extractor.utils.camstim_sync import (
     behavior_utils,
     constants,
+    pkl_utils as pkl,
     stim_utils,
     sync_utils,
     naming_utils
@@ -318,11 +319,19 @@ class Camstim:
 
             stim_name = row.get("stim_name", "") or ""
             image_set = row.get("image_set", "")
-            if pd.notnull(image_set):
+            if pd.notnull(image_set) and image_set:  # Check both not null and not empty
                 stim_name = image_set
 
             if "image" in stim_name.lower() or "movie" in stim_name.lower():
                 current_epoch[4].add(row["stim_name"])
+        
+        # Process the final epoch
+        if current_epoch[0] is not None:
+            self._summarize_epoch_params(
+                stim_table, current_epoch, epoch_start_idx, len(stim_table)
+            )
+            epochs.append(current_epoch)
+        
         return epochs[1:]
 
     def epochs_from_stim_table(self) -> list[dict]:
@@ -368,3 +377,19 @@ class Camstim:
             schema_epochs.append(epoch_obj)
 
         return schema_epochs
+
+    def extract_whole_session_epoch(self, stim_table: pd.DataFrame) -> tuple[float, float]:
+        """
+        Extract the overall start and end times for the entire session.
+        
+        Parameters
+        ----------
+        stim_table : pd.DataFrame
+            The stimulus table containing start_time and stop_time columns
+            
+        Returns
+        -------
+        tuple[float, float]
+            A tuple of (session_start_time, session_end_time)
+        """
+        return (stim_table["start_time"].iloc[0], stim_table["stop_time"].iloc[-1])

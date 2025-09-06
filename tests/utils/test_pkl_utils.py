@@ -1,7 +1,9 @@
-""" Unit tests for the pkl_utils module. """
+"""Unit tests for the pkl_utils module."""
 
 import unittest
 import numpy as np
+from unittest.mock import patch
+import io
 
 from aind_metadata_extractor.utils.camstim_sync import pkl_utils as pkl
 
@@ -179,6 +181,73 @@ class TestPKL(unittest.TestCase):
 
         # Asserting that the result is the expected numpy array
         np.testing.assert_array_equal(result, np.array([0.5, 1.5, 2.5]))
+
+    def test_get_stimuli_behavior(self):
+        """
+        Test get_stimuli with is_behavior=True
+        """
+        sample_pkl = {
+            "items": {"behavior": {"items": ["behavior1", "behavior2"]}},
+            "stimuli": ["stim1", "stim2"],
+        }
+
+        result = pkl.get_stimuli(sample_pkl, is_behavior=True)
+        self.assertEqual(result, ["behavior1", "behavior2"])
+
+    def test_get_fps_calculated(self):
+        """
+        Test get_fps when fps is not present and needs to be calculated
+        """
+        sample_pkl = {
+            "items": {"behavior": {"intervalsms": [100, 100, 100]}},
+        }
+
+        result = pkl.get_fps(sample_pkl)
+        expected = round(1 / np.mean([100, 100, 100]) * 0.001, 2)
+        self.assertEqual(result, expected)
+
+    def test_get_stage_with_stage_key(self):
+        """
+        Test get_stage when 'stage' key is present
+        """
+        sample_pkl = {"stage": "test_stage"}
+        result = pkl.get_stage(sample_pkl)
+        self.assertEqual(result, "test_stage")
+
+    def test_get_stage_with_items_key(self):
+        """
+        Test get_stage when 'stage' key is not present but 'items' is
+        """
+        sample_pkl = {"items": {"behavior": {"cl_params": {"stage": "behavior_stage"}}}}
+        result = pkl.get_stage(sample_pkl)
+        self.assertEqual(result, "behavior_stage")
+
+    @patch("pandas.read_pickle")
+    def test_load_pkl(self, mock_read_pickle):
+        """
+        Test load_pkl function
+        """
+        expected_data = {"test": "data"}
+        mock_read_pickle.return_value = expected_data
+
+        result = pkl.load_pkl("test_path.pkl")
+
+        mock_read_pickle.assert_called_once_with("test_path.pkl")
+        self.assertEqual(result, expected_data)
+
+    @patch("pickle.load")
+    def test_load_img_pkl(self, mock_pickle_load):
+        """
+        Test load_img_pkl function
+        """
+        expected_data = {"image": "data"}
+        mock_pickle_load.return_value = expected_data
+
+        mock_stream = io.BytesIO()
+        result = pkl.load_img_pkl(mock_stream)
+
+        mock_pickle_load.assert_called_once_with(mock_stream, encoding="Latin-1")
+        self.assertEqual(result, expected_data)
 
 
 if __name__ == "__main__":
