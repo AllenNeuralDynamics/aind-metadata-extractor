@@ -1,4 +1,4 @@
-""" Utilities for working with stimulus data."""
+"""Utilities for working with stimulus data."""
 
 import ast
 import functools
@@ -101,9 +101,7 @@ def enforce_df_int_typing(
     return input_df
 
 
-def enforce_df_column_order(
-    input_df: pd.DataFrame, column_order: List[str]
-) -> pd.DataFrame:
+def enforce_df_column_order(input_df: pd.DataFrame, column_order: List[str]) -> pd.DataFrame:
     """Return the data frame but with columns ordered.
 
     Parameters
@@ -127,9 +125,7 @@ def enforce_df_column_order(
             pruned_order.append(col)
     # Get the full list of columns in the data frame with our ordered columns
     # first.
-    pruned_order.extend(
-        list(set(input_df.columns).difference(set(pruned_order)))
-    )
+    pruned_order.extend(list(set(input_df.columns).difference(set(pruned_order))))
     return input_df[pruned_order]
 
 
@@ -149,14 +145,10 @@ def seconds_to_frames(seconds, pkl_file):
     frames : list of int
         Frames corresponding to the input seconds.
     """
-    return (np.array(seconds) + pkl.get_pre_blank_sec(pkl_file)) * pkl.get_fps(
-        pkl_file
-    )
+    return (np.array(seconds) + pkl.get_pre_blank_sec(pkl_file)) * pkl.get_fps(pkl_file)
 
 
-def extract_const_params_from_stim_repr(
-    stim_repr, repr_params_re=REPR_PARAMS_RE, array_re=ARRAY_RE
-):
+def extract_const_params_from_stim_repr(stim_repr, repr_params_re=REPR_PARAMS_RE, array_re=ARRAY_RE):
     """Parameters which are not set as sweep_params in the stimulus script
     (usually because they are not varied during the course of the session) are
     not output in an easily machine-readable format. This function
@@ -228,9 +220,7 @@ def parse_stim_repr(
 
     """
 
-    stim_params = extract_const_params_from_stim_repr(
-        stim_repr, repr_params_re=repr_params_re, array_re=array_re
-    )
+    stim_params = extract_const_params_from_stim_repr(stim_repr, repr_params_re=repr_params_re, array_re=array_re)
 
     for drop_param in drop_params:
         if drop_param in stim_params:
@@ -284,9 +274,7 @@ def create_stim_table(
 
         stimulus_tables.extend(current_tables)
 
-    stimulus_tables = sorted(
-        stimulus_tables, key=lambda df: min(df[sort_key].values)
-    )
+    stimulus_tables = sorted(stimulus_tables, key=lambda df: min(df[sort_key].values))
     for ii, stim_table in enumerate(stimulus_tables):
         stim_table[block_key] = ii
 
@@ -349,10 +337,7 @@ def make_spontaneous_activity_tables(
     spon_sweeps = pd.DataFrame({start_key: spon_start, end_key: spon_end})
 
     if duration_threshold is not None:
-        spon_sweeps = spon_sweeps[
-            np.fabs(spon_sweeps[start_key] - spon_sweeps[end_key])
-            > duration_threshold
-        ]
+        spon_sweeps = spon_sweeps[np.fabs(spon_sweeps[start_key] - spon_sweeps[end_key]) > duration_threshold]
         spon_sweeps.reset_index(drop=True, inplace=True)
     spon_sweeps = spon_sweeps.drop_duplicates(subset=[start_key, end_key])
     spon_sweeps.reset_index(drop=True, inplace=True)
@@ -453,27 +438,17 @@ def extract_frame_times_from_photodiode(
     (
         vsync_times_chunked,
         pd_times_chunked,
-    ) = sync.separate_vsyncs_and_photodiode_times(
-        vsync_times, photodiode_times, photodiode_cycle
-    )
+    ) = sync.separate_vsyncs_and_photodiode_times(vsync_times, photodiode_times, photodiode_cycle)
 
     frame_start_times = np.zeros((0,))
 
     for i in range(len(vsync_times_chunked)):
-        photodiode_times = sync.trim_border_pulses(
-            pd_times_chunked[i], vsync_times_chunked[i]
-        )
+        photodiode_times = sync.trim_border_pulses(pd_times_chunked[i], vsync_times_chunked[i])
         photodiode_times = sync.correct_on_off_effects(photodiode_times)
-        photodiode_times = sync.fix_unexpected_edges(
-            photodiode_times, cycle=photodiode_cycle
-        )
+        photodiode_times = sync.fix_unexpected_edges(photodiode_times, cycle=photodiode_cycle)
 
-        frame_duration = sync.estimate_frame_duration(
-            photodiode_times, cycle=photodiode_cycle
-        )
-        irregular_interval_policy = functools.partial(
-            sync.allocate_by_vsync, np.diff(vsync_times_chunked[i])
-        )
+        frame_duration = sync.estimate_frame_duration(photodiode_times, cycle=photodiode_cycle)
+        irregular_interval_policy = functools.partial(sync.allocate_by_vsync, np.diff(vsync_times_chunked[i]))
         (
             frame_indices,
             frame_starts,
@@ -664,21 +639,15 @@ def extract_frame_times_with_delay(
             last_frame_index = -1
 
             # iterate until all of the errors have been corrected
-            while any(
-                photodiode_rise_diff[ptd_start:ptd_end]
-                < photodiode_rise_error_threshold
-            ):
+            while any(photodiode_rise_diff[ptd_start:ptd_end] < photodiode_rise_error_threshold):
                 error_frames = (
-                    np.where(
-                        photodiode_rise_diff[ptd_start:ptd_end]
-                        < photodiode_rise_error_threshold
-                    )[FIRST_ELEMENT_INDEX]
+                    np.where(photodiode_rise_diff[ptd_start:ptd_end] < photodiode_rise_error_threshold)[
+                        FIRST_ELEMENT_INDEX
+                    ]
                     + ptd_start
                 )
                 # remove the bad photodiode event
-                photodiode_rise = np.delete(
-                    photodiode_rise, error_frames[last_frame_index]
-                )
+                photodiode_rise = np.delete(photodiode_rise, error_frames[last_frame_index])
                 ptd_end -= 1
 
             # Find the delay
@@ -686,19 +655,14 @@ def extract_frame_times_with_delay(
             first_pulse = ptd_start
             number_of_photodiode_rises = ptd_end - ptd_start
             half_vsync_fall_events_per_photodiode_rise = 60
-            vsync_fall_events_per_photodiode_rise = (
-                half_vsync_fall_events_per_photodiode_rise * 2
-            )
+            vsync_fall_events_per_photodiode_rise = half_vsync_fall_events_per_photodiode_rise * 2
 
             delay_rise = np.empty(number_of_photodiode_rises)
             for photodiode_rise_index in range(number_of_photodiode_rises):
                 delay_rise[photodiode_rise_index] = (
                     photodiode_rise[photodiode_rise_index + first_pulse]
                     - stim_vsync_fall[
-                        (
-                            photodiode_rise_index
-                            * vsync_fall_events_per_photodiode_rise
-                        )
+                        (photodiode_rise_index * vsync_fall_events_per_photodiode_rise)
                         + half_vsync_fall_events_per_photodiode_rise
                     ]
                 )
@@ -720,11 +684,7 @@ def extract_frame_times_with_delay(
     except Exception as e:
         print(e)
         delay = ASSUMED_DELAY
-        logger.error(
-            "Process without photodiode signal. Assumed delay: {}".format(
-                round(delay, ROUND_PRECISION)
-            )
-        )
+        logger.error("Process without photodiode signal. Assumed delay: {}".format(round(delay, ROUND_PRECISION)))
         return delay
 
 
@@ -769,14 +729,10 @@ def convert_frames_to_seconds(
     if extra_frame_time is True and frames_per_second is not None:
         extra_frame_time = 1.0 / frames_per_second
     if extra_frame_time is not False:
-        frame_times = np.append(
-            frame_times, frame_times[-1] + extra_frame_time
-        )
+        frame_times = np.append(frame_times, frame_times[-1] + extra_frame_time)
 
     for column in map_columns:
-        stimulus_table[column] = frame_times[
-            np.around(stimulus_table[column]).astype(int)
-        ]
+        stimulus_table[column] = frame_times[np.around(stimulus_table[column]).astype(int)]
 
     return stimulus_table
 
@@ -819,34 +775,22 @@ def apply_display_sequence(
 
     sweep_frames_table = sweep_frames_table.copy()
     if block_key not in sweep_frames_table.columns.values:
-        sweep_frames_table[block_key] = np.zeros(
-            (sweep_frames_table.shape[0]), dtype=int
-        )
+        sweep_frames_table[block_key] = np.zeros((sweep_frames_table.shape[0]), dtype=int)
 
-    sweep_frames_table[diff_key] = (
-        sweep_frames_table[end_key] - sweep_frames_table[start_key]
-    )
+    sweep_frames_table[diff_key] = sweep_frames_table[end_key] - sweep_frames_table[start_key]
 
     sweep_frames_table[start_key] += frame_display_sequence[0, 0]
     for seg in range(len(frame_display_sequence) - 1):
-        match_inds = (
-            sweep_frames_table[start_key] >= frame_display_sequence[seg, 1]
-        )
+        match_inds = sweep_frames_table[start_key] >= frame_display_sequence[seg, 1]
 
         sweep_frames_table.loc[match_inds, start_key] += (
             frame_display_sequence[seg + 1, 0] - frame_display_sequence[seg, 1]
         )
         sweep_frames_table.loc[match_inds, block_key] = seg + 1
 
-    sweep_frames_table[end_key] = (
-        sweep_frames_table[start_key] + sweep_frames_table[diff_key]
-    )
-    sweep_frames_table = sweep_frames_table[
-        sweep_frames_table[end_key] <= frame_display_sequence[-1, 1]
-    ]
-    sweep_frames_table = sweep_frames_table[
-        sweep_frames_table[start_key] <= frame_display_sequence[-1, 1]
-    ]
+    sweep_frames_table[end_key] = sweep_frames_table[start_key] + sweep_frames_table[diff_key]
+    sweep_frames_table = sweep_frames_table[sweep_frames_table[end_key] <= frame_display_sequence[-1, 1]]
+    sweep_frames_table = sweep_frames_table[sweep_frames_table[start_key] <= frame_display_sequence[-1, 1]]
 
     sweep_frames_table.drop(diff_key, inplace=True, axis=1)
     return sweep_frames_table
@@ -879,13 +823,8 @@ def read_stimulus_name_from_path(stimulus):
         stim_name = stimulus["stim_path"]
 
     if stim_name == "":
-        if (
-            "movie_local_path" in stimulus
-            and stimulus["movie_local_path"] != ""
-        ):
-            stim_name = (
-                stimulus["movie_local_path"].split("\\")[-1].split(".")[0]
-            )
+        if "movie_local_path" in stimulus and stimulus["movie_local_path"] != "":
+            stim_name = stimulus["movie_local_path"].split("\\")[-1].split(".")[0]
         else:
             stim_name = stimulus["stim"]
     else:
@@ -1006,37 +945,22 @@ def build_stimuluswise_table(
             stimulus["sweep_frames"][0][0],
             stimulus["sweep_frames"][-1][1],
         )
-        sweep_frames_table = pd.DataFrame(
-            stimulus["sweep_frames"], columns=(start_key, end_key)
-        )
-        sweep_frames_table[block_key] = np.zeros(
-            [sweep_frames_table.shape[0]], dtype=int
-        )
+        sweep_frames_table = pd.DataFrame(stimulus["sweep_frames"], columns=(start_key, end_key))
+        sweep_frames_table[block_key] = np.zeros([sweep_frames_table.shape[0]], dtype=int)
         stim_table = pd.DataFrame(
             {
                 start_key: sweep_frames_table[start_key],
                 end_key: sweep_frames_table[end_key] + 1,
-                name_key: [
-                    get_stimulus_name(stimulus, idx)
-                    for idx in sweep_frames_table.index
-                ],
+                name_key: [get_stimulus_name(stimulus, idx) for idx in sweep_frames_table.index],
                 template_key: "Image",
                 block_key: sweep_frames_table[block_key],
             }
         )
     else:
-        frame_display_sequence = seconds_to_frames(
-            stimulus["display_sequence"], pickle_file
-        )
-        sweep_frames_table = pd.DataFrame(
-            stimulus["sweep_frames"], columns=(start_key, end_key)
-        )
-        sweep_frames_table[block_key] = np.zeros(
-            [sweep_frames_table.shape[0]], dtype=int
-        )
-        sweep_frames_table = apply_display_sequence(
-            sweep_frames_table, frame_display_sequence, block_key=block_key
-        )
+        frame_display_sequence = seconds_to_frames(stimulus["display_sequence"], pickle_file)
+        sweep_frames_table = pd.DataFrame(stimulus["sweep_frames"], columns=(start_key, end_key))
+        sweep_frames_table[block_key] = np.zeros([sweep_frames_table.shape[0]], dtype=int)
+        sweep_frames_table = apply_display_sequence(sweep_frames_table, frame_display_sequence, block_key=block_key)
 
         stim_table = pd.DataFrame(
             {
@@ -1066,9 +990,7 @@ def build_stimuluswise_table(
         )
 
     if extract_const_params_from_repr:
-        const_params = parse_stim_repr(
-            stimulus["stim"], drop_params=drop_const_params
-        )
+        const_params = parse_stim_repr(stimulus["stim"], drop_params=drop_const_params)
         existing_columns = set(stim_table.columns)
         for const_param_key, const_param_value in const_params.items():
             existing_cap = const_param_key.capitalize() in existing_columns
@@ -1076,16 +998,12 @@ def build_stimuluswise_table(
             existing = const_param_key in existing_columns
 
             if not (existing_cap or existing_upper or existing):
-                stim_table[const_param_key] = [
-                    const_param_value
-                ] * stim_table.shape[0]
+                stim_table[const_param_key] = [const_param_value] * stim_table.shape[0]
             else:
                 raise KeyError(f"column {const_param_key} already exists")
 
     unique_indices = np.unique(stim_table[block_key].values)
-    output = [
-        stim_table.loc[stim_table[block_key] == ii, :] for ii in unique_indices
-    ]
+    output = [stim_table.loc[stim_table[block_key] == ii, :] for ii in unique_indices]
 
     return output
 

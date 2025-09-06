@@ -16,7 +16,7 @@ from aind_metadata_extractor.utils.camstim_sync import (
     pkl_utils as pkl,
     stim_utils,
     sync_utils,
-    naming_utils
+    naming_utils,
 )
 
 
@@ -58,14 +58,8 @@ class Camstim:
         self.pkl_path = next(self.input_source.rglob("*.pkl"))
         if not self.camstim_settings.output_directory.is_dir():
             self.camstim_settings.output_directory.mkdir(parents=True)
-        self.stim_table_path = (
-            self.camstim_settings.output_directory
-            / f"{session_id}_stim_table.csv"
-        )
-        self.vsync_table_path = (
-            self.camstim_settings.output_directory
-            / f"{session_id}_vsync_table.csv"
-        )
+        self.stim_table_path = self.camstim_settings.output_directory / f"{session_id}_stim_table.csv"
+        self.vsync_table_path = self.camstim_settings.output_directory / f"{session_id}_vsync_table.csv"
         self.pkl_data = pkl.load_pkl(self.pkl_path)
         self.fps = pkl.get_fps(self.pkl_data)
         self.stage_name = pkl.get_stage(self.pkl_data)
@@ -103,9 +97,7 @@ class Camstim:
         """
         self.sync_path = next(self.input_source.glob("*.h5"))
         self.sync_data = sync_utils.load_sync(self.sync_path)
-        return sync_utils.get_start_time(self.sync_data), sync_utils.get_stop_time(
-            self.sync_data
-        )
+        return sync_utils.get_start_time(self.sync_data), sync_utils.get_stop_time(self.sync_data)
 
     def build_behavior_table(self) -> None:
         """Builds a behavior table from the stimulus pickle file and writes it
@@ -115,21 +107,15 @@ class Camstim:
         -------
         None
         """
-        timestamps = sync_utils.get_ophys_stimulus_timestamps(
-            self.sync_data, self.pkl_path
-        )
-        behavior_table = behavior_utils.from_stimulus_file(
-            self.pkl_path, timestamps
-        )
+        timestamps = sync_utils.get_ophys_stimulus_timestamps(self.sync_data, self.pkl_path)
+        behavior_table = behavior_utils.from_stimulus_file(self.pkl_path, timestamps)
         behavior_table[0].to_csv(self.stim_table_path, index=False)
 
     def get_session_uuid(self) -> str:
         """Returns the session uuid from the pickle file"""
         return pkl.load_pkl(self.pkl_path)["session_uuid"]
 
-    def get_stim_table_seconds(
-        self, stim_table_sweeps, frame_times, name_map
-    ) -> pd.DataFrame:
+    def get_stim_table_seconds(self, stim_table_sweeps, frame_times, name_map) -> pd.DataFrame:
         """Builds a stimulus table from the stimulus pickle file, sync file
 
         Parameters
@@ -145,20 +131,12 @@ class Camstim:
         -------
         pd.DataFrame
         """
-        stim_table_seconds = stim_utils.convert_frames_to_seconds(
-            stim_table_sweeps, frame_times, self.fps, True
-        )
+        stim_table_seconds = stim_utils.convert_frames_to_seconds(stim_table_sweeps, frame_times, self.fps, True)
         stim_table_seconds = naming_utils.collapse_columns(stim_table_seconds)
         stim_table_seconds = naming_utils.drop_empty_columns(stim_table_seconds)
-        stim_table_seconds = naming_utils.standardize_movie_numbers(
-            stim_table_seconds
-        )
-        stim_table_seconds = naming_utils.add_number_to_shuffled_movie(
-            stim_table_seconds
-        )
-        stim_table_seconds = naming_utils.map_stimulus_names(
-            stim_table_seconds, name_map
-        )
+        stim_table_seconds = naming_utils.standardize_movie_numbers(stim_table_seconds)
+        stim_table_seconds = naming_utils.add_number_to_shuffled_movie(stim_table_seconds)
+        stim_table_seconds = naming_utils.map_stimulus_names(stim_table_seconds, name_map)
         return stim_table_seconds
 
     def build_stimulus_table(
@@ -199,24 +177,17 @@ class Camstim:
 
         vsync_times = stim_utils.extract_frame_times_from_vsync(self.sync_data)
         if modality == "ephys":
-            frame_times = stim_utils.extract_frame_times_from_photodiode(
-                self.sync_data
-            )
+            frame_times = stim_utils.extract_frame_times_from_photodiode(self.sync_data)
             times = [frame_times]
 
         elif modality == "ophys":
             delay = stim_utils.extract_frame_times_with_delay(self.sync_data)
-            frame_times = stim_utils.extract_frame_times_from_vsync(
-                self.sync_data
-            )
+            frame_times = stim_utils.extract_frame_times_from_vsync(self.sync_data)
             frame_times = frame_times + delay
             times = [frame_times, vsync_times]
 
         for i, time in enumerate(times):
-            minimum_spontaneous_activity_duration = (
-                minimum_spontaneous_activity_duration
-                / pkl.get_fps(self.pkl_data)
-            )
+            minimum_spontaneous_activity_duration = minimum_spontaneous_activity_duration / pkl.get_fps(self.pkl_data)
 
             stimulus_table = functools.partial(
                 stim_utils.build_stimuluswise_table,
@@ -232,16 +203,10 @@ class Camstim:
 
             stimuli = pkl.get_stimuli(self.pkl_data)
             stimuli = stim_utils.extract_blocks_from_stim(stimuli)
-            stim_table_sweeps = stim_utils.create_stim_table(
-                self.pkl_data, stimuli, stimulus_table, spon_table
-            )
+            stim_table_sweeps = stim_utils.create_stim_table(self.pkl_data, stimuli, stimulus_table, spon_table)
 
-            stim_table_seconds = self.get_stim_table_seconds(
-                stim_table_sweeps, time, stimulus_name_map
-            )
-            stim_table_final = naming_utils.map_column_names(
-                stim_table_seconds, column_name_map, ignore_case=False
-            )
+            stim_table_seconds = self.get_stim_table_seconds(stim_table_sweeps, time, stimulus_name_map)
+            stim_table_final = naming_utils.map_column_names(stim_table_seconds, column_name_map, ignore_case=False)
             if i == 0:
                 stim_table_final.to_csv(self.stim_table_path, index=False)
             else:
@@ -281,9 +246,7 @@ class Camstim:
                 elif param_set:
                     current_epoch[3][column] = param_set
 
-    def extract_stim_epochs(
-        self, stim_table: pd.DataFrame
-    ) -> list[list[str, int, int, dict, set]]:
+    def extract_stim_epochs(self, stim_table: pd.DataFrame) -> list[list[str, int, int, dict, set]]:
         """
         Returns a list of stimulus epochs, where an epoch takes the form
         (name, start, stop, params_dict, template names). Iterates over the
@@ -302,9 +265,7 @@ class Camstim:
             if row["stim_name"] == "spontaneous":
                 continue
             if row["stim_name"] != current_epoch[0]:
-                self._summarize_epoch_params(
-                    stim_table, current_epoch, epoch_start_idx, current_idx
-                )
+                self._summarize_epoch_params(stim_table, current_epoch, epoch_start_idx, current_idx)
                 epochs.append(current_epoch)
                 epoch_start_idx = current_idx
                 current_epoch = [
@@ -324,14 +285,12 @@ class Camstim:
 
             if "image" in stim_name.lower() or "movie" in stim_name.lower():
                 current_epoch[4].add(row["stim_name"])
-        
+
         # Process the final epoch
         if current_epoch[0] is not None:
-            self._summarize_epoch_params(
-                stim_table, current_epoch, epoch_start_idx, len(stim_table)
-            )
+            self._summarize_epoch_params(stim_table, current_epoch, epoch_start_idx, len(stim_table))
             epochs.append(current_epoch)
-        
+
         return epochs[1:]
 
     def epochs_from_stim_table(self) -> list[dict]:
@@ -365,10 +324,8 @@ class Camstim:
             )
 
             epoch_obj = dict(
-                stimulus_start_time=self.session_start
-                + timedelta(seconds=epoch_start),
-                stimulus_end_time=self.session_start
-                + timedelta(seconds=epoch_end),
+                stimulus_start_time=self.session_start + timedelta(seconds=epoch_start),
+                stimulus_end_time=self.session_start + timedelta(seconds=epoch_end),
                 stimulus_name=epoch_name,
                 software=[software_obj],
                 script=script_obj,
@@ -381,12 +338,12 @@ class Camstim:
     def extract_whole_session_epoch(self, stim_table: pd.DataFrame) -> tuple[float, float]:
         """
         Extract the overall start and end times for the entire session.
-        
+
         Parameters
         ----------
         stim_table : pd.DataFrame
             The stimulus table containing start_time and stop_time columns
-            
+
         Returns
         -------
         tuple[float, float]

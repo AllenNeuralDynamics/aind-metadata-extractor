@@ -1,4 +1,4 @@
-""" Utils to process pkl files"""
+"""Utils to process pkl files"""
 
 import pickle
 
@@ -69,9 +69,7 @@ def get_fps(pkl):
 
     """
     if not pkl.get("fps"):
-        fps = round(
-            1 / np.mean(pkl["items"]["behavior"]["intervalsms"]) * 0.001, 2
-        )
+        fps = round(1 / np.mean(pkl["items"]["behavior"]["intervalsms"]) * 0.001, 2)
     else:
         fps = pkl["fps"]
     return fps
@@ -212,8 +210,6 @@ def get_running_array(pkl, key):
         try:
             result = pkl[key]
         except KeyError:
-            raise KeyError(
-                f"unable to extract {key} from this stimulus pickle"
-            )
+            raise KeyError(f"unable to extract {key} from this stimulus pickle")
 
     return np.array(result)
