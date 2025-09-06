@@ -1322,6 +1322,7 @@ class TestStimUtils(unittest.TestCase):
         }
 
         def mock_seconds_to_frames(seconds, pkl_file):
+            """mock seconds_to_frames function"""
             return np.array(seconds) * 60  # Assume 60 fps
 
         # Mock pkl_file
@@ -1359,6 +1360,7 @@ class TestStimUtils(unittest.TestCase):
         }
 
         def mock_seconds_to_frames(seconds, pkl_file):
+            """Mock seconds_to_frames function"""
             return np.array(seconds) * 60
 
         pkl_file = "test.pkl"

@@ -1315,6 +1315,7 @@ class TestAdditionalCoverage(unittest.TestCase):
             ) as mock_get_rising_edges:
                 # First call raises ValueError, second call succeeds
                 def side_effect_func(*args, **kwargs):
+                    """mock side effect function"""
                     stim_key = args[1] if len(args) > 1 else kwargs.get("stim_key", "")
                     if stim_key == "vsync_stim":
                         raise ValueError("First key failed")
@@ -1369,6 +1370,7 @@ class TestAdditionalCoverage(unittest.TestCase):
 
         # First call raises ValueError, second call succeeds
         def side_effect_func(*args, **kwargs):
+            """mock side effect function"""
             stim_key = args[1] if len(args) > 1 else kwargs.get("stim_key", "")
             if stim_key == "vsync_stim":
                 raise ValueError("First key failed")
@@ -1472,6 +1474,7 @@ class TestAdditionalCoverage(unittest.TestCase):
 
         # Mock irregular_interval_policy to handle irregularities
         def mock_policy(start_index, starts, ends, duration, irregularity, cycle):
+            """mock policy function"""
             return starts, ends
 
         frame_indices, frame_starts, frame_ends = sync.compute_frame_times(
