@@ -1,7 +1,6 @@
 """Tests class and methods in core module"""
 
 import json
-import os
 import unittest
 from pathlib import Path
 from typing import Literal
