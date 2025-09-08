@@ -237,10 +237,10 @@ class TestJobSettings(unittest.TestCase):
 
     def test_field_titles(self):
         """Test that field titles are properly set."""
-        job_settings = JobSettings.model_validate(self.valid_job_settings)
+        JobSettings.model_validate(self.valid_job_settings)
 
         # Get field info from the model
-        fields = job_settings.model_fields
+        fields = JobSettings.model_fields
 
         self.assertEqual(fields["input_source"].title, "Path to the input source")
         self.assertEqual(fields["session_id"].title, "ID of the session")
