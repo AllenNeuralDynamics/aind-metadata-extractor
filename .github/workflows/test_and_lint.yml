@@ -24,7 +24,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ '3.10', '3.11', '3.12' ]
-        test-group: ['core', 'smartspim', 'mesoscope']
+        test-group: ['core', 'smartspim', 'mesoscope', 'utils']
         include:
           - test-group: 'core'
             dependencies: '[dev]'
@@ -38,6 +38,10 @@ jobs:
             dependencies: '[dev,mesoscope]'
             test-path: 'tests/mesoscope'
             test-pattern: 'test_*.py'
+          - test-group: 'utils'
+            dependencies: '[dev]'
+            test-path: 'tests/utils'
+            test-pattern: 'test_*.py'
     steps:
     - uses: actions/checkout@v5
     - name: Set up Python ${{ matrix.python-version }}
@@ -48,7 +52,7 @@ jobs:
       run: python -m pip install -e .${{ matrix.dependencies }}
     - name: Run tests with coverage
       run: |
-        coverage run --parallel-mode --source=aind_metadata_extractor -m unittest discover -s ${{ matrix.test-path }} -p ${{ matrix.test-pattern }}
+        coverage run --parallel-mode --source=aind-metadata-extractor -m unittest discover -s ${{ matrix.test-path }} -p ${{ matrix.test-pattern }}
     - name: Upload coverage data
       uses: actions/upload-artifact@v4
       with:
