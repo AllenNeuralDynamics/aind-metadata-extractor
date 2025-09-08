@@ -168,29 +168,29 @@ class TestMesoscopeExtract(unittest.TestCase):
             "session_metadata": {"session": "test"},
             "camstim_epochs": ["epoch1", "epoch2"],
             "camstim_session_type": "test_session",
-            "job_settings": {"setting": "test"}
+            "job_settings": {"setting": "test"},
         }
         mock_extract.return_value = mock_extract_data
-        
+
         # Setup mock model instance
         mock_model_instance = MagicMock()
         mock_model.return_value = mock_model_instance
-        
+
         extractor = MesoscopeExtract(self.job_settings)
         extractor.run_job()
-        
+
         # Use unittest assertions to verify behavior
         mock_extract.assert_called_once()
-        
+
         # Verify MesoscopeExtractModel was instantiated with correct data
         mock_model.assert_called_once_with(
             tiff_header=mock_extract_data["time_series_header"],
             session_metadata=mock_extract_data["session_metadata"],
             camstim_epchs=mock_extract_data["camstim_epochs"],
             camstim_session_type=mock_extract_data["camstim_session_type"],
-            job_settings=mock_extract_data["job_settings"]
+            job_settings=mock_extract_data["job_settings"],
         )
-        
+
         # Verify model_dump was called
         mock_model_instance.model_dump.assert_called_once()
 
@@ -203,18 +203,18 @@ class TestMesoscopeExtract(unittest.TestCase):
             "session_metadata": {"platform": "mesoscope"},
             "camstim_epochs": ["epoch1", "epoch2"],
             "camstim_session_type": "behavior",
-            "job_settings": {"input_source": "test_path"}
+            "job_settings": {"input_source": "test_path"},
         }
         mock_extract.return_value = mock_extract_data
-        
+
         extractor = MesoscopeExtract(self.job_settings)
-        
+
         # This should not raise any exceptions if the model validation passes
         try:
             extractor.run_job()
         except Exception as e:
             self.fail(f"run_job() raised an unexpected exception: {e}")
-        
+
         # Verify _extract was called
         self.assertTrue(mock_extract.called)
         self.assertEqual(mock_extract.call_count, 1)

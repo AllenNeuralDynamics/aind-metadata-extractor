@@ -15,6 +15,7 @@ from aind_metadata_extractor.utils.camstim_sync.camstim import Camstim, CamstimS
 
 from aind_metadata_extractor.models.mesoscope import MesoscopeExtractModel
 
+
 class MesoscopeExtract:
     """Class to manage transforming mesoscope platform json and metadata into
     a Session model."""
