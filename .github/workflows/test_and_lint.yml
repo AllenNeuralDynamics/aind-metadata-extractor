@@ -28,7 +28,7 @@ jobs:
         include:
           - test-group: 'core'
             dependencies: '[dev]'
-            test-path: 'tests'
+            test-path: 'tests/core'
             test-pattern: 'test_*.py'
           - test-group: 'smartspim'
             dependencies: '[dev,smartspim]'
