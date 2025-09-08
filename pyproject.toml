@@ -42,7 +42,7 @@ bergamo = [
 ]
 
 mesoscope = [
-    "aind-metadata-mapper[bergamo]",
+    "aind-metadata-extractor[bergamo]",
     "pillow >= 10.4.0",
     "tifffile==2024.2.12",
     "numpy >= 1.26.4",
