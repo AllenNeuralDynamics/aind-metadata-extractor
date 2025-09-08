@@ -52,7 +52,7 @@ jobs:
       run: python -m pip install -e .${{ matrix.dependencies }}
     - name: Run tests with coverage
       run: |
-        coverage run --parallel-mode --source=aind-metadata-extractor -m unittest discover -s ${{ matrix.test-path }} -p ${{ matrix.test-pattern }}
+        coverage run --parallel-mode --source=aind-metadata-extractor.${{ matrix.test-group }} -m unittest discover -s ${{ matrix.test-path }} -p ${{ matrix.test-pattern }}
     - name: Upload coverage data
       uses: actions/upload-artifact@v4
       with:
