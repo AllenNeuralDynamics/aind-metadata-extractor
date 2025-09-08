@@ -10,7 +10,7 @@ from typing import Tuple, Union
 import h5py as h5
 import tifffile
 
-from aind_metadata_extractor.pophys.mesoscope.job_settings import JobSettings
+from aind_metadata_extractor.mesoscope.job_settings import JobSettings
 from aind_metadata_extractor.utils.camstim_sync.camstim import Camstim, CamstimSettings
 
 
