@@ -24,7 +24,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ '3.10', '3.11', '3.12' ]
-        test-group: ['core', 'smartspim']
+        test-group: ['core', 'smartspim', 'mesoscope']
         include:
           - test-group: 'core'
             dependencies: '[dev]'
