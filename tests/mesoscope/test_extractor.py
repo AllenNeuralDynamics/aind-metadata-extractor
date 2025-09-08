@@ -4,8 +4,8 @@ import json
 import unittest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
-from aind_metadata_extractor.pophys.mesoscope.extractor import MesoscopeExtract
-from aind_metadata_extractor.pophys.mesoscope.job_settings import JobSettings
+from aind_metadata_extractor.mesoscope.extractor import MesoscopeExtract
+from aind_metadata_extractor.mesoscope.job_settings import JobSettings
 import datetime
 
 
@@ -14,7 +14,7 @@ class TestMesoscopeExtract(unittest.TestCase):
 
     def setUp(self):
         """setup"""
-        self.patcher = patch("aind_metadata_extractor.pophys.mesoscope.extractor.Camstim", autospec=True)
+        self.patcher = patch("aind_metadata_extractor.mesoscope.extractor.Camstim", autospec=True)
         self.mock_camstim = self.patcher.start()
         self.resource_dir = Path("tests/resources/mesoscope")
         self.job_settings = JobSettings(
@@ -67,8 +67,8 @@ class TestMesoscopeExtract(unittest.TestCase):
                 result = extractor._extract_time_series_metadata()
         self.assertIsInstance(result, dict)
 
-    @patch("aind_metadata_extractor.pophys.mesoscope.extractor.tifffile.read_scanimage_metadata")
-    @patch("aind_metadata_extractor.pophys.mesoscope.extractor.tifffile.FileHandle")
+    @patch("aind_metadata_extractor.mesoscope.extractor.tifffile.read_scanimage_metadata")
+    @patch("aind_metadata_extractor.mesoscope.extractor.tifffile.FileHandle")
     def test_read_metadata(self, mock_filehandle, mock_read_scanimage_metadata):
         """test read metadata"""
         mock_read_scanimage_metadata.return_value = {"meta": "data"}
@@ -77,7 +77,7 @@ class TestMesoscopeExtract(unittest.TestCase):
             result = MesoscopeExtract._read_metadata(tiff_path)
         self.assertEqual(result, {"meta": "data"})
 
-    @patch("aind_metadata_extractor.pophys.mesoscope.extractor.h5.File")
+    @patch("aind_metadata_extractor.mesoscope.extractor.h5.File")
     def test_read_h5_metadata(self, mock_h5file):
         """test read h5 metadata"""
         mock_file = MagicMock()
@@ -97,7 +97,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         result = extractor._read_h5_metadata("dummy.h5")
         self.assertEqual(result, {"key": "value"})
 
-    @patch("aind_metadata_extractor.pophys.mesoscope.extractor.Path.glob")
+    @patch("aind_metadata_extractor.mesoscope.extractor.Path.glob")
     def test_extract_platform_metadata_mock(self, mock_glob):
         """test extract platform metadata mock"""
         mock_path = MagicMock()
@@ -109,7 +109,7 @@ class TestMesoscopeExtract(unittest.TestCase):
             result = extractor._extract_platform_metadata(session_metadata)
         self.assertIn("platform", result)
 
-    @patch("aind_metadata_extractor.pophys.mesoscope.extractor.Path.glob")
+    @patch("aind_metadata_extractor.mesoscope.extractor.Path.glob")
     def test_extract_time_series_metadata_tiff_mock(self, mock_glob):
         """test extract time series metadata tiff mock"""
         mock_path = MagicMock()
@@ -119,7 +119,7 @@ class TestMesoscopeExtract(unittest.TestCase):
             result = extractor._extract_time_series_metadata()
         self.assertEqual(result, {"meta": "data"})
 
-    @patch("aind_metadata_extractor.pophys.mesoscope.extractor.Path.glob")
+    @patch("aind_metadata_extractor.mesoscope.extractor.Path.glob")
     def test_extract_time_series_metadata_h5_mock(self, mock_glob):
         """test extract time series metadata h5 mock"""
         mock_glob.side_effect = [iter([]), iter([MagicMock(name="ophys_experiment_1")])]
@@ -128,7 +128,7 @@ class TestMesoscopeExtract(unittest.TestCase):
             result = extractor._extract_time_series_metadata()
         self.assertEqual(result, {"meta": "h5data"})
 
-    @patch("aind_metadata_extractor.pophys.mesoscope.extractor.Path.glob")
+    @patch("aind_metadata_extractor.mesoscope.extractor.Path.glob")
     def test_extract_behavior_metadata_mock(self, mock_glob):
         """test extract behavior metadata mock"""
         mock_json_path = Path("Behavior_test_session.json")
@@ -236,7 +236,7 @@ class TestMesoscopeExtract(unittest.TestCase):
                 extractor._extract_platform_metadata({})
             self.assertIn("No platform json file found", str(context.exception))
 
-    @patch("aind_metadata_extractor.pophys.mesoscope.extractor.h5.File")
+    @patch("aind_metadata_extractor.mesoscope.extractor.h5.File")
     def test_read_h5_metadata_key_error(self, mock_h5file):
         """test read h5 metadata when scanimage_metadata key is missing"""
         mock_file = MagicMock()

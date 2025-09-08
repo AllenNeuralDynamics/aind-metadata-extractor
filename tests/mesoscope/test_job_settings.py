@@ -5,7 +5,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from aind_metadata_extractor.pophys.mesoscope.job_settings import JobSettings
+from aind_metadata_extractor.mesoscope.job_settings import JobSettings
 
 
 class TestJobSettings(unittest.TestCase):
