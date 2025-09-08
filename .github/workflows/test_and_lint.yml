@@ -39,7 +39,7 @@ jobs:
             test-path: 'tests/mesoscope'
             test-pattern: 'test_*.py'
           - test-group: 'utils'
-            dependencies: '[dev]'
+            dependencies: '[dev,utils]'
             test-path: 'tests/utils'
             test-pattern: 'test_*.py'
     steps:
