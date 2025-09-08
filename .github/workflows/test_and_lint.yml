@@ -52,11 +52,11 @@ jobs:
       run: python -m pip install -e .${{ matrix.dependencies }}
     - name: Run tests with coverage
       run: |
-        coverage run --parallel-mode --source=aind-metadata-extractor.${{ matrix.test-group }} -m unittest discover -s ${{ matrix.test-path }} -p ${{ matrix.test-pattern }}
+        coverage run --parallel-mode --source=src/aind_metadata_extractor -m unittest discover -s ${{ matrix.test-path }} -p ${{ matrix.test-pattern }}
     - name: Upload coverage data
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-data-${{ matrix.python-version }}-${{ matrix.test-group }}
+        name: coverage-data-py${{ matrix.python-version }}-${{ matrix.test-group }}
         path: .coverage.*
         include-hidden-files: true
         if-no-files-found: error
@@ -75,8 +75,16 @@ jobs:
     - name: Download all coverage data
       uses: actions/download-artifact@v4
       with:
-        pattern: coverage-data-*
+        pattern: coverage-data-py*
         merge-multiple: true
+    - name: Debug coverage files
+      run: |
+        echo "Coverage files found:"
+        ls -la .coverage*
+        echo "Working directory:"
+        pwd
+        echo "Source directory contents:"
+        ls -la src/aind_metadata_extractor/
     - name: Combine coverage data
       run: |
         coverage combine
