@@ -13,6 +13,7 @@ import tifffile
 from aind_metadata_extractor.mesoscope.job_settings import JobSettings
 from aind_metadata_extractor.utils.camstim_sync.camstim import Camstim, CamstimSettings
 
+from aind_metadata_extractor.models.mesoscope import MesoscopeExtractModel
 
 class MesoscopeExtract:
     """Class to manage transforming mesoscope platform json and metadata into
@@ -167,11 +168,13 @@ class MesoscopeExtract:
         session_metadata = self._extract_platform_metadata(session_metadata)
         meta = self._extract_time_series_metadata()
         epochs, session_type = self._camstim_epoch_and_session()
+        user_settings = self.job_settings.model_dump()
         data = {
             "session_metadata": session_metadata,
             "camstim_epochs": epochs,
             "camstim_session_type": session_type,
             "time_series_header": meta,
+            "job_settings": user_settings,
         }
         return data
 
@@ -196,7 +199,15 @@ class MesoscopeExtract:
         -------
         None
         """
-        self._extract()
+        data = self._extract()
+        mesoscope_metadata = MesoscopeExtractModel(
+            tiff_header=data["time_series_header"],
+            session_metadata=data["session_metadata"],
+            camstim_epchs=data["camstim_epochs"],
+            camstim_session_type=data["camstim_session_type"],
+            job_settings=data["job_settings"],
+        )
+        mesoscope_metadata.model_dump()
 
     @classmethod
     def from_args(cls, args: list):
