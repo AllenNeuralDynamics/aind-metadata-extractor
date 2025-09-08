@@ -34,6 +34,10 @@ jobs:
             dependencies: '[dev,smartspim]'
             test-path: 'tests/smartspim'
             test-pattern: 'test_*.py'
+          - test-group: 'mesoscope'
+            dependencies: '[dev,mesoscope]'
+            test-path: 'tests/mesoscope'
+            test-pattern: 'test_*.py'
     steps:
     - uses: actions/checkout@v5
     - name: Set up Python ${{ matrix.python-version }}
