@@ -77,14 +77,6 @@ jobs:
       with:
         pattern: coverage-data-py*
         merge-multiple: true
-    - name: Debug coverage files
-      run: |
-        echo "Coverage files found:"
-        ls -la .coverage*
-        echo "Working directory:"
-        pwd
-        echo "Source directory contents:"
-        ls -la src/aind_metadata_extractor/
     - name: Combine coverage data
       run: |
         coverage combine
