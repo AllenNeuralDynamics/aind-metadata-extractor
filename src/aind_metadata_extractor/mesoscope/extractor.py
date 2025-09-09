@@ -50,7 +50,7 @@ class MesoscopeExtract:
             camstim_output = job_settings_model.output_directory / f"{job_settings_model.session_id}_behavior"
         self.job_settings = job_settings_model
         camstim_settings = CamstimSettings(
-            input_source=self.job_settings.input_source,
+            input_source=self.job_settings.behavior_source,
             output_directory=camstim_output,
             session_id=self.job_settings.session_id,
             subject_id=self.job_settings.subject_id,
@@ -208,7 +208,7 @@ class MesoscopeExtract:
             camstim_session_type=data["camstim_session_type"],
             job_settings=data["job_settings"],
         )
-        mesoscope_metadata.model_dump()
+        return mesoscope_metadata.model_dump()
 
     @classmethod
     def from_args(cls, args: list):
@@ -251,4 +251,4 @@ if __name__ == "__main__":
     sys_args = sys.argv[1:]
     main_job_settings = JobSettings.from_args(sys_args)
     metl = MesoscopeExtract(job_settings=main_job_settings)
-    metl.run_job()
+    extracted_data = metl.run_job()

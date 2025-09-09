@@ -199,7 +199,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         """test run job validates model fields correctly"""
         # Setup extract return data with all required fields
         mock_extract_data = {
-            "time_series_header": {"SI.hRoiManager.pixelsPerLine": 512},
+            "time_series_header": [{"SI.hRoiManager.pixelsPerLine": 512}],
             "session_metadata": {"platform": "mesoscope"},
             "camstim_epochs": ["epoch1", "epoch2"],
             "camstim_session_type": "behavior",
