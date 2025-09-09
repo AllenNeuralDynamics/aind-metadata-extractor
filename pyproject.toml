@@ -86,7 +86,7 @@ exclude = '''
 [tool.coverage.run]
 omit = ["*__init__*"]
 # Use command-line --source flag for better control over what gets measured
-# source = ["aind_metadata_extractor", "tests"]
+source = ["aind_metadata_extractor", "tests"]
 
 [tool.coverage.report]
 exclude_lines = [
