@@ -18,7 +18,7 @@ from aind_metadata_extractor.models.mesoscope import MesoscopeExtractModel
 
 class MesoscopeExtract:
     """Class to manage transforming mesoscope platform json and metadata into
-    a Session model."""
+    a mesoscope model model."""
 
     _STRUCTURE_LOOKUP_DICT = {
         385: "VISp",
