@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 from aind_metadata_extractor.core import BaseJobSettings
 
-RESOURCES_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / "resources"
+RESOURCES_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / ".." / "resources"
 CONFIG_FILE_PATH = RESOURCES_DIR / "job_settings.json"
 CONFIG_FILE_PATH_CORRUPT = RESOURCES_DIR / "job_settings_corrupt.txt"
 

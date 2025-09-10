@@ -24,15 +24,23 @@ jobs:
     strategy:
       matrix:
         python-version: [ '3.10', '3.11', '3.12' ]
-        test-group: ['core', 'smartspim']
+        test-group: ['core', 'smartspim', 'mesoscope', 'utils']
         include:
           - test-group: 'core'
             dependencies: '[dev]'
-            test-path: 'tests'
+            test-path: 'tests/core'
             test-pattern: 'test_*.py'
           - test-group: 'smartspim'
             dependencies: '[dev,smartspim]'
             test-path: 'tests/smartspim'
+            test-pattern: 'test_*.py'
+          - test-group: 'mesoscope'
+            dependencies: '[dev,mesoscope]'
+            test-path: 'tests/mesoscope'
+            test-pattern: 'test_*.py'
+          - test-group: 'utils'
+            dependencies: '[dev,utils]'
+            test-path: 'tests/utils'
             test-pattern: 'test_*.py'
     steps:
     - uses: actions/checkout@v5
@@ -44,11 +52,11 @@ jobs:
       run: python -m pip install -e .${{ matrix.dependencies }}
     - name: Run tests with coverage
       run: |
-        coverage run --parallel-mode --source=aind_metadata_extractor -m unittest discover -s ${{ matrix.test-path }} -p ${{ matrix.test-pattern }}
+        coverage run --parallel-mode --source=src/aind_metadata_extractor -m unittest discover -s ${{ matrix.test-path }} -p ${{ matrix.test-pattern }}
     - name: Upload coverage data
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-data-${{ matrix.python-version }}-${{ matrix.test-group }}
+        name: coverage-data-py${{ matrix.python-version }}-${{ matrix.test-group }}
         path: .coverage.*
         include-hidden-files: true
         if-no-files-found: error
@@ -67,7 +75,7 @@ jobs:
     - name: Download all coverage data
       uses: actions/download-artifact@v4
       with:
-        pattern: coverage-data-*
+        pattern: coverage-data-py*
         merge-multiple: true
     - name: Combine coverage data
       run: |
