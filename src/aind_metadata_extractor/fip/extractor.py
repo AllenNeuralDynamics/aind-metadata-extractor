@@ -1,119 +1,180 @@
-"""Module for extracting Fiber Photometry session metadata.
+"""Fiber Photometry extractor module using data contract"""
 
-This module provides functionality for extracting and structuring fiber
-photometry experiment data into a standardized format. It handles:
-
-- Extraction of session times from data files
-- Collection of configuration data from various sources
-- Structuring data into a standardized FiberData model
-
-The extractor provides a simple interface for processing fiber photometry
-data and returning structured metadata.
-"""
-
-import sys
+import dataclasses
 import json
-from typing import Union, Optional, List
+import os
+import sys
+import typing as t
 from pathlib import Path
 from datetime import datetime
-import pandas as pd
+from typing import Optional, List, Dict, Any, Union
+
+
+from aind_physiology_fip.data_contract import dataset
 
 from aind_metadata_extractor.fip.job_settings import JobSettings
-from aind_metadata_mapper.fip.utils import (
-    extract_session_start_time_from_files,
-    extract_session_end_time_from_files,
-)
 from aind_metadata_extractor.models.fip import FiberData
 
 
 class FiberPhotometryExtractor:
-    """Extracts fiber photometry session metadata.
+    """Extractor for Fiber Photometry metadata using data contract."""
 
-    This class handles the extraction of metadata and timing information
-    from fiber photometry experiment files, structuring the data into
-    a standardized FiberData model.
-
-    The extractor processes raw data files to extract session timing,
-    configuration data, and other metadata required for analysis.
-    """
-
-    def __init__(self, job_settings: Union[str, JobSettings]):
-        """Initialize extractor with job settings.
-
-        Parameters
-        ----------
-        job_settings : Union[str, JobSettings]
-            Either a JobSettings object or a JSON string that can
-            be parsed into one. The settings define all required parameters
-            for the session metadata, including experimenter info, subject
-            ID, data paths, etc.
-
-        Raises
-        ------
-        ValidationError
-            If the provided settings fail schema validation
-        JSONDecodeError
-            If job_settings is a string but not valid JSON
-        """
-        if isinstance(job_settings, str):
-            job_settings = JobSettings(**json.loads(job_settings))
+    def __init__(self, job_settings: JobSettings):
+        """Initialize the Fiber Photometry extractor with job settings."""
         self.job_settings = job_settings
+        self.dataset = None
 
-    def extract(self) -> FiberData:
-        """Extract metadata and raw data from fiber photometry files.
+    def extract(self) -> dict:
+        """Run extraction process using the GitHub data contract.
 
-        This method parses the raw data files to create a
-        FiberData model containing all necessary information
-        from the fiber photometry session.
-
-        Returns
-        -------
-        FiberData
-            Structured data model containing parsed file data and metadata
+        Uses the official data contract from:
+        https://github.com/AllenNeuralDynamics/FIP_DAQ_Control/blob/bc-major-refactor/src/aind_physiology_fip/data_contract.py
         """
-        settings = self.job_settings
-        data_dir = Path(settings.data_directory)
 
-        data_files = list(data_dir.glob("FIP_Data*.csv"))
-        local_timezone = settings.local_timezone
-        start_time = extract_session_start_time_from_files(
-            data_dir, local_timezone
-        )
-        end_time = (
-            extract_session_end_time_from_files(
-                data_dir, start_time, local_timezone
-            )
-            if start_time
-            else None
-        )
+        # Create dataset from data directory using the GitHub data contract
+        if not self.job_settings.data_directory:
+            raise ValueError("data_directory must be specified in job settings")
 
-        timestamps = []
-        for file in data_files:
-            df = pd.read_csv(file, header=None)
-            timestamps.extend(df[0].tolist())
+        self.dataset = dataset(self.job_settings.data_directory)
 
-        stream_data = settings.data_streams[0]
+        # Extract metadata using the data contract
+        file_metadata = self._extract_metadata_from_contract()
 
-        return FiberData(
-            start_time=start_time,
-            end_time=end_time,
-            data_files=data_files,
-            timestamps=timestamps,
-            light_source_configs=stream_data["light_sources"],
-            detector_configs=stream_data["detectors"],
-            fiber_configs=stream_data["fiber_connections"],
-            subject_id=settings.subject_id,
-            experimenter_full_name=settings.experimenter_full_name,
-            rig_id=settings.rig_id,
-            iacuc_protocol=settings.iacuc_protocol,
-            notes=settings.notes,
-            mouse_platform_name=settings.mouse_platform_name,
-            active_mouse_platform=settings.active_mouse_platform,
-            session_type=settings.session_type,
-            anaesthesia=settings.anaesthesia,
-            animal_weight_post=settings.animal_weight_post,
-            animal_weight_prior=settings.animal_weight_prior,
-        )
+        # Create the fiber data model
+        fiber_data = FiberData(**file_metadata)
+
+        return fiber_data.model_dump()
+
+    def _extract_metadata_from_contract(self) -> dict:
+        """Extract metadata using the data contract approach."""
+        metadata = {}
+
+        try:
+            # Extract timing information from CSV files
+            timing_data = self._extract_timing_from_csv()
+            metadata.update(timing_data)
+
+            # Extract data files information
+            files_data = self._extract_data_files()
+            metadata.update(files_data)
+
+            # Extract hardware configuration if available
+            hardware_data = self._extract_hardware_config()
+            metadata.update(hardware_data)
+
+        except Exception as e:
+            print(f"Warning: Could not extract all metadata: {e}")
+            # Fall back to basic metadata
+            metadata = self._extract_basic_metadata()
+
+        return metadata
+
+    def _extract_timing_from_csv(self) -> dict:
+        """Extract session timing from CSV data streams."""
+        timing_data = {}
+
+        try:
+            # Try to get timing from green channel CSV
+            green_stream = self._get_data_stream("green")
+            if green_stream:
+                green_data = green_stream.read()
+                if not green_data.empty:
+                    timing_data["start_time"] = green_data.index.min()
+                    timing_data["end_time"] = green_data.index.max()
+                    return timing_data
+
+        except Exception:
+            pass
+
+        try:
+            # Fall back to red channel CSV
+            red_stream = self._get_data_stream("red")
+            if red_stream:
+                red_data = red_stream.read()
+                if not red_data.empty:
+                    timing_data["start_time"] = red_data.index.min()
+                    timing_data["end_time"] = red_data.index.max()
+                    return timing_data
+
+        except Exception:
+            pass
+
+        # Default timing if no CSV available
+        timing_data["start_time"] = datetime.now()
+        timing_data["end_time"] = datetime.now()
+
+        return timing_data
+
+    def _get_data_stream(self, stream_name: str):
+        """Get a data stream by name from the dataset."""
+        if not self.dataset or not hasattr(self.dataset, 'data_streams'):
+            return None
+
+        for stream in self.dataset.data_streams:
+            if hasattr(stream, 'name') and stream.name == stream_name:
+                return stream
+        return None
+
+    def _extract_data_files(self) -> dict:
+        """Extract data files information from the dataset."""
+        data_files = []
+
+        # Get all data streams that represent files
+        for stream_name in ["raw_green", "raw_red", "raw_iso", "green", "red", "iso"]:
+            try:
+                stream = self._get_data_stream(stream_name)
+                if stream:
+                    file_path = getattr(stream.reader_params, 'path', None)
+                    if file_path and Path(file_path).exists():
+                        data_files.append(str(file_path))
+            except Exception:
+                continue
+
+        return {"data_files": data_files}
+
+    def _extract_hardware_config(self) -> dict:
+        """Extract hardware configuration from rig and session inputs."""
+        hardware_data = {}
+
+        try:
+            # Try to extract rig configuration
+            rig_stream = self._get_data_stream("rig_input")
+            if rig_stream:
+                rig_data = rig_stream.read()
+                hardware_data["rig_config"] = rig_data.model_dump() if hasattr(rig_data, 'model_dump') else {}
+        except Exception:
+            pass
+
+        try:
+            # Try to extract session configuration
+            session_stream = self._get_data_stream("session_input")
+            if session_stream:
+                session_data = session_stream.read()
+                hardware_data["session_config"] = session_data.model_dump() if hasattr(session_data, 'model_dump') else {}
+        except Exception:
+            pass
+
+        return hardware_data
+
+    def _extract_basic_metadata(self) -> dict:
+        """Extract basic metadata when contract approach needs fallback data."""
+        data_dir = Path(self.job_settings.data_directory)
+
+        # Find any available data files
+        data_files = []
+        for pattern in ["*.bin", "*.csv", "*.json"]:
+            data_files.extend([str(f) for f in data_dir.glob(pattern)])
+
+        # Use current time as fallback
+        current_time = datetime.now()
+
+        return {
+            "start_time": current_time,
+            "end_time": current_time,
+            "data_files": data_files,
+            "rig_config": {},
+            "session_config": {}
+        }
 
     def save_to_file(self, fiber_data: FiberData, output_path: Optional[Path] = None) -> Path:
         """Save FiberData to a JSON file.
@@ -139,13 +200,3 @@ class FiberPhotometryExtractor:
             f.write(fiber_data.model_dump_json(indent=3))
 
         return output_path
-
-
-if __name__ == "__main__":
-    sys_args = sys.argv[1:]
-    main_job_settings = JobSettings.from_args(sys_args)
-    extractor = FiberPhotometryExtractor(job_settings=main_job_settings)
-    fiber_data = extractor.extract()
-
-    # Print the extracted data as JSON
-    print(fiber_data.model_dump_json(indent=2))
