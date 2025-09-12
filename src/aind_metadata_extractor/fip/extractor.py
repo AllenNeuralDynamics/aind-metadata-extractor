@@ -40,6 +40,9 @@ class FiberPhotometryExtractor:
         # Extract metadata using the data contract
         file_metadata = self._extract_metadata_from_contract()
 
+        print("Extracted metadata from data contract:")
+        print(json.dumps(file_metadata, indent=3, default=str))
+
         # Create the fiber data model
         fiber_data = FiberData(**file_metadata)
 
@@ -49,52 +52,101 @@ class FiberPhotometryExtractor:
         """Extract metadata using the data contract approach."""
         metadata = {}
 
-        try:
-            # Extract timing information from CSV files
-            timing_data = self._extract_timing_from_csv()
-            metadata.update(timing_data)
+        print(self.dataset.load_all())
+        # Extract timing information from CSV files
+        timing_data = self._extract_timing_from_csv()
+        metadata.update(timing_data)
 
-            # Extract data files information
-            files_data = self._extract_data_files()
-            metadata.update(files_data)
+        # Extract data files information
+        files_data = self._extract_data_files()
+        metadata.update(files_data)
 
-            # Extract hardware configuration if available
-            hardware_data = self._extract_hardware_config()
-            metadata.update(hardware_data)
-
-        except Exception as e:
-            print(f"Warning: Could not extract all metadata: {e}")
-            # Fall back to basic metadata
-            metadata = self._extract_basic_metadata()
+        # Extract hardware configuration if available
+        hardware_data = self._extract_hardware_config()
+        metadata.update(hardware_data)
 
         return metadata
 
-    def _extract_timing_from_csv(self) -> dict:
-        """Extract session timing from CSV data streams."""
-        timing_data = {}
 
+    def _extract_index(self) -> dict:
+        """Extract index key information from the dataset contract configuration."""
+        index_data = {}
+
+        try:
+            # Try to get index key from green channel CSV configuration
+            green_stream = self._get_data_stream("green")
+            if green_stream and hasattr(green_stream, 'reader_params'):
+                index_key = getattr(green_stream.reader_params, 'index', None)
+                if index_key:
+                    index_data["index_key"] = index_key
+                    return index_data
+
+        except Exception:
+            pass
+
+        try:
+            # Fall back to red channel CSV configuration
+            red_stream = self._get_data_stream("red")
+            if red_stream and hasattr(red_stream, 'reader_params'):
+                index_key = getattr(red_stream.reader_params, 'index', None)
+                if index_key:
+                    index_data["index_key"] = index_key
+                    return index_data
+
+        except Exception:
+            pass
+
+        # Default index key if none found
+        index_data["index_key"] = "ReferenceTime"
+
+        return index_data
+
+    def _extract_timing_from_csv(self) -> dict:
+        """Extract session timing from CSV data streams using the contract's index key."""
+        timing_data = {}
+        print(self._get_data_stream("green"))
         try:
             # Try to get timing from green channel CSV
             green_stream = self._get_data_stream("green")
             if green_stream:
                 green_data = green_stream.read()
                 if not green_data.empty:
-                    timing_data["start_time"] = green_data.index.min()
-                    timing_data["end_time"] = green_data.index.max()
-                    return timing_data
+                    # Get the index key from the contract configuration
+                    index_key = self._extract_index().get("index_key", "ReferenceTime")
+
+                    # Use the index key to access the timing column
+                    if index_key in green_data.columns:
+                        timing_data["start_time"] = green_data[index_key].min()
+                        timing_data["end_time"] = green_data[index_key].max()
+                        return timing_data
+                    # Fallback to DataFrame index if column not found
+                    elif not green_data.index.empty:
+                        timing_data["start_time"] = green_data.index.min()
+                        timing_data["end_time"] = green_data.index.max()
+                        return timing_data
 
         except Exception:
             pass
 
         try:
-            # Fall back to red channel CSV
+            # Fall back to red channel CSV (also uses index key from contract)
             red_stream = self._get_data_stream("red")
             if red_stream:
                 red_data = red_stream.read()
                 if not red_data.empty:
-                    timing_data["start_time"] = red_data.index.min()
-                    timing_data["end_time"] = red_data.index.max()
-                    return timing_data
+                    # Get the index key from the contract configuration
+                    index_key = self._extract_index().get("index_key", "ReferenceTime")
+
+                    # Use the index key to access the timing column
+                    if index_key in red_data.columns:
+                        timing_data["start_time"] = red_data[index_key].min()
+                        timing_data["end_time"] = red_data[index_key].max()
+                        return timing_data
+                    # Fallback to DataFrame index if column not found
+                    elif not red_data.index.empty:
+                        timing_data["start_time"] = red_data.index.min()
+                        timing_data["end_time"] = red_data.index.max()
+                        return timing_data
 
         except Exception:
             pass
@@ -111,7 +163,7 @@ class FiberPhotometryExtractor:
             return None
 
         for stream in self.dataset.data_streams:
-            if hasattr(stream, 'name') and stream.name == stream_name:
+            if hasattr(stream, 'Stream name') and stream.Stream_name == stream_name:
                 return stream
         return None
 
@@ -200,3 +252,28 @@ class FiberPhotometryExtractor:
             f.write(fiber_data.model_dump_json(indent=3))
 
         return output_path
+
+
+if __name__ == "__main__":
+    # Example usage
+    if len(sys.argv) < 2:
+        print("Usage: python extractor.py <data_directory>")
+        sys.exit(1)
+
+    data_directory = sys.argv[1]
+
+    # Create job settings with minimal required fields
+    job_settings = JobSettings(
+        data_directory=data_directory,
+        experimenter_full_name=["Auto Extractor"],
+        subject_id="UNKNOWN",
+        rig_id="UNKNOWN",
+        iacuc_protocol="UNKNOWN",
+        notes="Extracted using data contract"
+    )
+
+    extractor = FiberPhotometryExtractor(job_settings)
+    extracted_data = extractor.extract()
+
+    fiber_data = FiberData(**extracted_data)
+    print(fiber_data.model_dump_json(indent=3))
