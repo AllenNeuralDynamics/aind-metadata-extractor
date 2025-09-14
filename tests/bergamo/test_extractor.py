@@ -65,6 +65,7 @@ class TestBergamoExtractor(unittest.TestCase):
                 [],
                 [
                     "neuron4_00001.tif",
+                    "neuron4_00002.tif",
                     "spont_00001.tif",
                     "spontpost_00001.tif",
                     "spontpost_slm_00001.tif",
@@ -75,7 +76,7 @@ class TestBergamoExtractor(unittest.TestCase):
         ]
         locations = Extractor(settings=self.example_job_settings).get_tif_file_locations()
         expected_locations = {
-            "neuron4": [Path("example_dir") / "neuron4_00001.tif"],
+            "neuron4": [Path("example_dir") / "neuron4_00001.tif", Path("example_dir") / "neuron4_00002.tif"],
             "spont": [Path("example_dir") / "spont_00001.tif"],
             "spontpost": [Path("example_dir") / "spontpost_00001.tif"],
             "spontpost_slm": [Path("example_dir") / "spontpost_slm_00001.tif"],
