@@ -1,10 +1,11 @@
 """Data models of extracted information from tiff files."""
 
 from enum import Enum
+from pathlib import Path
 from typing import List
 
 from pydantic import BaseModel
-from pathlib import Path
+
 
 class TifFileGroup(str, Enum):
     """Type of stimulation a group of files belongs to"""
@@ -26,6 +27,7 @@ class RawImageInfo(BaseModel):
     # [num_of_frames, pixel_width, pixel_height]?
     reader_shape: List[int]
 
+
 class ExtractedInfoItem(BaseModel):
     """ExtractedInfo that can be used to build Session metadata."""
 
@@ -35,6 +37,8 @@ class ExtractedInfoItem(BaseModel):
     file_stem: str
     files: List[Path]
 
+
 class ExtractedInfo(BaseModel):
     """Main model to be used downstream."""
+
     info: List[ExtractedInfoItem]
