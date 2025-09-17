@@ -1,11 +1,11 @@
 """Module defining Settings for Bergamo Extractor class."""
 
 from decimal import Decimal
+from pathlib import Path
 from typing import List, Optional
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
-from pathlib import Path
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=True):
@@ -13,17 +13,9 @@ class Settings(BaseSettings, cli_parse_args=True, cli_ignore_unknown_args=True):
     Data that needs to be input by user. Can be pulled from env vars with BERGAMO prefix or set explicitly.
     """
 
-    model_config = SettingsConfigDict(env_prefix='BERGAMO_')
-    input_source: Path = Field(
-        ...,
-        description="Path to input source."
-    )
-    output_filepath: Optional[Path] = Field(
-        default=None,
-        description=(
-            "Dump model to json file if set."
-        )
-    )
+    model_config = SettingsConfigDict(env_prefix="BERGAMO_")
+    input_source: Path = Field(..., description="Path to input source.")
+    output_filepath: Path = Field(..., description=("Dump model to json file if set."))
     # mandatory fields:
     experimenter_full_name: List[str]
     subject_id: str

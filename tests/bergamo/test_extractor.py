@@ -8,8 +8,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 from aind_metadata_extractor.bergamo.extractor import Extractor
-from aind_metadata_extractor.bergamo.models import ExtractedInfo, ExtractedInfoItem, RawImageInfo, TifFileGroup
 from aind_metadata_extractor.bergamo.settings import Settings
+from aind_metadata_extractor.models.bergamo import ExtractedInfo, ExtractedInfoItem, RawImageInfo, TifFileGroup
 
 RESOURCES_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / ".." / "resources" / "bergamo"
 EXAMPLE_READER_RESPONSE_PATH = RESOURCES_DIR / "reader_response.json.gz"

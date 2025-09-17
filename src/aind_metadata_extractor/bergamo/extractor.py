@@ -11,8 +11,8 @@ from typing import Dict, List
 
 from ScanImageTiffReader import ScanImageTiffReader
 
-from aind_metadata_extractor.bergamo.models import ExtractedInfo, ExtractedInfoItem, RawImageInfo, TifFileGroup
 from aind_metadata_extractor.bergamo.settings import Settings
+from aind_metadata_extractor.models.bergamo import ExtractedInfo, ExtractedInfoItem, RawImageInfo, TifFileGroup
 
 
 class Extractor:
