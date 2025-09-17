@@ -1,19 +1,20 @@
 """Ophys Indicator Benchmark job settings configuration."""
+
 from pathlib import Path
-from typing import List, Literal, Optional, Union
+from typing import List, Optional
 
 from pydantic import Field
-from aind_metadata_extractor.core import BaseJobSettings
 
+from aind_metadata_extractor.core import BaseJobSettings
 
 
 class JobSettings(BaseJobSettings):
     """Parameters for extracting from raw data."""
 
     data_directory: Path = Field(
-        ..., description="Path to data directory containing fiber photometry files"
+        ...,
+        description="Path to data directory containing fiber photometry files",
     )
-    
 
     # Optogenetics parameters
     stimulus_name: str
@@ -22,10 +23,16 @@ class JobSettings(BaseJobSettings):
     number_pulse_trains: List[int] = Field(..., title="Number of pulse trains")
     pulse_width: List[int] = Field(..., title="Pulse width (ms)")
 
-    pulse_train_duration: List[float] = Field(..., title="Pulse train duration (s)")
-    fixed_pulse_train_interval: bool = Field(..., title="Fixed pulse train interval")
+    pulse_train_duration: List[float] = Field(
+        ..., title="Pulse train duration (s)"
+    )
+    fixed_pulse_train_interval: bool = Field(
+        ..., title="Fixed pulse train interval"
+    )
     pulse_train_interval: Optional[float] = Field(
-        default=None, title="Pulse train interval (s)", description="Time between pulse trains"
+        default=None,
+        title="Pulse train interval (s)",
+        description="Time between pulse trains",
     )
     baseline_duration: float = Field(
         ...,
