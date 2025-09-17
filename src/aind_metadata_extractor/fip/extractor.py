@@ -52,7 +52,7 @@ class FiberPhotometryExtractor:
         """Extract metadata using the data contract approach."""
         metadata = {}
 
-        print(self.dataset.load_all())
+        print(self.dataset)
         # Extract timing information from CSV files
         timing_data = self._extract_timing_from_csv()
         metadata.update(timing_data)
@@ -159,11 +159,8 @@ class FiberPhotometryExtractor:
 
     def _get_data_stream(self, stream_name: str):
         """Get a data stream by name from the dataset."""
-        if not self.dataset or not hasattr(self.dataset, 'data_streams'):
-            return None
-
-        for stream in self.dataset.data_streams:
-            if hasattr(stream, 'Stream name') and stream.Stream_name == stream_name:
+        for stream in self.dataset._data:
+            if hasattr(stream, 'name') and stream.name == stream_name:
                 return stream
         return None
 
