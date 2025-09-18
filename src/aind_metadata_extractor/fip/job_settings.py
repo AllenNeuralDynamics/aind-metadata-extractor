@@ -3,133 +3,87 @@
 from datetime import datetime
 from pathlib import Path
 from typing import List, Literal, Optional, Union
-import argparse
-import json
-from pydantic import BaseModel, Field
 
+from pydantic import Field, field_validator
+from aind_metadata_extractor.core import BaseJobSettings
 
-class JobSettings(BaseModel):
-    """Settings for the contract-based Fiber Photometry metadata extractor.
-
-    This simplified job settings model focuses on the essential parameters
-    needed for the contract-based extractor. The extractor will extract
-    most metadata directly from the data contract rather than requiring
-    it to be specified in the job settings.
-    """
+class JobSettings(BaseJobSettings):
+    """Data to be entered by the user for Fiber Photometry."""
 
     job_settings_name: Literal["FiberPhotometry"] = Field(
-        default="FiberPhotometry",
-        description="Name of the job settings type"
+        default="FiberPhotometry", title="Name of the job settings"
     )
-
-    # Core required fields
     data_directory: Union[str, Path] = Field(
-        ...,
-        description="Path to data directory containing fiber photometry files"
+        ..., title="Path to data directory containing fiber photometry files"
     )
-
-    # Optional metadata fields (extracted from data contract when available)
     experimenter_full_name: List[str] = Field(
-        default_factory=list,
-        description="List of experimenter names"
+        default_factory=list, title="List of experimenter names"
     )
     subject_id: Optional[str] = Field(
-        None,
-        description="Subject identifier (extracted from session data if not provided)"
+        default=None, title="Subject identifier"
     )
-    session_start_time: Optional[datetime] = Field(
-        None,
-        description="Start time of the session (extracted from data if not provided)"
+    rig_id: Optional[str] = Field(
+        default=None, title="Identifier for the experimental rig"
     )
-    session_end_time: Optional[datetime] = Field(
-        None,
-        description="End time of the session (extracted from data if not provided)"
+    mouse_platform_name: Optional[str] = Field(
+        default=None, title="Name of the mouse platform used"
+    )
+    active_mouse_platform: Optional[bool] = Field(
+        default=None, title="Whether the mouse platform was active during the session"
+    )
+    data_streams: Optional[List[dict]] = Field(
+        default_factory=list, title="List of data stream configurations"
+    )
+    iacuc_protocol: Optional[str] = Field(
+        default=None, title="IACUC protocol identifier"
     )
     notes: Optional[str] = Field(
-        None,
-        description="Additional session notes"
+        default=None, title="Session notes"
     )
-
-    # Technical settings
+    anaesthesia: Optional[str] = Field(
+        default=None, title="Anaesthesia used"
+    )
+    animal_weight_post: Optional[float] = Field(
+        default=None, title="Animal weight after session"
+    )
+    animal_weight_prior: Optional[float] = Field(
+        default=None, title="Animal weight before session"
+    )
+    protocol_id: Optional[List[str]] = Field(
+        default_factory=list, title="List of protocol identifiers"
+    )
+    session_type: Optional[str] = Field(
+        default="FIB", title="Type of session"
+    )
+    session_start_time: Optional[datetime] = Field(
+        default=None, title="Start time of the session"
+    )
+    session_end_time: Optional[datetime] = Field(
+        default=None, title="End time of the session"
+    )
+    data_files: Optional[List[str]] = Field(
+        default_factory=list, title="List of data file paths"
+    )
+    rig_config: Optional[dict] = Field(
+        default=None, title="Rig configuration dictionary"
+    )
+    session_config: Optional[dict] = Field(
+        default=None, title="Session configuration dictionary"
+    )
     local_timezone: str = Field(
-        default="America/Los_Angeles",
-        description="Timezone for the session"
+        default="America/Los_Angeles", title="Timezone for the session"
     )
     output_directory: Optional[Union[str, Path]] = Field(
-        None,
-        description="Output directory for generated files (defaults to data_directory)"
+        default=None, title="Output directory for generated files (defaults to data_directory)"
     )
     output_filename: str = Field(
-        default="session_fip.json",
-        description="Name of output file"
+        default="session_fip.json", title="Name of output file"
     )
 
+    @field_validator("data_directory", "output_directory", mode="before")
     @classmethod
-    def from_args(cls, args: List[str]) -> "JobSettings":
-        """Create JobSettings from command line arguments.
-
-        The contract-based extractor requires minimal configuration since
-        most metadata is extracted directly from the data contract.
-
-        Parameters
-        ----------
-        args : List[str]
-            Command line arguments
-
-        Returns
-        -------
-        JobSettings
-            Parsed job settings
-        """
-        parser = argparse.ArgumentParser(
-            description="Fiber Photometry Contract-based Extractor Job Settings"
-        )
-
-        # Required arguments
-        parser.add_argument(
-            "--data_directory",
-            required=True,
-            help="Data directory path containing FIP data files"
-        )
-
-        # Optional arguments
-        parser.add_argument(
-            "--experimenter_full_name",
-            nargs="+",
-            default=[],
-            help="Experimenter names (optional - extracted from data if available)"
-        )
-        parser.add_argument(
-            "--subject_id",
-            help="Subject identifier (optional - extracted from session data if available)"
-        )
-        parser.add_argument(
-            "--notes",
-            help="Additional session notes"
-        )
-        parser.add_argument(
-            "--local_timezone",
-            default="America/Los_Angeles",
-            help="Local timezone for session times"
-        )
-        parser.add_argument(
-            "--output_directory",
-            help="Output directory (defaults to data_directory)"
-        )
-        parser.add_argument(
-            "--output_filename",
-            default="session_fip.json",
-            help="Output filename"
-        )
-
-        parsed_args = parser.parse_args(args)
-
-        return cls(
-            data_directory=parsed_args.data_directory,
-            experimenter_full_name=parsed_args.experimenter_full_name,
-            subject_id=parsed_args.subject_id,
-            notes=parsed_args.notes,
-            local_timezone=parsed_args.local_timezone,
-            output_directory=parsed_args.output_directory,
-            output_filename=parsed_args.output_filename,
-        )
+    def validate_path_is_dir(cls, v):
+        """Validate that the path is a directory if not None."""
+        if v is not None and not Path(v).is_dir():
+            raise ValueError(f"{v} is not a directory")
+        return v

@@ -337,3 +337,4 @@ class FiberPhotometryExtractor:
             f.write(fiber_data.model_dump_json(indent=3))
 
         return output_path
+
