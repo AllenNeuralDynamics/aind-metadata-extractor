@@ -1,36 +1,37 @@
-import unittest
-import tempfile
-import pandas as pd
-from pathlib import Path
-from datetime import datetime
-from zoneinfo import ZoneInfo
+"""Tests for testing ophys benchmark extractor"""
 
-# Import your classes
-from aind_metadata_extractor.ophys_indictor_benchmark.job_settings import (
-    JobSettings
+import tempfile
+import unittest
+from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
+
+from aind_metadata_extractor.models.ophys_indicator_benchmark import (
+    OphysIndicatorBenchmarkModel,
+    OptoModel,
 )
 from aind_metadata_extractor.ophys_indictor_benchmark.extractor import (
-    OphysIndicatorBenchMarkExtractor
+    OphysIndicatorBenchMarkExtractor,
 )
-from aind_metadata_extractor.models.ophys_indicator_benchmark import (
-    OptoModel,
-    OphysIndicatorBenchmarkModel
+from aind_metadata_extractor.ophys_indictor_benchmark.job_settings import (
+    JobSettings,
 )
+
 
 class TestOphysIndicatorBenchMarkExtractor(unittest.TestCase):
+    """Class for Testing Extractor"""
 
     def setUp(self):
+        """Set up for tests"""
         # Create temporary directory and stim CSV
         self.tmp_dir = tempfile.TemporaryDirectory()
         self.data_dir = Path(self.tmp_dir.name)
 
         # Sample stim CSV
-        df = pd.DataFrame({
-            "SoftwareTS": [
-                "2025-09-17T12:00:00",
-                "2025-09-17T12:01:00"
-            ]
-        })
+        df = pd.DataFrame(
+            {"SoftwareTS": ["2025-09-17T12:00:00", "2025-09-17T12:01:00"]}
+        )
         df.to_csv(self.data_dir / "Stim_example.csv", index=False)
 
         # Valid JobSettings
@@ -47,14 +48,16 @@ class TestOphysIndicatorBenchMarkExtractor(unittest.TestCase):
             baseline_duration=10.0,
             wavelength=470,
             power=2.5,
-            job_settings_name="Optogenetics"
+            job_settings_name="Optogenetics",
         )
 
     def tearDown(self):
+        """Clean up"""
         self.tmp_dir.cleanup()
 
     # ---- Initialization tests ----
     def test_init_with_jobsettings(self):
+        """Test with job settings"""
         extractor = OphysIndicatorBenchMarkExtractor(self.job_settings)
         self.assertEqual(extractor.job_settings.stimulus_name, "LaserStim")
 
@@ -68,6 +71,7 @@ class TestOphysIndicatorBenchMarkExtractor(unittest.TestCase):
 
     # ---- Opto parameters ----
     def test_extract_opto_parameters(self):
+        """Test getting opto parameters"""
         extractor = OphysIndicatorBenchMarkExtractor(self.job_settings)
         opto_params = extractor._extract_opto_parameters()
         self.assertIsInstance(opto_params, dict)
@@ -76,6 +80,7 @@ class TestOphysIndicatorBenchMarkExtractor(unittest.TestCase):
 
     # ---- Stimulus epochs ----
     def test_extract_stimulus_epochs(self):
+        """Test getting stimulus epochs"""
         extractor = OphysIndicatorBenchMarkExtractor(self.job_settings)
         epochs = extractor._extract_stimulus_epochs()
         self.assertIn("stimulus_start_time", epochs)
@@ -89,14 +94,18 @@ class TestOphysIndicatorBenchMarkExtractor(unittest.TestCase):
 
     # ---- Full extraction ----
     def test_extract_returns_model(self):
+        """Test full extraction"""
         extractor = OphysIndicatorBenchMarkExtractor(self.job_settings)
         result = extractor.extract()
         self.assertIsInstance(result, OphysIndicatorBenchmarkModel)
         self.assertIsInstance(result.opto_data, OptoModel)
-        self.assertEqual(result.opto_data.opto_metadata["stimulus_name"], "LaserStim")
+        self.assertEqual(
+            result.opto_data.opto_metadata["stimulus_name"], "LaserStim"
+        )
 
     # ---- File-not-found handling ----
     def test_extract_stimulus_epochs_file_not_found(self):
+        """Test file not found"""
         for f in self.data_dir.glob("Stim*.csv"):
             f.unlink()  # remove CSV
         extractor = OphysIndicatorBenchMarkExtractor(self.job_settings)
@@ -104,5 +113,5 @@ class TestOphysIndicatorBenchMarkExtractor(unittest.TestCase):
             extractor._extract_stimulus_epochs()
 
 
-if __name__ == "__main__": # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     unittest.main()

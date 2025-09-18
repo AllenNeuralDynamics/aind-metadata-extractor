@@ -1,12 +1,18 @@
+"""Tests job settings for Ophys Benchmark"""
+
 import unittest
 from pathlib import Path
+
 from pydantic import ValidationError
 
-# Import your model
-from aind_metadata_extractor.ophys_indictor_benchmark.job_settings import JobSettings
+from aind_metadata_extractor.ophys_indictor_benchmark.job_settings import (
+    JobSettings,
+)
 
 
 class TestJobSettings(unittest.TestCase):
+    """Class to test job settings"""
+
     def setUp(self):
         """Valid baseline dataset for tests."""
         self.valid_data = {
@@ -22,7 +28,7 @@ class TestJobSettings(unittest.TestCase):
             "baseline_duration": 10.0,
             "wavelength": 470,
             "power": 2.5,
-            "job_settings_name": "Optogenetics"
+            "job_settings_name": "Optogenetics",
         }
 
     def test_valid_jobsettings(self):
@@ -62,9 +68,11 @@ class TestJobSettings(unittest.TestCase):
         for field, bad_value in bad_cases.items():
             data = self.valid_data.copy()
             data[field] = bad_value
-            with self.assertRaises(ValidationError, msg=f"Field {field} should fail"):
+            with self.assertRaises(
+                ValidationError, msg=f"Field {field} should fail"
+            ):
                 JobSettings(**data)
 
 
-if __name__ == "__main__": # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     unittest.main()
