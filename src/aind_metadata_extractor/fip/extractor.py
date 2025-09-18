@@ -1,5 +1,4 @@
 """Fiber Photometry extractor module using data contract"""
-
 import dataclasses
 import json
 import os
@@ -20,7 +19,14 @@ class FiberPhotometryExtractor:
     """Extractor for Fiber Photometry metadata using data contract."""
 
     def __init__(self, job_settings: JobSettings):
-        """Initialize the Fiber Photometry extractor with job settings."""
+        """
+        Initialize the Fiber Photometry extractor with job settings.
+
+        Parameters
+        ----------
+        job_settings : JobSettings
+            Configuration settings for the extraction process
+        """
         self.job_settings = job_settings
         self.dataset = None
 
@@ -29,11 +35,18 @@ class FiberPhotometryExtractor:
 
         Uses the official data contract from:
         https://github.com/AllenNeuralDynamics/FIP_DAQ_Control/blob/bc-major-refactor/src/aind_physiology_fip/data_contract.py
+
+        Returns
+        -------
+        dict
+            Extracted metadata as a dictionary
         """
 
         # Create dataset from data directory using the GitHub data contract
         if not self.job_settings.data_directory:
-            raise ValueError("data_directory must be specified in job settings")
+            raise ValueError(
+                "data_directory must be specified in job settings"
+            )
 
         self.dataset = dataset(self.job_settings.data_directory)
 
@@ -49,11 +62,17 @@ class FiberPhotometryExtractor:
         return fiber_data.model_dump()
 
     def _extract_metadata_from_contract(self) -> dict:
-        """Extract metadata using the data contract approach."""
+        """
+        Extract metadata using the data contract approach.
+
+        Returns
+        -------
+        dict
+            Extracted metadata as a dictionary
+        """
         metadata = {}
 
         print(self.dataset)
-        # Extract timing information from CSV files
         timing_data = self._extract_timing_from_csv()
         metadata.update(timing_data)
 
@@ -61,22 +80,27 @@ class FiberPhotometryExtractor:
         files_data = self._extract_data_files()
         metadata.update(files_data)
 
-        # Extract hardware configuration if available
         hardware_data = self._extract_hardware_config()
         metadata.update(hardware_data)
 
         return metadata
 
-
     def _extract_index(self) -> dict:
-        """Extract index key information from the dataset contract configuration."""
+        """
+        Extract index key information from the dataset contract configuration.
+
+        Returns
+        -------
+        dict
+            Extracted index key information as a dictionary
+        """
         index_data = {}
 
         try:
             # Try to get index key from green channel CSV configuration
             green_stream = self._get_data_stream("green")
-            if green_stream and hasattr(green_stream, 'reader_params'):
-                index_key = getattr(green_stream.reader_params, 'index', None)
+            if green_stream and hasattr(green_stream, "reader_params"):
+                index_key = getattr(green_stream.reader_params, "index", None)
                 if index_key:
                     index_data["index_key"] = index_key
                     return index_data
@@ -87,8 +111,8 @@ class FiberPhotometryExtractor:
         try:
             # Fall back to red channel CSV configuration
             red_stream = self._get_data_stream("red")
-            if red_stream and hasattr(red_stream, 'reader_params'):
-                index_key = getattr(red_stream.reader_params, 'index', None)
+            if red_stream and hasattr(red_stream, "reader_params"):
+                index_key = getattr(red_stream.reader_params, "index", None)
                 if index_key:
                     index_data["index_key"] = index_key
                     return index_data
@@ -102,7 +126,15 @@ class FiberPhotometryExtractor:
         return index_data
 
     def _extract_timing_from_csv(self) -> dict:
-        """Extract session timing from CSV data streams using the contract's index key."""
+        """
+        Extract session timing from CSV data streams using
+            the contract's index key.
+
+        Returns
+        -------
+        dict
+            Extracted timing information with 'start_time' and 'end_time' keys
+        """
         timing_data = {}
         print(self._get_data_stream("green"))
         try:
@@ -112,7 +144,9 @@ class FiberPhotometryExtractor:
                 green_data = green_stream.read()
                 if not green_data.empty:
                     # Get the index key from the contract configuration
-                    index_key = self._extract_index().get("index_key", "ReferenceTime")
+                    index_key = self._extract_index().get(
+                        "index_key", "ReferenceTime"
+                    )
 
                     # Use the index key to access the timing column
                     if index_key in green_data.columns:
@@ -135,7 +169,9 @@ class FiberPhotometryExtractor:
                 red_data = red_stream.read()
                 if not red_data.empty:
                     # Get the index key from the contract configuration
-                    index_key = self._extract_index().get("index_key", "ReferenceTime")
+                    index_key = self._extract_index().get(
+                        "index_key", "ReferenceTime"
+                    )
 
                     # Use the index key to access the timing column
                     if index_key in red_data.columns:
@@ -158,22 +194,48 @@ class FiberPhotometryExtractor:
         return timing_data
 
     def _get_data_stream(self, stream_name: str):
-        """Get a data stream by name from the dataset."""
+        """
+        Get a data stream by name from the dataset.
+
+        Parameters
+        ----------
+        stream_name : str
+            The name of the data stream to retrieve.
+
+        Returns
+        -------
+        DataStream
+            The requested data stream, or None if not found.
+        """
         for stream in self.dataset._data:
-            if hasattr(stream, 'name') and stream.name == stream_name:
+            if hasattr(stream, "name") and stream.name == stream_name:
                 return stream
         return None
 
     def _extract_data_files(self) -> dict:
-        """Extract data files information from the dataset."""
+        """
+        Extract data files information from the dataset.
+
+        Returns
+        -------
+        dict
+            Extracted data files information with 'data_files' key
+        """
         data_files = []
 
         # Get all data streams that represent files
-        for stream_name in ["raw_green", "raw_red", "raw_iso", "green", "red", "iso"]:
+        for stream_name in [
+            "raw_green",
+            "raw_red",
+            "raw_iso",
+            "green",
+            "red",
+            "iso",
+        ]:
             try:
                 stream = self._get_data_stream(stream_name)
                 if stream:
-                    file_path = getattr(stream.reader_params, 'path', None)
+                    file_path = getattr(stream.reader_params, "path", None)
                     if file_path and Path(file_path).exists():
                         data_files.append(str(file_path))
             except Exception:
@@ -182,7 +244,15 @@ class FiberPhotometryExtractor:
         return {"data_files": data_files}
 
     def _extract_hardware_config(self) -> dict:
-        """Extract hardware configuration from rig and session inputs."""
+        """
+        Extract hardware configuration from rig and session inputs.
+
+        Returns
+        -------
+        dict
+            Extracted hardware configuration with
+                'rig_config' and 'session_config' keys
+        """
         hardware_data = {}
 
         try:
@@ -190,7 +260,11 @@ class FiberPhotometryExtractor:
             rig_stream = self._get_data_stream("rig_input")
             if rig_stream:
                 rig_data = rig_stream.read()
-                hardware_data["rig_config"] = rig_data.model_dump() if hasattr(rig_data, 'model_dump') else {}
+                hardware_data["rig_config"] = (
+                    rig_data.model_dump()
+                    if hasattr(rig_data, "model_dump")
+                    else {}
+                )
         except Exception:
             pass
 
@@ -199,14 +273,26 @@ class FiberPhotometryExtractor:
             session_stream = self._get_data_stream("session_input")
             if session_stream:
                 session_data = session_stream.read()
-                hardware_data["session_config"] = session_data.model_dump() if hasattr(session_data, 'model_dump') else {}
+                hardware_data["session_config"] = (
+                    session_data.model_dump()
+                    if hasattr(session_data, "model_dump")
+                    else {}
+                )
         except Exception:
             pass
 
         return hardware_data
 
     def _extract_basic_metadata(self) -> dict:
-        """Extract basic metadata when contract approach needs fallback data."""
+        """
+        Extract basic metadata when contract approach needs fallback data.
+
+        Returns
+        -------
+        dict
+            Extracted basic metadata with 'start_time',
+                'end_time', and 'data_files' keys
+        """
         data_dir = Path(self.job_settings.data_directory)
 
         # Find any available data files
@@ -222,10 +308,12 @@ class FiberPhotometryExtractor:
             "end_time": current_time,
             "data_files": data_files,
             "rig_config": {},
-            "session_config": {}
+            "session_config": {},
         }
 
-    def save_to_file(self, fiber_data: FiberData, output_path: Optional[Path] = None) -> Path:
+    def save_to_file(
+        self, fiber_data: FiberData, output_path: Optional[Path] = None
+    ) -> Path:
         """Save FiberData to a JSON file.
 
         Parameters
@@ -266,7 +354,7 @@ if __name__ == "__main__":
         subject_id="UNKNOWN",
         rig_id="UNKNOWN",
         iacuc_protocol="UNKNOWN",
-        notes="Extracted using data contract"
+        notes="Extracted using data contract",
     )
 
     extractor = FiberPhotometryExtractor(job_settings)

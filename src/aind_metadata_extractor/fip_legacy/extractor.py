@@ -14,7 +14,9 @@ import pandas as pd
 from aind_metadata_extractor.fip_legacy.job_settings import JobSettings
 from aind_metadata_extractor.models.fip_legacy import FiberData
 
-REGEX_DATE = r"(20[0-9]{2})-([0-9]{2})-([0-9]{2})_([0-9]{2})-" r"([0-9]{2})-([0-9]{2})"
+REGEX_DATE = (
+    r"(20[0-9]{2})-([0-9]{2})-([0-9]{2})_([0-9]{2})-" r"([0-9]{2})-([0-9]{2})"
+)
 REGEX_MOUSE_ID = r"([0-9]{6})"
 
 
@@ -39,27 +41,66 @@ class FiberPhotometryExtractor:
         FiberPhotometryExtractor
             Configured extractor instance
         """
-        parser = argparse.ArgumentParser(description="Fiber Photometry ETL Job Settings")
+        parser = argparse.ArgumentParser(
+            description="Fiber Photometry ETL Job Settings"
+        )
 
         # Required arguments
-        parser.add_argument("--subject_id", required=True, help="Subject identifier")
+        parser.add_argument(
+            "--subject_id", required=True, help="Subject identifier"
+        )
         parser.add_argument("--rig_id", required=True, help="Rig identifier")
-        parser.add_argument("--iacuc_protocol", required=True, help="IACUC protocol")
+        parser.add_argument(
+            "--iacuc_protocol", required=True, help="IACUC protocol"
+        )
         parser.add_argument("--notes", required=True, help="Session notes")
-        parser.add_argument("--data_directory", required=True, help="Data directory path")
+        parser.add_argument(
+            "--data_directory", required=True, help="Data directory path"
+        )
 
         # Optional arguments
-        parser.add_argument("--experimenter_full_name", nargs="+", default=[], help="Experimenter names")
-        parser.add_argument("--session_type", default="FIB", help="Session type")
-        parser.add_argument("--mouse_platform_name", help="Mouse platform name")
-        parser.add_argument("--active_mouse_platform", action="store_true", help="Mouse platform active")
+        parser.add_argument(
+            "--experimenter_full_name",
+            nargs="+",
+            default=[],
+            help="Experimenter names",
+        )
+        parser.add_argument(
+            "--session_type", default="FIB", help="Session type"
+        )
+        parser.add_argument(
+            "--mouse_platform_name", help="Mouse platform name"
+        )
+        parser.add_argument(
+            "--active_mouse_platform",
+            action="store_true",
+            help="Mouse platform active",
+        )
         parser.add_argument("--anaesthesia", help="Anaesthesia used")
-        parser.add_argument("--animal_weight_post", type=float, help="Animal weight post session")
-        parser.add_argument("--animal_weight_prior", type=float, help="Animal weight prior to session")
-        parser.add_argument("--local_timezone", default="America/Los_Angeles", help="Local timezone")
+        parser.add_argument(
+            "--animal_weight_post",
+            type=float,
+            help="Animal weight post session",
+        )
+        parser.add_argument(
+            "--animal_weight_prior",
+            type=float,
+            help="Animal weight prior to session",
+        )
+        parser.add_argument(
+            "--local_timezone",
+            default="America/Los_Angeles",
+            help="Local timezone",
+        )
         parser.add_argument("--output_directory", help="Output directory")
-        parser.add_argument("--output_filename", default="session_fip.json", help="Output filename")
-        parser.add_argument("--data_streams", help="JSON string of data streams configuration")
+        parser.add_argument(
+            "--output_filename",
+            default="session_fip.json",
+            help="Output filename",
+        )
+        parser.add_argument(
+            "--data_streams", help="JSON string of data streams configuration"
+        )
 
         parsed_args = parser.parse_args(args)
 
@@ -116,7 +157,9 @@ class FiberPhotometryExtractor:
             raise ValueError("data_directory must be a valid path")
 
         if not data_dir.exists():
-            raise FileNotFoundError(f"Data directory {data_dir} does not exist")
+            raise FileNotFoundError(
+                f"Data directory {data_dir} does not exist"
+            )
 
         # Find FIP data files
         data_files = list(data_dir.glob("FIP_Data*.csv"))
@@ -139,7 +182,11 @@ class FiberPhotometryExtractor:
         fiber_configs = []
 
         if self.job_settings.data_streams:
-            stream_data = self.job_settings.data_streams[0] if self.job_settings.data_streams else {}
+            stream_data = (
+                self.job_settings.data_streams[0]
+                if self.job_settings.data_streams
+                else {}
+            )
             light_source_configs = stream_data.get("light_sources", [])
             detector_configs = stream_data.get("detectors", [])
             fiber_configs = stream_data.get("fiber_connections", [])
@@ -157,7 +204,7 @@ class FiberPhotometryExtractor:
             "rig_id": self.job_settings.rig_id,
             "iacuc_protocol": self.job_settings.iacuc_protocol,
             "notes": self.job_settings.notes,
-            "mouse_platform_name": self.job_settings.mouse_platform_name or "unknown",
+            "mouse_platform_name": self.job_settings.mouse_platform_name,
             "active_mouse_platform": self.job_settings.active_mouse_platform,
             "session_type": self.job_settings.session_type,
             "anaesthesia": self.job_settings.anaesthesia,
@@ -167,7 +214,9 @@ class FiberPhotometryExtractor:
 
         return metadata_dict
 
-    def _extract_session_timing(self, data_files: List[Path]) -> tuple[Optional[datetime], Optional[datetime]]:
+    def _extract_session_timing(
+        self, data_files: List[Path]
+    ) -> tuple[Optional[datetime], Optional[datetime]]:
         """Extract session start and end times from data files."""
         if not data_files:
             return None, None
@@ -178,7 +227,11 @@ class FiberPhotometryExtractor:
             df = pd.read_csv(first_file)
 
             # Try to find timestamp column
-            timestamp_cols = [col for col in df.columns if 'time' in col.lower() or 'timestamp' in col.lower()]
+            timestamp_cols = [
+                col
+                for col in df.columns
+                if "time" in col.lower() or "timestamp" in col.lower()
+            ]
 
             if timestamp_cols:
                 timestamps = pd.to_datetime(df[timestamp_cols[0]])
@@ -193,14 +246,18 @@ class FiberPhotometryExtractor:
             # Fallback to filename extraction
             return self._extract_timing_from_filename(data_files[0])
 
-    def _extract_timing_from_filename(self, file_path: Path) -> tuple[Optional[datetime], Optional[datetime]]:
+    def _extract_timing_from_filename(
+        self, file_path: Path
+    ) -> tuple[Optional[datetime], Optional[datetime]]:
         """Extract timing information from filename using regex."""
         try:
             # Try to match date pattern in filename or parent directory
             for path_part in [file_path.name, file_path.parent.name]:
                 date_match = re.search(REGEX_DATE, path_part)
                 if date_match:
-                    start_time = datetime.strptime(date_match.group(), "%Y-%m-%d_%H-%M-%S")
+                    start_time = datetime.strptime(
+                        date_match.group(), "%Y-%m-%d_%H-%M-%S"
+                    )
                     return start_time, None
             return None, None
         except Exception:
@@ -215,13 +272,17 @@ class FiberPhotometryExtractor:
                 df = pd.read_csv(file_path)
 
                 # Look for timestamp columns
-                timestamp_cols = [col for col in df.columns if 'time' in col.lower()]
+                timestamp_cols = [
+                    col for col in df.columns if "time" in col.lower()
+                ]
 
                 if timestamp_cols:
                     timestamps = pd.to_datetime(df[timestamp_cols[0]])
                     # Convert to relative timestamps (seconds from start)
                     if not timestamps.empty:
-                        relative_timestamps = (timestamps - timestamps.min()).dt.total_seconds()
+                        relative_timestamps = (
+                            timestamps - timestamps.min()
+                        ).dt.total_seconds()
                         all_timestamps.extend(relative_timestamps.tolist())
                 else:
                     # If no timestamp column, use row index as proxy
@@ -230,6 +291,3 @@ class FiberPhotometryExtractor:
             except Exception:
                 # Skip files that can't be read
                 continue
-
-
-
