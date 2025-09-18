@@ -1,4 +1,4 @@
-"""Fiber Photometry extractor module"""
+"""Fiber Photometry legacy extractor module."""
 
 import argparse
 import json
@@ -11,14 +11,14 @@ from pathlib import Path
 import pandas as pd
 
 from aind_metadata_extractor.fip_legacy.job_settings import JobSettings
-from aind_metadata_extractor.models.fip_legacy import FiberData
+from aind_metadata_extractor.models.fip import FiberData
 
-REGEX_DATE = r"(20[0-9]{2})-([0-9]{2})-([0-9]{2})_([0-9]{2})-" r"([0-9]{2})-([0-9]{2})"
-REGEX_MOUSE_ID = r"([0-9]{6})"
+REGEX_DATE = r"\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}"
+REGEX_MOUSE_ID = r"mouse_\w+"
 
 
 class FiberPhotometryExtractor:
-    """Extractor for Fiber Photometry metadata from data files."""
+    """Extractor for Fiber Photometry metadata from legacy data files."""
 
     def __init__(self, job_settings: JobSettings):
         """Initialize the Fiber Photometry extractor with job settings."""
@@ -113,6 +113,50 @@ class FiberPhotometryExtractor:
 
         return cls(job_settings)
 
+    def extract_metadata(self) -> FiberData:
+        """Extract metadata from legacy fiber photometry files and job settings."""
+        data_dir = Path(self.job_settings.data_directory) if self.job_settings.data_directory else None
+        if not data_dir or not data_dir.exists():
+            raise FileNotFoundError(f"Data directory {data_dir} does not exist")
+
+        # Find CSV files matching expected pattern
+        data_files = list(data_dir.glob("*.csv"))
+        if not data_files:
+            raise FileNotFoundError(f"No CSV data files found in {data_dir}")
+
+        # Extract session start time from file name or content
+        session_start_time = self._extract_session_start_time(data_files)
+        session_end_time = self._extract_session_end_time(data_files)
+
+        # Compose metadata dictionary
+        metadata = {
+            "job_settings_name": "FiberPhotometry",
+            "experimenter_full_name": self.job_settings.experimenter_full_name,
+            "session_start_time": session_start_time,
+            "session_end_time": session_end_time,
+            "subject_id": self.job_settings.subject_id,
+            "rig_id": self.job_settings.rig_id,
+            "mouse_platform_name": self.job_settings.mouse_platform_name,
+            "active_mouse_platform": self.job_settings.active_mouse_platform,
+            "data_streams": self.job_settings.data_streams,
+            "session_type": self.job_settings.session_type,
+            "iacuc_protocol": self.job_settings.iacuc_protocol,
+            "notes": self.job_settings.notes,
+            "anaesthesia": self.job_settings.anaesthesia,
+            "animal_weight_post": self.job_settings.animal_weight_post,
+            "animal_weight_prior": self.job_settings.animal_weight_prior,
+            "protocol_id": self.job_settings.protocol_id,
+            "data_directory": str(data_dir),
+            "data_files": [str(f) for f in data_files],
+            "rig_config": self.job_settings.rig_config,
+            "session_config": self.job_settings.session_config,
+            "local_timezone": self.job_settings.local_timezone,
+            "output_directory": self.job_settings.output_directory,
+            "output_filename": self.job_settings.output_filename,
+        }
+
+        return FiberData(**metadata)
+
     def extract(self) -> dict:
         """Run extraction process"""
 
@@ -190,6 +234,30 @@ class FiberPhotometryExtractor:
         }
 
         return metadata_dict
+
+    def _extract_session_start_time(self, data_files: List[Path]) -> Optional[datetime]:
+        """Extract session start time from file names using regex."""
+        for file_path in data_files:
+            match = re.search(REGEX_DATE, file_path.name)
+            if match:
+                try:
+                    return datetime.strptime(match.group(), "%Y-%m-%d_%H-%M-%S")
+                except Exception:
+                    continue
+        return None
+
+    def _extract_session_end_time(self, data_files: List[Path]) -> Optional[datetime]:
+        """Extract session end time from CSV content if possible."""
+        for file_path in data_files:
+            try:
+                df = pd.read_csv(file_path)
+                timestamp_cols = [col for col in df.columns if "time" in col.lower() or "timestamp" in col.lower()]
+                if timestamp_cols:
+                    timestamps = pd.to_datetime(df[timestamp_cols[0]])
+                    return timestamps.max().to_pydatetime()
+            except Exception:
+                continue
+        return None
 
     def _extract_session_timing(self, data_files: List[Path]) -> tuple[Optional[datetime], Optional[datetime]]:
         """Extract session start and end times from data files."""
