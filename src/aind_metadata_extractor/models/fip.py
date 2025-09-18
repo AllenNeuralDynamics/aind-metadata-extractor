@@ -1,3 +1,5 @@
+"""Data models of extracted information from FIP files."""
+
 from typing import Literal, Union, Optional, List
 from datetime import datetime
 from pathlib import Path
