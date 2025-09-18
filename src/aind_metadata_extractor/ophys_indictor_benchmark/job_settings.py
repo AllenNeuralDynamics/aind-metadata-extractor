@@ -13,7 +13,7 @@ class JobSettings(BaseJobSettings):
 
     data_directory: Path = Field(
         ...,
-        description="Path to data directory containing fiber photometry files",
+        description="Path to data directory",
     )
 
     # Optogenetics parameters
