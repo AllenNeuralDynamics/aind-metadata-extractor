@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from pydantic import BaseModel, Field
 
+
 class FiberData(BaseModel):
     """
     Intermediate data model for fiber photometry data.

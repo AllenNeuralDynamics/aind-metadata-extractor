@@ -1,12 +1,8 @@
 """Fiber Photometry extractor module using data contract"""
-import dataclasses
 import json
-import os
-import sys
-import typing as t
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional
 
 
 from aind_physiology_fip.data_contract import dataset
@@ -136,28 +132,21 @@ class FiberPhotometryExtractor:
             Extracted timing information with 'start_time' and 'end_time' keys
         """
         timing_data = {}
-        print(self._get_data_stream("green"))
         try:
             # Try to get timing from green channel CSV
             green_stream = self._get_data_stream("green")
             if green_stream:
                 green_data = green_stream.read()
-                if not green_data.empty:
-                    # Get the index key from the contract configuration
-                    index_key = self._extract_index().get(
-                        "index_key", "ReferenceTime"
-                    )
+                # Get the index key from the contract configuration
+                index_key = self._extract_index().get(
+                    "index_key", "ReferenceTime"
+                )
 
-                    # Use the index key to access the timing column
-                    if index_key in green_data.columns:
-                        timing_data["start_time"] = green_data[index_key].min()
-                        timing_data["end_time"] = green_data[index_key].max()
-                        return timing_data
-                    # Fallback to DataFrame index if column not found
-                    elif not green_data.index.empty:
-                        timing_data["start_time"] = green_data.index.min()
-                        timing_data["end_time"] = green_data.index.max()
-                        return timing_data
+                # Use the index key to access the timing column
+                if index_key in green_data.columns:
+                    timing_data["start_time"] = green_data[index_key].min()
+                    timing_data["end_time"] = green_data[index_key].max()
+                    return timing_data
 
         except Exception:
             pass
@@ -167,22 +156,21 @@ class FiberPhotometryExtractor:
             red_stream = self._get_data_stream("red")
             if red_stream:
                 red_data = red_stream.read()
-                if not red_data.empty:
-                    # Get the index key from the contract configuration
-                    index_key = self._extract_index().get(
-                        "index_key", "ReferenceTime"
-                    )
+                # Get the index key from the contract configuration
+                index_key = self._extract_index().get(
+                    "index_key", "ReferenceTime"
+                )
 
-                    # Use the index key to access the timing column
-                    if index_key in red_data.columns:
-                        timing_data["start_time"] = red_data[index_key].min()
-                        timing_data["end_time"] = red_data[index_key].max()
-                        return timing_data
-                    # Fallback to DataFrame index if column not found
-                    elif not red_data.index.empty:
-                        timing_data["start_time"] = red_data.index.min()
-                        timing_data["end_time"] = red_data.index.max()
-                        return timing_data
+                # Use the index key to access the timing column
+                if index_key in red_data.columns:
+                    timing_data["start_time"] = red_data[index_key].min()
+                    timing_data["end_time"] = red_data[index_key].max()
+                    return timing_data
+                # Fallback to DataFrame index if column not found
+                elif not red_data.index.empty:
+                    timing_data["start_time"] = red_data.index.min()
+                    timing_data["end_time"] = red_data.index.max()
+                    return timing_data
 
         except Exception:
             pass
@@ -337,4 +325,3 @@ class FiberPhotometryExtractor:
             f.write(fiber_data.model_dump_json(indent=3))
 
         return output_path
-

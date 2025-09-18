@@ -1,7 +1,5 @@
 """Fiber Photometry job settings configuration."""
 
-import argparse
-import json
 from pathlib import Path
 from typing import List, Literal, Optional, Union
 
@@ -24,7 +22,9 @@ class JobSettings(BaseModel):
     experimenter_full_name: List[str] = Field(default_factory=list, description="List of experimenter names")
     session_type: str = Field(default="FIB", description="Type of session")
     mouse_platform_name: Optional[str] = Field(default=None, description="Name of the mouse platform used")
-    active_mouse_platform: bool = Field(default=False, description="Whether the mouse platform was active during the session")
+    active_mouse_platform: bool = Field(
+        default=False, description="Whether the mouse platform was active during the session"
+    )
 
     # Optional session details
     anaesthesia: Optional[str] = Field(default=None, description="Anaesthesia used")
@@ -37,20 +37,12 @@ class JobSettings(BaseModel):
 
     # File paths
     data_directory: Optional[Union[str, Path]] = Field(
-        default=None,
-        description="Path to data directory containing fiber photometry files"
+        default=None, description="Path to data directory containing fiber photometry files"
     )
     output_directory: Optional[Union[str, Path]] = Field(
-        default=None,
-        description="Output directory for generated files"
+        default=None, description="Output directory for generated files"
     )
-    output_filename: str = Field(
-        default="session_fip.json",
-        description="Name of output file"
-    )
+    output_filename: str = Field(default="session_fip.json", description="Name of output file")
 
     # Timing configuration
-    local_timezone: str = Field(
-        default="America/Los_Angeles",
-        description="Timezone for the session"
-    )
+    local_timezone: str = Field(default="America/Los_Angeles", description="Timezone for the session")

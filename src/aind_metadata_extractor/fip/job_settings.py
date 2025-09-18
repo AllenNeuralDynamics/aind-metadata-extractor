@@ -7,6 +7,7 @@ from typing import List, Literal, Optional, Union
 from pydantic import Field, field_validator
 from aind_metadata_extractor.core import BaseJobSettings
 
+
 class JobSettings(BaseJobSettings):
     """Data to be entered by the user for Fiber Photometry."""
 
