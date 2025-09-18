@@ -3,6 +3,6 @@ message: "If you use this software, please cite it as below."
 authors:
 - given-names: "Allen Institute for Neural Dynamics"
 title: "aind-metadata-extractor"
-version: "v0.0.0"
+version: "v0.2.1"
 date-release: 2025-08-21
 url: "https://github.com/AllenNeuralDynamics/aind-metadata-extractor"
