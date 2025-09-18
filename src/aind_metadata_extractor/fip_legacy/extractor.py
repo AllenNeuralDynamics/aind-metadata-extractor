@@ -291,3 +291,26 @@ class FiberPhotometryExtractor:
             except Exception:
                 # Skip files that can't be read
                 continue
+
+if __name__ == "__main__":
+    # Example usage
+    if len(sys.argv) < 2:
+        print("Usage: python extractor.py <data_directory>")
+        sys.exit(1)
+
+    data_directory = sys.argv[1]
+
+    jobsettings = JobSettings(
+        data_directory=data_directory,
+        experimenter_full_name=["Auto Extractor"],
+        subject_id="UNKNOWN",
+        rig_id="UNKNOWN",
+        iacuc_protocol="UNKNOWN",
+        notes="Extracted using data contract",
+    )
+
+    extractor = FiberPhotometryExtractor(jobsettings)
+    extracted_data = extractor.extract()
+
+    fiber_data = FiberData(**extracted_data)
+    print(fiber_data.model_dump_json(indent=3))
