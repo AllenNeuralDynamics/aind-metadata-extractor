@@ -4,7 +4,6 @@ Ophys Indicator Benchmark Optogenetics Extractor
 
 from datetime import datetime
 from typing import Union
-from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -21,7 +20,7 @@ class OphysIndicatorBenchMarkExtractor:
     """Extractor for Ophys Benchmark Opto Metadata."""
 
     def __init__(self, job_settings: Union[str, JobSettings]):
-        """Initialize the SmartSPIM extractor with job settings."""
+        """Initialize the Ophys Benchmark extractor with job settings."""
         if isinstance(job_settings, str):
             self.job_settings = JobSettings.model_validate_json(job_settings)
         else:
@@ -60,17 +59,18 @@ class OphysIndicatorBenchMarkExtractor:
             raise FileNotFoundError("No stim csv found. Check data")
 
         stim_df = pd.read_csv(stim_csv_path[0])
+        filename = stim_csv_path[0].stem
 
-        tz = ZoneInfo("America/Los_Angeles")
-        start_time = datetime.fromisoformat(
-            stim_df["SoftwareTS"].iloc[0]
-        ).replace(tzinfo=tz)
-        end_time = datetime.fromisoformat(
-            stim_df["SoftwareTS"].iloc[-1]
-        ).replace(tzinfo=tz)
+        # Parse directly with the format
+        start_time = datetime.strptime(filename, "Stim_%Y-%m-%dT%H_%M_%S")
+        # Compute end time
+        end_time = start_time + pd.to_timedelta(
+            stim_df["SoftwareTS"].max(), unit="us"
+        )
+        end_time = end_time.isoformat()
 
         return {
-            "stimulus_start_time": start_time,
+            "stimulus_start_time": start_time.isoformat(),
             "stimulus_end_time": end_time,
             "stimulus_name": "OptoStim",
             "stimulus_modalities": ["Optogenetics"],

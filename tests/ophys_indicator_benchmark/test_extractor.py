@@ -30,9 +30,9 @@ class TestOphysIndicatorBenchMarkExtractor(unittest.TestCase):
 
         # Sample stim CSV
         df = pd.DataFrame(
-            {"SoftwareTS": ["2025-09-17T12:00:00", "2025-09-17T12:01:00"]}
+            {"SoftwareTS": [450, 455]}
         )
-        df.to_csv(self.data_dir / "Stim_example.csv", index=False)
+        df.to_csv(self.data_dir / "Stim_2025-08-01T17_48_50.csv", index=False)
 
         # Valid JobSettings
         self.job_settings = JobSettings(
@@ -90,7 +90,7 @@ class TestOphysIndicatorBenchMarkExtractor(unittest.TestCase):
         self.assertEqual(epochs["configurations"]["wavelength"], 470)
         self.assertEqual(epochs["configurations"]["power"], 2.5)
         # Check that start_time is datetime
-        self.assertIsInstance(epochs["stimulus_start_time"], datetime)
+        self.assertIsInstance(epochs["stimulus_start_time"], str)
 
     # ---- Full extraction ----
     def test_extract_returns_model(self):
