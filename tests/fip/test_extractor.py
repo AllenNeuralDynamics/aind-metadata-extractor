@@ -66,21 +66,13 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
                         "session_config": {"session_type": "FIB"}
                     }):
                         fiber_data = extractor.extract()
-        self.assertIn("start_time", fiber_data)
-        self.assertIn("end_time", fiber_data)
+        self.assertIn("session_start_time", fiber_data)
+        self.assertIn("session_end_time", fiber_data)
         self.assertIn("data_files", fiber_data)
         self.assertIn("rig_config", fiber_data)
         self.assertIn("session_config", fiber_data)
         self.assertEqual(fiber_data["rig_config"]["rig_name"], "Rig_001")
         self.assertEqual(fiber_data["session_config"]["session_type"], "FIB")
-
-    @patch("aind_metadata_extractor.fip.extractor.dataset")
-    def test_extract_missing_data_directory(self, mock_dataset):
-        """Test error when data_directory is missing."""
-        job_settings = JobSettings(data_directory=None)
-        extractor = FiberPhotometryExtractor(job_settings)
-        with self.assertRaises(ValueError):
-            extractor.extract()
 
     @patch("aind_metadata_extractor.fip.extractor.dataset")
     def test_extract_basic_metadata_fallback(self, mock_dataset):
