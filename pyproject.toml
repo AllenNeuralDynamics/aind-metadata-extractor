@@ -55,6 +55,10 @@ mesoscope = [
     "tifffile==2024.2.12",
 ]
 
+fip = [
+    "git+https://github.com/AllenNeuralDynamics/FIP_DAQ_Control.git@7da6273ab459234688ba2b6702d8ceecea469c2c"
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

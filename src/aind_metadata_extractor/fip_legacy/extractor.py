@@ -148,8 +148,6 @@ class FiberPhotometryExtractor:
             "protocol_id": self.job_settings.protocol_id,
             "data_directory": str(data_dir),
             "data_files": [str(f) for f in data_files],
-            "rig_config": self.job_settings.rig_config,
-            "session_config": self.job_settings.session_config,
             "local_timezone": self.job_settings.local_timezone,
             "output_directory": self.job_settings.output_directory,
             "output_filename": self.job_settings.output_filename,
@@ -236,7 +234,6 @@ class FiberPhotometryExtractor:
         return metadata_dict
 
     def _extract_session_start_time(self, data_files: List[Path]) -> Optional[datetime]:
-        """Extract session start time from file names using regex."""
         for file_path in data_files:
             match = re.search(REGEX_DATE, file_path.name)
             if match:
@@ -244,7 +241,7 @@ class FiberPhotometryExtractor:
                     return datetime.strptime(match.group(), "%Y-%m-%d_%H-%M-%S")
                 except Exception:
                     continue
-        return None
+        raise ValueError("Could not extract valid timestamp from filenames")
 
     def _extract_session_end_time(self, data_files: List[Path]) -> Optional[datetime]:
         """Extract session end time from CSV content if possible."""
