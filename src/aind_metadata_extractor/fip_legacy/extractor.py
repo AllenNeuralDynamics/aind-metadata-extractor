@@ -234,6 +234,19 @@ class FiberPhotometryExtractor:
         return metadata_dict
 
     def _extract_session_start_time(self, data_files: List[Path]) -> Optional[datetime]:
+        """
+        Extract session start time from filenames using regex.
+
+        Parameters
+        ----------
+        data_files : List[Path]
+            List of data file paths to extract the start time from.
+
+        Returns
+        -------
+        Optional[datetime]
+            Extracted session start time or None if not found.
+        """
         for file_path in data_files:
             match = re.search(REGEX_DATE, file_path.name)
             if match:
@@ -244,7 +257,19 @@ class FiberPhotometryExtractor:
         raise ValueError("Could not extract valid timestamp from filenames")
 
     def _extract_session_end_time(self, data_files: List[Path]) -> Optional[datetime]:
-        """Extract session end time from CSV content if possible."""
+        """
+        Extract session end time from CSV content if possible.
+
+        Parameters
+        ----------
+        data_files : List[Path]
+            List of data file paths to extract the end time from.
+
+        Returns
+        -------
+        Optional[datetime]
+            Extracted session end time or None if not found.
+        """
         for file_path in data_files:
             try:
                 df = pd.read_csv(file_path)
