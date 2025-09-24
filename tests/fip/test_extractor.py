@@ -34,10 +34,9 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir)
 
-
-    
     @patch("aind_metadata_extractor.fip.extractor.dataset")
     def test_extract_success(self, mock_dataset):
         """Test successful extraction using contract."""
@@ -49,7 +48,7 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         mock_stream.read.return_value = MagicMock(
             columns=["ReferenceTime"],
             __getitem__=lambda self, key: [933019.553312, 933754.601152],
-            index=MagicMock(empty=False, min=lambda: 933019.553312, max=lambda: 933754.601152)
+            index=MagicMock(empty=False, min=lambda: 933019.553312, max=lambda: 933754.601152),
         )
 
         mock_dataset.return_value._data = [mock_stream]
@@ -57,17 +56,21 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
 
         extractor = FiberPhotometryExtractor(self.job_settings)
         with patch.object(extractor, "_get_data_stream", return_value=mock_stream):
-            with patch.object(extractor, "_extract_timing_from_csv", return_value={
-                "start_time": 933019.553312,
-                "end_time": 933754.601152
-            }):
-                with patch.object(extractor, "_extract_data_files", return_value={
-                    "data_files": [str(self.test_data_dir / "green.csv")]
-                }):
-                    with patch.object(extractor, "_extract_hardware_config", return_value={
-                        "rig_config": {"rig_name": "Rig_001"},
-                        "session_config": {"session_type": "FIB"}
-                    }):
+            with patch.object(
+                extractor,
+                "_extract_timing_from_csv",
+                return_value={"start_time": 933019.553312, "end_time": 933754.601152},
+            ):
+                with patch.object(
+                    extractor,
+                    "_extract_data_files",
+                    return_value={"data_files": [str(self.test_data_dir / "green.csv")]},
+                ):
+                    with patch.object(
+                        extractor,
+                        "_extract_hardware_config",
+                        return_value={"rig_config": {"rig_name": "Rig_001"}, "session_config": {"session_type": "FIB"}},
+                    ):
                         fiber_data = extractor.extract()
         self.assertIn("session_start_time", fiber_data)
         self.assertIn("session_end_time", fiber_data)
@@ -129,7 +132,9 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         # Mock green stream with index
         green_stream = MagicMock()
         green_stream.reader_params.index = "GreenIndex"
-        with patch.object(extractor, "_get_data_stream", side_effect=lambda color: green_stream if color == "green" else None):
+        with patch.object(
+            extractor, "_get_data_stream", side_effect=lambda color: green_stream if color == "green" else None
+        ):
             result = extractor._extract_index()
             self.assertEqual(result["index_key"], "GreenIndex")
 
@@ -138,7 +143,13 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         green_stream_no_index.reader_params.index = None
         red_stream = MagicMock()
         red_stream.reader_params.index = "RedIndex"
-        with patch.object(extractor, "_get_data_stream", side_effect=lambda color: green_stream_no_index if color == "green" else red_stream if color == "red" else None):
+        with patch.object(
+            extractor,
+            "_get_data_stream",
+            side_effect=lambda color: (
+                green_stream_no_index if color == "green" else red_stream if color == "red" else None
+            ),
+        ):
             result = extractor._extract_index()
             self.assertEqual(result["index_key"], "RedIndex")
 
@@ -147,7 +158,13 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         green_stream_no_index.reader_params.index = None
         red_stream_no_index = MagicMock()
         red_stream_no_index.reader_params.index = None
-        with patch.object(extractor, "_get_data_stream", side_effect=lambda color: green_stream_no_index if color == "green" else red_stream_no_index if color == "red" else None):
+        with patch.object(
+            extractor,
+            "_get_data_stream",
+            side_effect=lambda color: (
+                green_stream_no_index if color == "green" else red_stream_no_index if color == "red" else None
+            ),
+        ):
             result = extractor._extract_index()
             self.assertEqual(result["index_key"], "ReferenceTime")
 
@@ -163,12 +180,18 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         reference_time_series = MagicMock()
         reference_time_series.min.return_value = 1
         reference_time_series.max.return_value = 2
-        green_data.__getitem__.side_effect = lambda key: reference_time_series if key == "ReferenceTime" else MagicMock()
+        green_data.__getitem__.side_effect = lambda key: (
+            reference_time_series if key == "ReferenceTime" else MagicMock()
+        )
         green_data.index = MagicMock(empty=False, min=lambda: 1, max=lambda: 2)
         green_stream.read.return_value = green_data
 
-        with patch.object(extractor, "_get_data_stream", side_effect=lambda color: green_stream if color == "green" else None), \
-             patch.object(extractor, "_extract_index", return_value={"index_key": "ReferenceTime"}):
+        with (
+            patch.object(
+                extractor, "_get_data_stream", side_effect=lambda color: green_stream if color == "green" else None
+            ),
+            patch.object(extractor, "_extract_index", return_value={"index_key": "ReferenceTime"}),
+        ):
             timing = extractor._extract_timing_from_csv()
             self.assertEqual(timing["start_time"], 1)
             self.assertEqual(timing["end_time"], 2)
@@ -180,12 +203,18 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         reference_time_series_red = MagicMock()
         reference_time_series_red.min.return_value = 3
         reference_time_series_red.max.return_value = 4
-        red_data.__getitem__.side_effect = lambda key: reference_time_series_red if key == "ReferenceTime" else MagicMock()
+        red_data.__getitem__.side_effect = lambda key: (
+            reference_time_series_red if key == "ReferenceTime" else MagicMock()
+        )
         red_data.index = MagicMock(empty=False, min=lambda: 3, max=lambda: 4)
         red_stream.read.return_value = red_data
 
-        with patch.object(extractor, "_get_data_stream", side_effect=lambda color: red_stream if color == "red" else None), \
-             patch.object(extractor, "_extract_index", return_value={"index_key": "ReferenceTime"}):
+        with (
+            patch.object(
+                extractor, "_get_data_stream", side_effect=lambda color: red_stream if color == "red" else None
+            ),
+            patch.object(extractor, "_extract_index", return_value={"index_key": "ReferenceTime"}),
+        ):
             timing = extractor._extract_timing_from_csv()
             self.assertEqual(timing["start_time"], 3)
             self.assertEqual(timing["end_time"], 4)
@@ -196,15 +225,21 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         red_data_no_col.index = MagicMock(empty=False, min=lambda: 5, max=lambda: 6)
         red_stream.read.return_value = red_data_no_col
 
-        with patch.object(extractor, "_get_data_stream", side_effect=lambda color: red_stream if color == "red" else None), \
-             patch.object(extractor, "_extract_index", return_value={"index_key": "ReferenceTime"}):
+        with (
+            patch.object(
+                extractor, "_get_data_stream", side_effect=lambda color: red_stream if color == "red" else None
+            ),
+            patch.object(extractor, "_extract_index", return_value={"index_key": "ReferenceTime"}),
+        ):
             timing = extractor._extract_timing_from_csv()
             self.assertEqual(timing["start_time"], 5)
             self.assertEqual(timing["end_time"], 6)
 
         # Case 4: Both streams missing, should fallback to now
-        with patch.object(extractor, "_get_data_stream", return_value=None), \
-             patch.object(extractor, "_extract_index", return_value={"index_key": "ReferenceTime"}):
+        with (
+            patch.object(extractor, "_get_data_stream", return_value=None),
+            patch.object(extractor, "_extract_index", return_value={"index_key": "ReferenceTime"}),
+        ):
             timing = extractor._extract_timing_from_csv()
             self.assertTrue(isinstance(timing["start_time"], datetime))
             self.assertTrue(isinstance(timing["end_time"], datetime))
@@ -223,7 +258,11 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         Path(green_stream.reader_params.path).touch()
         Path(red_stream.reader_params.path).touch()
 
-        with patch.object(extractor, "_get_data_stream", side_effect=lambda color: green_stream if color == "green" else red_stream if color == "red" else None):
+        with patch.object(
+            extractor,
+            "_get_data_stream",
+            side_effect=lambda color: green_stream if color == "green" else red_stream if color == "red" else None,
+        ):
             result = extractor._extract_data_files()
             self.assertIn(str(self.test_data_dir / "green.csv"), result["data_files"])
             self.assertIn(str(self.test_data_dir / "red.csv"), result["data_files"])
@@ -231,11 +270,14 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         # Case 2: Files do not exist
         green_stream.reader_params.path = self.test_data_dir / "missing_green.csv"
         red_stream.reader_params.path = self.test_data_dir / "missing_red.csv"
-        with patch.object(extractor, "_get_data_stream", side_effect=lambda color: green_stream if color == "green" else red_stream if color == "red" else None):
+        with patch.object(
+            extractor,
+            "_get_data_stream",
+            side_effect=lambda color: green_stream if color == "green" else red_stream if color == "red" else None,
+        ):
             result = extractor._extract_data_files()
             self.assertNotIn(str(self.test_data_dir / "missing_green.csv"), result["data_files"])
             self.assertNotIn(str(self.test_data_dir / "missing_red.csv"), result["data_files"])
-
 
     def test_extract_hardware_config(self):
         """Test _extract_hardware_config for rig and session streams."""
@@ -253,11 +295,16 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         session_data.model_dump.return_value = {"session_type": "FIB"}
         session_stream.read.return_value = session_data
 
-        with patch.object(extractor, "_get_data_stream", side_effect=lambda name: rig_stream if name == "rig_input" else session_stream if name == "session_input" else None):
+        with patch.object(
+            extractor,
+            "_get_data_stream",
+            side_effect=lambda name: (
+                rig_stream if name == "rig_input" else session_stream if name == "session_input" else None
+            ),
+        ):
             result = extractor._extract_hardware_config()
             self.assertEqual(result["rig_config"]["rig_name"], "Rig_001")
             self.assertEqual(result["session_config"]["session_type"], "FIB")
-
 
     def test_get_data_stream(self):
         """Test _get_data_stream returns correct stream or None."""
@@ -328,14 +375,13 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
 
         timing_data = {"start_time": 1, "end_time": 2}
         files_data = {"data_files": [str(self.test_data_dir / "green.csv")]}
-        hardware_data = {
-            "rig_config": {"rig_name": "Rig_001"},
-            "session_config": {"session_type": "FIB"}
-        }
+        hardware_data = {"rig_config": {"rig_name": "Rig_001"}, "session_config": {"session_type": "FIB"}}
 
-        with patch.object(extractor, "_extract_timing_from_csv", return_value=timing_data), \
-             patch.object(extractor, "_extract_data_files", return_value=files_data), \
-             patch.object(extractor, "_extract_hardware_config", return_value=hardware_data):
+        with (
+            patch.object(extractor, "_extract_timing_from_csv", return_value=timing_data),
+            patch.object(extractor, "_extract_data_files", return_value=files_data),
+            patch.object(extractor, "_extract_hardware_config", return_value=hardware_data),
+        ):
             metadata = extractor._extract_metadata_from_contract()
 
         self.assertEqual(metadata["start_time"], 1)

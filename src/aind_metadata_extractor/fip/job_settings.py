@@ -11,75 +11,33 @@ from aind_metadata_extractor.core import BaseJobSettings
 class JobSettings(BaseJobSettings):
     """Data to be entered by the user for Fiber Photometry."""
 
-    job_settings_name: Literal["FiberPhotometry"] = Field(
-        default="FiberPhotometry", title="Name of the job settings"
-    )
-    data_directory: Union[str, Path] = Field(
-        ..., title="Path to data directory containing fiber photometry files"
-    )
-    experimenter_full_name: List[str] = Field(
-        default_factory=list, title="List of experimenter names"
-    )
-    subject_id: Optional[str] = Field(
-        default=None, title="Subject identifier"
-    )
-    rig_id: Optional[str] = Field(
-        default=None, title="Identifier for the experimental rig"
-    )
-    mouse_platform_name: Optional[str] = Field(
-        default=None, title="Name of the mouse platform used"
-    )
+    job_settings_name: Literal["FiberPhotometry"] = Field(default="FiberPhotometry", title="Name of the job settings")
+    data_directory: Union[str, Path] = Field(..., title="Path to data directory containing fiber photometry files")
+    experimenter_full_name: List[str] = Field(default_factory=list, title="List of experimenter names")
+    subject_id: Optional[str] = Field(default=None, title="Subject identifier")
+    rig_id: Optional[str] = Field(default=None, title="Identifier for the experimental rig")
+    mouse_platform_name: Optional[str] = Field(default=None, title="Name of the mouse platform used")
     active_mouse_platform: Optional[bool] = Field(
         default=None, title="Whether the mouse platform was active during the session"
     )
-    data_streams: Optional[List[dict]] = Field(
-        default_factory=list, title="List of data stream configurations"
-    )
-    iacuc_protocol: Optional[str] = Field(
-        default=None, title="IACUC protocol identifier"
-    )
-    notes: Optional[str] = Field(
-        default=None, title="Session notes"
-    )
-    anaesthesia: Optional[str] = Field(
-        default=None, title="Anaesthesia used"
-    )
-    animal_weight_post: Optional[float] = Field(
-        default=None, title="Animal weight after session"
-    )
-    animal_weight_prior: Optional[float] = Field(
-        default=None, title="Animal weight before session"
-    )
-    protocol_id: Optional[List[str]] = Field(
-        default_factory=list, title="List of protocol identifiers"
-    )
-    session_type: Optional[str] = Field(
-        default="FIB", title="Type of session"
-    )
-    session_start_time: Optional[datetime] = Field(
-        default=None, title="Start time of the session"
-    )
-    session_end_time: Optional[datetime] = Field(
-        default=None, title="End time of the session"
-    )
-    data_files: Optional[List[str]] = Field(
-        default_factory=list, title="List of data file paths"
-    )
-    rig_config: Optional[dict] = Field(
-        default=None, title="Rig configuration dictionary"
-    )
-    session_config: Optional[dict] = Field(
-        default=None, title="Session configuration dictionary"
-    )
-    local_timezone: str = Field(
-        default="America/Los_Angeles", title="Timezone for the session"
-    )
+    data_streams: Optional[List[dict]] = Field(default_factory=list, title="List of data stream configurations")
+    iacuc_protocol: Optional[str] = Field(default=None, title="IACUC protocol identifier")
+    notes: Optional[str] = Field(default=None, title="Session notes")
+    anaesthesia: Optional[str] = Field(default=None, title="Anaesthesia used")
+    animal_weight_post: Optional[float] = Field(default=None, title="Animal weight after session")
+    animal_weight_prior: Optional[float] = Field(default=None, title="Animal weight before session")
+    protocol_id: Optional[List[str]] = Field(default_factory=list, title="List of protocol identifiers")
+    session_type: Optional[str] = Field(default="FIB", title="Type of session")
+    session_start_time: Optional[datetime] = Field(default=None, title="Start time of the session")
+    session_end_time: Optional[datetime] = Field(default=None, title="End time of the session")
+    data_files: Optional[List[str]] = Field(default_factory=list, title="List of data file paths")
+    rig_config: Optional[dict] = Field(default=None, title="Rig configuration dictionary")
+    session_config: Optional[dict] = Field(default=None, title="Session configuration dictionary")
+    local_timezone: str = Field(default="America/Los_Angeles", title="Timezone for the session")
     output_directory: Optional[Union[str, Path]] = Field(
         default=None, title="Output directory for generated files (defaults to data_directory)"
     )
-    output_filename: str = Field(
-        default="session_fip.json", title="Name of output file"
-    )
+    output_filename: str = Field(default="session_fip.json", title="Name of output file")
 
     @field_validator("data_directory", "output_directory", mode="before")
     @classmethod

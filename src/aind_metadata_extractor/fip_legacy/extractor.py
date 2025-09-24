@@ -1,17 +1,14 @@
 """Fiber Photometry legacy extractor module."""
 
-import argparse
-import json
 from datetime import datetime
 import re
-import sys
 from typing import Optional, List
 from pathlib import Path
 
 import pandas as pd
 
 from aind_metadata_extractor.fip_legacy.job_settings import JobSettings
-from aind_metadata_extractor.models.fip import FiberData
+from aind_metadata_extractor.models.fip_legacy import FiberData
 
 REGEX_DATE = r"\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}"
 REGEX_MOUSE_ID = r"mouse_\w+"
@@ -23,95 +20,6 @@ class FiberPhotometryExtractor:
     def __init__(self, job_settings: JobSettings):
         """Initialize the Fiber Photometry extractor with job settings."""
         self.job_settings = job_settings
-
-    @classmethod
-    def from_args(cls, args: List[str]) -> "FiberPhotometryExtractor":
-        """Create FiberPhotometryExtractor from command line arguments.
-
-        Parameters
-        ----------
-        args : List[str]
-            Command line arguments
-
-        Returns
-        -------
-        FiberPhotometryExtractor
-            Configured extractor instance
-        """
-        parser = argparse.ArgumentParser(description="Fiber Photometry ETL Job Settings")
-
-        # Required arguments
-        parser.add_argument("--subject_id", required=True, help="Subject identifier")
-        parser.add_argument("--rig_id", required=True, help="Rig identifier")
-        parser.add_argument("--iacuc_protocol", required=True, help="IACUC protocol")
-        parser.add_argument("--notes", required=True, help="Session notes")
-        parser.add_argument("--data_directory", required=True, help="Data directory path")
-
-        # Optional arguments
-        parser.add_argument(
-            "--experimenter_full_name",
-            nargs="+",
-            default=[],
-            help="Experimenter names",
-        )
-        parser.add_argument("--session_type", default="FIB", help="Session type")
-        parser.add_argument("--mouse_platform_name", help="Mouse platform name")
-        parser.add_argument(
-            "--active_mouse_platform",
-            action="store_true",
-            help="Mouse platform active",
-        )
-        parser.add_argument("--anaesthesia", help="Anaesthesia used")
-        parser.add_argument(
-            "--animal_weight_post",
-            type=float,
-            help="Animal weight post session",
-        )
-        parser.add_argument(
-            "--animal_weight_prior",
-            type=float,
-            help="Animal weight prior to session",
-        )
-        parser.add_argument(
-            "--local_timezone",
-            default="America/Los_Angeles",
-            help="Local timezone",
-        )
-        parser.add_argument("--output_directory", help="Output directory")
-        parser.add_argument(
-            "--output_filename",
-            default="session_fip.json",
-            help="Output filename",
-        )
-        parser.add_argument("--data_streams", help="JSON string of data streams configuration")
-
-        parsed_args = parser.parse_args(args)
-
-        # Parse data_streams if provided as JSON string
-        data_streams = []
-        if parsed_args.data_streams:
-            data_streams = json.loads(parsed_args.data_streams)
-
-        job_settings = JobSettings(
-            subject_id=parsed_args.subject_id,
-            rig_id=parsed_args.rig_id,
-            iacuc_protocol=parsed_args.iacuc_protocol,
-            notes=parsed_args.notes,
-            data_directory=parsed_args.data_directory,
-            experimenter_full_name=parsed_args.experimenter_full_name,
-            session_type=parsed_args.session_type,
-            mouse_platform_name=parsed_args.mouse_platform_name,
-            active_mouse_platform=parsed_args.active_mouse_platform,
-            anaesthesia=parsed_args.anaesthesia,
-            animal_weight_post=parsed_args.animal_weight_post,
-            animal_weight_prior=parsed_args.animal_weight_prior,
-            local_timezone=parsed_args.local_timezone,
-            output_directory=parsed_args.output_directory,
-            output_filename=parsed_args.output_filename,
-            data_streams=data_streams,
-        )
-
-        return cls(job_settings)
 
     def extract_metadata(self) -> FiberData:
         """Extract metadata from legacy fiber photometry files and job settings."""
@@ -250,10 +158,7 @@ class FiberPhotometryExtractor:
         for file_path in data_files:
             match = re.search(REGEX_DATE, file_path.name)
             if match:
-                try:
-                    return datetime.strptime(match.group(), "%Y-%m-%d_%H-%M-%S")
-                except Exception:
-                    continue
+                return datetime.strptime(match.group(), "%Y-%m-%d_%H-%M-%S")
         raise ValueError("Could not extract valid timestamp from filenames")
 
     def _extract_session_end_time(self, data_files: List[Path]) -> Optional[datetime]:
@@ -271,14 +176,11 @@ class FiberPhotometryExtractor:
             Extracted session end time or None if not found.
         """
         for file_path in data_files:
-            try:
-                df = pd.read_csv(file_path)
-                timestamp_cols = [col for col in df.columns if "time" in col.lower() or "timestamp" in col.lower()]
-                if timestamp_cols:
-                    timestamps = pd.to_datetime(df[timestamp_cols[0]])
-                    return timestamps.max().to_pydatetime()
-            except Exception:
-                continue
+            df = pd.read_csv(file_path)
+            timestamp_cols = [col for col in df.columns if "time" in col.lower() or "timestamp" in col.lower()]
+            if timestamp_cols:
+                timestamps = pd.to_datetime(df[timestamp_cols[0]])
+                return timestamps.max().to_pydatetime()
         return None
 
     def _extract_session_timing(self, data_files: List[Path]) -> tuple[Optional[datetime], Optional[datetime]]:
@@ -286,39 +188,32 @@ class FiberPhotometryExtractor:
         if not data_files:
             return None, None
 
-        try:
-            # Read the first data file to get timing information
-            first_file = data_files[0]
-            df = pd.read_csv(first_file)
+        # Read the first data file to get timing information
+        first_file = data_files[0]
+        df = pd.read_csv(first_file)
 
-            # Try to find timestamp column
-            timestamp_cols = [col for col in df.columns if "time" in col.lower() or "timestamp" in col.lower()]
+        # Try to find timestamp column
+        timestamp_cols = [col for col in df.columns if "time" in col.lower() or "timestamp" in col.lower()]
 
-            if timestamp_cols:
-                timestamps = pd.to_datetime(df[timestamp_cols[0]])
-                start_time = timestamps.min().to_pydatetime()
-                end_time = timestamps.max().to_pydatetime()
-                return start_time, end_time
-            else:
-                # Try to extract from filename if timestamp column not found
-                return self._extract_timing_from_filename(first_file)
-
-        except Exception:
-            # Fallback to filename extraction
-            return self._extract_timing_from_filename(data_files[0])
+        if timestamp_cols:
+            timestamps = pd.to_datetime(df[timestamp_cols[0]])
+            start_time = timestamps.min().to_pydatetime()
+            end_time = timestamps.max().to_pydatetime()
+            return start_time, end_time
+        else:
+            # Try to extract from filename if timestamp column not found
+            return self._extract_timing_from_filename(first_file)
 
     def _extract_timing_from_filename(self, file_path: Path) -> tuple[Optional[datetime], Optional[datetime]]:
         """Extract timing information from filename using regex."""
-        try:
-            # Try to match date pattern in filename or parent directory
-            for path_part in [file_path.name, file_path.parent.name]:
-                date_match = re.search(REGEX_DATE, path_part)
-                if date_match:
-                    start_time = datetime.strptime(date_match.group(), "%Y-%m-%d_%H-%M-%S")
-                    return start_time, None
-            return None, None
-        except Exception:
-            return None, None
+
+        # Try to match date pattern in filename or parent directory
+        for path_part in [file_path.name, file_path.parent.name]:
+            date_match = re.search(REGEX_DATE, path_part)
+            if date_match:
+                start_time = datetime.strptime(date_match.group(), "%Y-%m-%d_%H-%M-%S")
+                return start_time, None
+        return None, None
 
     def _extract_timestamps(self, data_files: List[Path]) -> List[float]:
         """Extract timestamps from all data files."""
@@ -344,28 +239,3 @@ class FiberPhotometryExtractor:
             except Exception:
                 # Skip files that can't be read
                 continue
-
-
-if __name__ == "__main__":
-    # Example usage
-    if len(sys.argv) < 2:
-        print("Usage: python extractor.py <data_directory>")
-        sys.exit(1)
-
-    data_directory = sys.argv[1]
-
-    # Create job settings with minimal required fields
-    job_settings = JobSettings(
-        data_directory=data_directory,
-        experimenter_full_name=["Auto Extractor"],
-        subject_id="UNKNOWN",
-        rig_id="UNKNOWN",
-        iacuc_protocol="UNKNOWN",
-        notes="Extracted using data contract",
-    )
-
-    extractor = FiberPhotometryExtractor(job_settings)
-    extracted_data = extractor.extract()
-
-    fiber_data = FiberData(**extracted_data)
-    print(fiber_data.model_dump_json(indent=3))

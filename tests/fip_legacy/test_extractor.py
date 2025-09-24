@@ -31,7 +31,7 @@ class TestFiberPhotometryLegacyExtractor(unittest.TestCase):
             mouse_platform_name="Platform_A",
             active_mouse_platform=True,
             anaesthesia="isoflurane",
-            data_directory=str(self.test_data_dir)  # <-- Add this line
+            data_directory=str(self.test_data_dir),  # <-- Add this line
         )
 
         # Create sample test files
@@ -82,17 +82,15 @@ class TestFiberPhotometryLegacyExtractor(unittest.TestCase):
         self.assertEqual(result.anaesthesia, "isoflurane")
         self.assertEqual(result.session_start_time, datetime(2024, 1, 15, 14, 30, 0))
 
-
     def test_extract_no_data_files(self):
         """Test error when no data files are found."""
-        empty_dir = tempfile.mkdtemp()
 
         job_settings = JobSettings(
             subject_id="mouse_001",
             rig_id="Rig_001",
             iacuc_protocol="IACUC-12345",
             notes="Test experiment notes",
-            data_directory=str("testingdir")  # Non-existent directory
+            data_directory=str("testingdir"),  # Non-existent directory
         )
 
         extractor = FiberPhotometryExtractor(job_settings)
@@ -100,7 +98,7 @@ class TestFiberPhotometryLegacyExtractor(unittest.TestCase):
         with self.assertRaises(FileNotFoundError) as context:
             extractor.extract_metadata()
         self.assertIn("Data directory testingdir does not exist", str(context.exception))
-    
+
     def test_extract_no_csv_files(self):
         """Test error when no CSV data files are found."""
         empty_dir = tempfile.mkdtemp()
@@ -109,7 +107,7 @@ class TestFiberPhotometryLegacyExtractor(unittest.TestCase):
             rig_id="Rig_001",
             iacuc_protocol="IACUC-12345",
             notes="Test experiment notes",
-            data_directory=str(empty_dir)  # Empty directory
+            data_directory=str(empty_dir),  # Empty directory
         )
 
         extractor = FiberPhotometryExtractor(job_settings)
@@ -117,7 +115,6 @@ class TestFiberPhotometryLegacyExtractor(unittest.TestCase):
         with self.assertRaises(FileNotFoundError) as context:
             extractor.extract_metadata()
         self.assertIn("No CSV data files found in ", str(context.exception))
-
 
     def test_extract(self):
         """Test the extract() method for full coverage."""
@@ -151,7 +148,6 @@ class TestFiberPhotometryLegacyExtractor(unittest.TestCase):
             self.assertEqual(result["mouse_platform_name"], "Platform_A")
             self.assertEqual(result["active_mouse_platform"], True)
             self.assertEqual(result["anaesthesia"], "isoflurane")
-        
 
     def test_extract_metadata_minimal_settings(self):
         """Test metadata extraction with minimal job settings."""
@@ -161,7 +157,7 @@ class TestFiberPhotometryLegacyExtractor(unittest.TestCase):
             rig_id="Rig_002",
             iacuc_protocol="IACUC-67890",
             notes="Minimal test",
-            data_directory=str(self.test_data_dir)
+            data_directory=str(self.test_data_dir),
         )
 
         extractor = FiberPhotometryExtractor(minimal_settings)
@@ -305,15 +301,15 @@ class TestFiberPhotometryLegacyExtractor(unittest.TestCase):
     def test_extract_metadata_from_data_files_hardware_configs(self):
         """Test extraction of hardware configs from data_streams."""
         extractor = FiberPhotometryExtractor(self.job_settings)
-        extractor.job_settings.data_streams = [{
-            "light_sources": ["ls1", "ls2"],
-            "detectors": ["det1"],
-            "fiber_connections": ["fc1"]
-        }]
+        extractor.job_settings.data_streams = [
+            {"light_sources": ["ls1", "ls2"], "detectors": ["det1"], "fiber_connections": ["fc1"]}
+        ]
         # Patch file finding and timing
-        with patch.object(extractor, "_extract_session_timing", return_value=(None, None)), \
-             patch.object(extractor, "_extract_timestamps", return_value=[]), \
-             patch("pathlib.Path.glob", return_value=[Path(__file__)]):
+        with (
+            patch.object(extractor, "_extract_session_timing", return_value=(None, None)),
+            patch.object(extractor, "_extract_timestamps", return_value=[]),
+            patch("pathlib.Path.glob", return_value=[Path(__file__)]),
+        ):
             result = extractor._extract_metadata_from_data_files()
             self.assertEqual(result["light_source_configs"], ["ls1", "ls2"])
             self.assertEqual(result["detector_configs"], ["det1"])
@@ -324,9 +320,11 @@ class TestFiberPhotometryLegacyExtractor(unittest.TestCase):
         extractor = FiberPhotometryExtractor(self.job_settings)
         extractor.job_settings.data_streams = []
         # Patch file finding and timing
-        with patch.object(extractor, "_extract_session_timing", return_value=(None, None)), \
-             patch.object(extractor, "_extract_timestamps", return_value=[]), \
-             patch("pathlib.Path.glob", return_value=[Path(__file__)]):
+        with (
+            patch.object(extractor, "_extract_session_timing", return_value=(None, None)),
+            patch.object(extractor, "_extract_timestamps", return_value=[]),
+            patch("pathlib.Path.glob", return_value=[Path(__file__)]),
+        ):
             result = extractor._extract_metadata_from_data_files()
             self.assertEqual(result["light_source_configs"], [])
             self.assertEqual(result["detector_configs"], [])
@@ -350,7 +348,7 @@ class TestFiberPhotometryLegacyExtractor(unittest.TestCase):
             f.write("value\n1\n2\n3\n")
         result = extractor._extract_timestamps([csv_file])
         self.assertEqual(result, None)
-    
+
     def test_extract_session_end_time_no_timestamps(self):
         """Test _extract_session_end_time returns None when no timestamps."""
         extractor = FiberPhotometryExtractor(self.job_settings)

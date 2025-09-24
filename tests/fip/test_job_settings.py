@@ -13,6 +13,7 @@ class TestJobSettings(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         import tempfile
+
         self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_path = Path(self.temp_dir.name)
 
@@ -38,6 +39,7 @@ class TestJobSettings(unittest.TestCase):
         """Test creation with only required fields."""
         # Patch Path.is_dir to always return True for testing
         from unittest.mock import patch
+
         with patch("pathlib.Path.is_dir", return_value=True):
             settings = JobSettings(data_directory="C:/data")
             self.assertEqual(settings.data_directory, "C:/data")
@@ -52,6 +54,7 @@ class TestJobSettings(unittest.TestCase):
         dt_start = datetime(2023, 1, 1, 12, 0)
         dt_end = datetime(2023, 1, 1, 13, 0)
         from unittest.mock import patch
+
         with patch("pathlib.Path.is_dir", return_value=True):
             settings = JobSettings(
                 data_directory=Path("/tmp/data"),
@@ -76,16 +79,18 @@ class TestJobSettings(unittest.TestCase):
     def test_defaults(self):
         """Test default values for optional fields."""
         from unittest.mock import patch
+
         with patch("pathlib.Path.is_dir", return_value=True):
             settings = JobSettings(data_directory="C:/data")
             self.assertEqual(settings.output_filename, "session_fip.json")
             self.assertEqual(settings.local_timezone, "America/Los_Angeles")
             self.assertIsNone(settings.output_directory)
             self.assertEqual(settings.experimenter_full_name, [])
-        
+
     def test_validate_path_is_dir_error(self):
         """Test validation error when data_directory is not a directory."""
         from unittest.mock import patch
+
         with patch("pathlib.Path.is_dir", return_value=False):
             with self.assertRaises(ValueError) as context:
                 JobSettings(data_directory="C:/not_a_dir")
