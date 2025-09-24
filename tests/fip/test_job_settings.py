@@ -82,6 +82,14 @@ class TestJobSettings(unittest.TestCase):
             self.assertEqual(settings.local_timezone, "America/Los_Angeles")
             self.assertIsNone(settings.output_directory)
             self.assertEqual(settings.experimenter_full_name, [])
+        
+    def test_validate_path_is_dir_error(self):
+        """Test validation error when data_directory is not a directory."""
+        from unittest.mock import patch
+        with patch("pathlib.Path.is_dir", return_value=False):
+            with self.assertRaises(ValueError) as context:
+                JobSettings(data_directory="C:/not_a_dir")
+            self.assertIn("is not a directory", str(context.exception))
 
 
 if __name__ == "__main__":

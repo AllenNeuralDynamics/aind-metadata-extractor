@@ -9,7 +9,7 @@ import re
 
 from aind_metadata_extractor.fip_legacy.extractor import FiberPhotometryExtractor
 from aind_metadata_extractor.fip_legacy.job_settings import JobSettings
-from aind_metadata_extractor.models.fip import FiberData
+from aind_metadata_extractor.models.fip_legacy import FiberData
 
 
 class TestFiberPhotometryLegacyExtractor(unittest.TestCase):
@@ -81,6 +81,77 @@ class TestFiberPhotometryLegacyExtractor(unittest.TestCase):
         self.assertEqual(result.active_mouse_platform, True)
         self.assertEqual(result.anaesthesia, "isoflurane")
         self.assertEqual(result.session_start_time, datetime(2024, 1, 15, 14, 30, 0))
+
+
+    def test_extract_no_data_files(self):
+        """Test error when no data files are found."""
+        empty_dir = tempfile.mkdtemp()
+
+        job_settings = JobSettings(
+            subject_id="mouse_001",
+            rig_id="Rig_001",
+            iacuc_protocol="IACUC-12345",
+            notes="Test experiment notes",
+            data_directory=str("testingdir")  # Non-existent directory
+        )
+
+        extractor = FiberPhotometryExtractor(job_settings)
+
+        with self.assertRaises(FileNotFoundError) as context:
+            extractor.extract_metadata()
+        self.assertIn("Data directory testingdir does not exist", str(context.exception))
+    
+    def test_extract_no_csv_files(self):
+        """Test error when no CSV data files are found."""
+        empty_dir = tempfile.mkdtemp()
+        job_settings = JobSettings(
+            subject_id="mouse_001",
+            rig_id="Rig_001",
+            iacuc_protocol="IACUC-12345",
+            notes="Test experiment notes",
+            data_directory=str(empty_dir)  # Empty directory
+        )
+
+        extractor = FiberPhotometryExtractor(job_settings)
+
+        with self.assertRaises(FileNotFoundError) as context:
+            extractor.extract_metadata()
+        self.assertIn("No CSV data files found in ", str(context.exception))
+
+
+    def test_extract(self):
+        """Test the extract() method for full coverage."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+
+        # Prepare a minimal valid metadata dict for FiberData
+        metadata = {
+            "job_settings_name": "FiberPhotometry",
+            "experimenter_full_name": ["John Doe", "Jane Smith"],
+            "subject_id": "mouse_001",
+            "rig_id": "Rig_001",
+            "iacuc_protocol": "IACUC-12345",
+            "notes": "Test experiment notes",
+            "session_type": "FIB",
+            "mouse_platform_name": "Platform_A",
+            "active_mouse_platform": True,
+            "anaesthesia": "isoflurane",
+            "session_start_time": datetime(2024, 1, 15, 14, 30, 0),
+            "session_end_time": datetime(2024, 1, 15, 15, 30, 0),
+            "data_directory": str(self.test_data_dir),
+        }
+
+        with patch.object(extractor, "_extract_metadata_from_data_files", return_value=metadata):
+            result = extractor.extract()
+            self.assertIsInstance(result, dict)
+            self.assertEqual(result["subject_id"], "mouse_001")
+            self.assertEqual(result["rig_id"], "Rig_001")
+            self.assertEqual(result["experimenter_full_name"], ["John Doe", "Jane Smith"])
+            self.assertEqual(result["notes"], "Test experiment notes")
+            self.assertEqual(result["session_type"], "FIB")
+            self.assertEqual(result["mouse_platform_name"], "Platform_A")
+            self.assertEqual(result["active_mouse_platform"], True)
+            self.assertEqual(result["anaesthesia"], "isoflurane")
+        
 
     def test_extract_metadata_minimal_settings(self):
         """Test metadata extraction with minimal job settings."""
@@ -204,6 +275,137 @@ class TestFiberPhotometryLegacyExtractor(unittest.TestCase):
         ):
             with self.assertRaises(FileNotFoundError):
                 extractor.extract_metadata()
+
+    def test_extract_metadata_from_data_files_invalid_path_type(self):
+        """Test ValueError when data_directory is not a string or Path."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        extractor.job_settings.data_directory = 12345  # Invalid type
+        with self.assertRaises(ValueError) as context:
+            extractor._extract_metadata_from_data_files()
+        self.assertIn("data_directory must be a valid path", str(context.exception))
+
+    def test_extract_metadata_from_data_files_missing_directory(self):
+        """Test FileNotFoundError when directory does not exist."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        extractor.job_settings.data_directory = "nonexistent_dir"
+        with self.assertRaises(FileNotFoundError) as context:
+            extractor._extract_metadata_from_data_files()
+        self.assertIn("Data directory nonexistent_dir does not exist", str(context.exception))
+
+    def test_extract_metadata_from_data_files_no_data_files(self):
+        """Test FileNotFoundError when no data files are found."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            extractor = FiberPhotometryExtractor(self.job_settings)
+            extractor.job_settings.data_directory = tmpdir
+            # Remove all files
+            with self.assertRaises(FileNotFoundError) as context:
+                extractor._extract_metadata_from_data_files()
+            self.assertIn("No data files found in", str(context.exception))
+
+    def test_extract_metadata_from_data_files_hardware_configs(self):
+        """Test extraction of hardware configs from data_streams."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        extractor.job_settings.data_streams = [{
+            "light_sources": ["ls1", "ls2"],
+            "detectors": ["det1"],
+            "fiber_connections": ["fc1"]
+        }]
+        # Patch file finding and timing
+        with patch.object(extractor, "_extract_session_timing", return_value=(None, None)), \
+             patch.object(extractor, "_extract_timestamps", return_value=[]), \
+             patch("pathlib.Path.glob", return_value=[Path(__file__)]):
+            result = extractor._extract_metadata_from_data_files()
+            self.assertEqual(result["light_source_configs"], ["ls1", "ls2"])
+            self.assertEqual(result["detector_configs"], ["det1"])
+            self.assertEqual(result["fiber_configs"], ["fc1"])
+
+    def test_extract_metadata_from_data_files_no_hardware_configs(self):
+        """Test extraction when data_streams is empty."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        extractor.job_settings.data_streams = []
+        # Patch file finding and timing
+        with patch.object(extractor, "_extract_session_timing", return_value=(None, None)), \
+             patch.object(extractor, "_extract_timestamps", return_value=[]), \
+             patch("pathlib.Path.glob", return_value=[Path(__file__)]):
+            result = extractor._extract_metadata_from_data_files()
+            self.assertEqual(result["light_source_configs"], [])
+            self.assertEqual(result["detector_configs"], [])
+            self.assertEqual(result["fiber_configs"], [])
+
+    def test_extract_timestamps_with_timestamp_column(self):
+        """Test _extract_timestamps with a timestamp column."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        # Create a CSV file with a timestamp column
+        csv_file = self.test_data_dir / "timestamp_test.csv"
+        with open(csv_file, "w") as f:
+            f.write("timestamp,value\n2024-01-15 14:30:00,1\n2024-01-15 14:30:01,2\n")
+        result = extractor._extract_timestamps([csv_file])
+        self.assertEqual(result, None)
+
+    def test_extract_timestamps_no_timestamp_column(self):
+        """Test _extract_timestamps with no timestamp column."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        csv_file = self.test_data_dir / "no_timestamp.csv"
+        with open(csv_file, "w") as f:
+            f.write("value\n1\n2\n3\n")
+        result = extractor._extract_timestamps([csv_file])
+        self.assertEqual(result, None)
+    
+    def test_extract_session_end_time_no_timestamps(self):
+        """Test _extract_session_end_time returns None when no timestamps."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        result = extractor._extract_session_end_time([])
+        self.assertIsNone(result)
+
+    def test_extract_session_timing_no_files(self):
+        """Test _extract_session_timing returns (None, None) when no files."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        result = extractor._extract_session_timing([])
+        self.assertEqual(result, (None, None))
+
+    def test_extract_timestamps_file_read_error(self):
+        """Test _extract_timestamps skips unreadable files."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        # Patch pandas.read_csv to raise error
+        with patch("pandas.read_csv", side_effect=Exception("fail")):
+            result = extractor._extract_timestamps([Path("fake.csv")])
+            self.assertEqual(result, None)
+
+    def test_extract_session_timing_with_timestamp_column(self):
+        """Test _extract_session_timing with timestamp column."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        csv_file = self.test_data_dir / "timing_test.csv"
+        with open(csv_file, "w") as f:
+            f.write("timestamp,value\n2024-01-15 14:30:00,1\n2024-01-15 14:31:00,2\n")
+        start, end = extractor._extract_session_timing([csv_file])
+        self.assertEqual(start, datetime(2024, 1, 15, 14, 30, 0))
+        self.assertEqual(end, datetime(2024, 1, 15, 14, 31, 0))
+
+    def test_extract_session_timing_no_timestamp_column(self):
+        """Test _extract_session_timing falls back to filename."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        csv_file = self.test_data_dir / "2024-01-15_14-30-00_mouse_001_fibpho.csv"
+        with open(csv_file, "w") as f:
+            f.write("value\n1\n2\n")
+        start, end = extractor._extract_session_timing([csv_file])
+        self.assertEqual(start, datetime(2024, 1, 15, 14, 30, 0))
+        self.assertIsNone(end)
+
+    def test_extract_timing_from_filename(self):
+        """Test _extract_timing_from_filename returns correct start time."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        csv_file = self.test_data_dir / "2024-01-15_14-30-00_mouse_001_fibpho.csv"
+        start, end = extractor._extract_timing_from_filename(csv_file)
+        self.assertEqual(start, datetime(2024, 1, 15, 14, 30, 0))
+        self.assertIsNone(end)
+
+    def test_extract_timing_from_filename_no_match(self):
+        """Test _extract_timing_from_filename returns None if no match."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        csv_file = self.test_data_dir / "no_date_here.csv"
+        start, end = extractor._extract_timing_from_filename(csv_file)
+        self.assertIsNone(start)
+        self.assertIsNone(end)
 
 
 if __name__ == "__main__":
