@@ -1,3 +1,8 @@
+# Skip this file when running unittest
+if "unittest" in sys.modules:
+    import unittest
+    raise unittest.SkipTest("This is an example script, not a test")
+
 from aind_metadata_extractor.smartspim.job_settings import JobSettings
 from aind_metadata_extractor.smartspim.extractor import SmartspimExtractor
 

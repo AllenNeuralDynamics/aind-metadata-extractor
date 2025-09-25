@@ -19,6 +19,7 @@ class TestSmartspimExtractor(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         job_settings_dict = {
+            "job_settings_name": "SmartSPIM",
             "subject_id": "804714",
             "metadata_service_path": "https://api.test.com/smartspim",
             "input_source": "/data/SmartSPIM_2025-08-19_15-03-00",
@@ -87,14 +88,7 @@ class TestSmartspimExtractor(unittest.TestCase):
         mock_isdir.return_value = True
         mock_read_json.return_value = {}  # Won't be called but good to have
 
-        def side_effect():
-            """Mock side effect for Path.exists()"""
-            # We can't access self here, but we can control the return value
-            print("Path exists check called")  # Debug print
-            print("Returning False for ASI file")  # Debug print
-            return False
-
-        mock_exists.side_effect = side_effect
+        mock_exists.return_value = False
 
         extractor = SmartspimExtractor(self.job_settings)
 
@@ -149,6 +143,7 @@ class TestSmartspimExtractor(unittest.TestCase):
         """Test extraction fails with invalid input source."""
         # Create a new dict instead of modifying original to avoid type issues
         invalid_settings_dict = {
+            "job_settings_name": "SmartSPIM",
             "subject_id": "804714",
             "metadata_service_path": "https://api.test.com/smartspim",
             "input_source": None,  # This will cause the error
@@ -167,6 +162,7 @@ class TestSmartspimExtractor(unittest.TestCase):
         """Test extraction with list input source."""
         # Create a new dict to handle list type properly
         list_settings_dict = {
+            "job_settings_name": "SmartSPIM",
             "subject_id": "804714",
             "metadata_service_path": "https://api.test.com/smartspim",
             "input_source": ["/data/SmartSPIM_2025-08-19_15-03-00", "/data/additional_path"],
@@ -246,9 +242,11 @@ class TestSmartspimExtractor(unittest.TestCase):
         mock_get.return_value = mock_response
 
         extractor = SmartspimExtractor(self.job_settings)
-        result = extractor._extract_metadata_from_slims()
-
-        self.assertEqual(result, {})
+        
+        with self.assertRaises(ValueError) as context:
+            extractor._extract_metadata_from_slims()
+        
+        self.assertIn("No imaging session found", str(context.exception))
 
     @patch("aind_metadata_extractor.smartspim.extractor.requests.get")
     def test_extract_metadata_from_slims_with_date_filters(self, mock_get):
@@ -291,17 +289,22 @@ class TestSmartspimExtractor(unittest.TestCase):
         extractor = SmartspimExtractor(self.job_settings)
         result = extractor.extract()
 
-        # Verify the result structure
-        self.assertIn("file_metadata", result)
-        self.assertIn("slims_metadata", result)
+        # Verify the result is a SmartspimModel object
+        from aind_metadata_extractor.models.smartspim import SmartspimModel
+        self.assertIsInstance(result, SmartspimModel)
+
+        # Verify structure has the expected attributes
+        self.assertEqual(result.acquisition_type, "some_acquisition_type")
+        self.assertIsNotNone(result.file_metadata)
+        self.assertIsNotNone(result.slims_metadata)
 
         # Verify file metadata
-        file_metadata = result["file_metadata"]
-        self.assertEqual(file_metadata["session_config"], example_metadata_info["session_config"])
+        self.assertEqual(result.file_metadata.session_config, example_metadata_info["session_config"])
+        self.assertEqual(result.file_metadata.wavelength_config, example_metadata_info["wavelength_config"])
+        self.assertEqual(result.file_metadata.session_end_time, example_session_end_time)
 
         # Verify SLIMS metadata
-        slims_metadata = result["slims_metadata"]
-        self.assertEqual(slims_metadata["subject_id"], example_imaging_info_from_slims["subject_id"])
+        self.assertEqual(result.slims_metadata.subject_id, example_imaging_info_from_slims["subject_id"])
 
     def test_regex_date_extraction(self):
         """Test date extraction from input path."""
