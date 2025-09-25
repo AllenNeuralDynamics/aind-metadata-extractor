@@ -154,7 +154,7 @@ class Extractor(BaseExtractor):
         else:
             return TifFileGroup.SPONTANEOUS
 
-    def extract_parsed_metadata_info_from_files(self, tif_file_locations: Dict[str, List[Path]]) -> ExtractedInfo:
+    def _extract(self, tif_file_locations: Dict[str, List[Path]]) -> ExtractedInfo:
         """
         Loop through list of files and use ScanImageTiffReader to read metadata
         Parameters
@@ -187,15 +187,14 @@ class Extractor(BaseExtractor):
             )
             extracted_info.append(extracted_item)
 
-        self.metadata = ExtractedInfo(info=extracted_info)
-        return self.metadata
+        return ExtractedInfo(info=extracted_info)
 
     def run_job(self):
         """Main entrypoint to extract info and save to file"""
         tif_file_locations = self.get_tif_file_locations()
-        metadata = self.extract_parsed_metadata_info_from_files(tif_file_locations)
+        self.metadata = self._extract(tif_file_locations)
         with open(self.settings.output_filepath, "w") as f:
-            json.dump(metadata.model_dump(mode="json"), f, indent=3)
+            json.dump(self.metadata.model_dump(mode="json"), f, indent=3)
 
 
 if __name__ == "__main__":

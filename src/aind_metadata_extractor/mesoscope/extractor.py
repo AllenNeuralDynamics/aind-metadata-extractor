@@ -152,7 +152,7 @@ class MesoscopeExtract(BaseExtractor):
 
         return meta
 
-    def _extract(self) -> dict:
+    def _extract(self) -> MesoscopeExtractModel:
         """extract data from the platform json file and tiff file (in the
         future).
         If input source is a file, will extract the data from the file.
@@ -178,7 +178,13 @@ class MesoscopeExtract(BaseExtractor):
             "time_series_header": meta,
             "job_settings": user_settings,
         }
-        return data
+        return MesoscopeExtractModel(
+            tiff_header=data["time_series_header"],
+            session_metadata=data["session_metadata"],
+            camstim_epchs=data["camstim_epochs"],
+            camstim_session_type=data["camstim_session_type"],
+            job_settings=data["job_settings"],
+        )
 
     def _camstim_epoch_and_session(self) -> Tuple[list, str]:
         """Get the camstim table and epochs
@@ -198,14 +204,7 @@ class MesoscopeExtract(BaseExtractor):
         """
         Run the extraction job.
         """
-        data = self._extract()
-        self.metadata = MesoscopeExtractModel(
-            tiff_header=data["time_series_header"],
-            session_metadata=data["session_metadata"],
-            camstim_epchs=data["camstim_epochs"],
-            camstim_session_type=data["camstim_session_type"],
-            job_settings=data["job_settings"],
-        )
+        self.metadata = self._extract()
         return self.metadata.model_dump()
 
     @classmethod

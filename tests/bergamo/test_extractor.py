@@ -252,7 +252,7 @@ class TestBergamoExtractor(unittest.TestCase):
 
         extractor = Extractor(settings=self.example_job_settings)
         with self.assertLogs(level="WARNING") as captured:
-            extracted_info = extractor.extract_parsed_metadata_info_from_files(
+            extracted_info = extractor._extract(
                 tif_file_locations={
                     "neuron4": [Path("neuron4_00001.tif "), Path("neuron4_00002.tif "), Path("neuron4_00003.tif ")]
                 }
