@@ -289,7 +289,7 @@ class TestSmartspimExtractor(unittest.TestCase):
         mock_extract_slims.return_value = example_imaging_info_from_slims
 
         extractor = SmartspimExtractor(self.job_settings)
-        result = extractor.extract()
+        result = extractor.run_job()
 
         # Verify the result structure
         self.assertIn("file_metadata", result)
