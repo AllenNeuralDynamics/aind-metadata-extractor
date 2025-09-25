@@ -147,7 +147,9 @@ class TestMesoscopeExtract(unittest.TestCase):
 
     @patch.object(MesoscopeExtract, "_extract_behavior_metdata", return_value={"behavior": "meta"})
     @patch.object(MesoscopeExtract, "_extract_platform_metadata", return_value={"platform": "meta"})
-    @patch.object(MesoscopeExtract, "_extract_time_series_metadata", return_value={"meta": "data"})
+    @patch.object(
+        MesoscopeExtract, "_extract_time_series_metadata", return_value=[{"SI.hRoiManager.pixelsPerLine": 512}]
+    )
     @patch.object(MesoscopeExtract, "_camstim_epoch_and_session", return_value=(["epoch1"], "session_type"))
     def test_extract(self, mock_epochs, mock_time_series, mock_platform, mock_behavior):
         """test extract"""
