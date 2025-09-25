@@ -402,11 +402,11 @@ class TestMesoscopeExtract(unittest.TestCase):
             experimenter_full_name=["John Doe"],
             make_camsitm_dir=False,
         )
-        
+
         # Use a hack to bypass pydantic validation and set behavior_source to string
         # This is to test the string-to-Path conversion logic in the MesoscopeExtract constructor
-        object.__setattr__(job_settings, 'behavior_source', str(self.resource_dir))
-        
+        object.__setattr__(job_settings, "behavior_source", str(self.resource_dir))
+
         # Now create the extractor - this should trigger the conversion on line 48
         extractor = MesoscopeExtract(job_settings)
         self.assertIsInstance(extractor.job_settings.behavior_source, Path)
