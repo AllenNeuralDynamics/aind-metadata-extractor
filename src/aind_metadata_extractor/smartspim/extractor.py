@@ -5,7 +5,6 @@ import os
 import re
 from typing import Optional
 from pathlib import Path
-import json
 
 import requests
 
