@@ -108,6 +108,7 @@ class TestBaseExtractor(unittest.TestCase):
     def tearDown(self):
         """Clean up test fixtures"""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_write_success_with_pydantic_model(self):
@@ -123,9 +124,11 @@ class TestBaseExtractor(unittest.TestCase):
         extractor.metadata = mock_metadata
 
         # Mock open and json.dump
-        with patch("builtins.open", mock_open()) as mock_file, \
-             patch("json.dump") as mock_json_dump, \
-             patch("logging.info") as mock_log:
+        with (
+            patch("builtins.open", mock_open()) as mock_file,
+            patch("json.dump") as mock_json_dump,
+            patch("logging.info") as mock_log,
+        ):
 
             extractor.write()
 
@@ -149,9 +152,11 @@ class TestBaseExtractor(unittest.TestCase):
         extractor.metadata = dict_metadata
 
         # Mock open and json.dump
-        with patch("builtins.open", mock_open()) as mock_file, \
-             patch("json.dump") as mock_json_dump, \
-             patch("logging.info") as mock_log:
+        with (
+            patch("builtins.open", mock_open()) as mock_file,
+            patch("json.dump") as mock_json_dump,
+            patch("logging.info") as mock_log,
+        ):
 
             extractor.write()
 
@@ -166,15 +171,13 @@ class TestBaseExtractor(unittest.TestCase):
     def test_write_creates_output_directory(self):
         """Test that write creates output directory if it doesn't exist"""
         nested_dir = self.temp_path / "nested" / "directory"
-        
+
         extractor = self.MockExtractor()
         extractor.__class__.__module__ = "aind_metadata_extractor.smartspim.extractor"
         extractor.job_settings = self.MockJobSettings(nested_dir)
         extractor.metadata = {"test": "data"}
 
-        with patch("builtins.open", mock_open()), \
-             patch("json.dump"), \
-             patch("logging.info"):
+        with patch("builtins.open", mock_open()), patch("json.dump"), patch("logging.info"):
 
             extractor.write()
 
@@ -188,8 +191,8 @@ class TestBaseExtractor(unittest.TestCase):
         extractor.__class__.__module__ = "aind_metadata_extractor.test.extractor"  # Valid module path
         extractor.job_settings = self.MockJobSettings(self.temp_dir)
         # Explicitly remove metadata attribute
-        if hasattr(extractor, 'metadata'):
-            delattr(extractor, 'metadata')
+        if hasattr(extractor, "metadata"):
+            delattr(extractor, "metadata")
 
         with self.assertRaises(ValueError) as context:
             extractor.write()
@@ -246,9 +249,7 @@ class TestBaseExtractor(unittest.TestCase):
                 extractor.job_settings = self.MockJobSettings(self.temp_dir)
                 extractor.metadata = {"test": "data"}
 
-                with patch("builtins.open", mock_open()) as mock_file, \
-                     patch("json.dump"), \
-                     patch("logging.info"):
+                with patch("builtins.open", mock_open()) as mock_file, patch("json.dump"), patch("logging.info"):
 
                     extractor.write()
 
