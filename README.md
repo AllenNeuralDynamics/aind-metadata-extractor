@@ -15,7 +15,7 @@ pip install 'aind-metadata-extractor[<your-extractor>]'
 To build a new extractor, define a new output model in the models/ folder. Then create a new extractor folder and inherit from `BaseExtractor`. Implement the functions:
 
 - `.run_job()` should store the metadata output object (matching the model) in self.metadata and return a dictionary with the `model_dump()` contents
-- `._extract()` should perform the actual data loading, metadata-service calls, etc, necessary to build the metadata model
+- `._extract()` should perform the actual data loading, metadata-service calls, etc, necessary to build the metadata model and return it
 
 Your extractor comes with an inherited function `.write()` which writes the metadata to the file <extractor>.json.
 
