@@ -230,11 +230,11 @@ class TestBergamoExtractor(unittest.TestCase):
         self.assertEqual(TifFileGroup.STACK, group2)
         self.assertEqual(TifFileGroup.SPONTANEOUS, group3)
 
-    @patch("aind_metadata_extractor.bergamo.extractor.Extractor._extract")
-    def test_extract(self, mock_extract: MagicMock):
+    @patch("aind_metadata_extractor.bergamo.extractor.Extractor.extract_raw_info_from_file")
+    def test_extract(self, mock_extract_raw_info: MagicMock):
         """Tests _extract."""
 
-        mock_extract.side_effect = [
+        mock_extract_raw_info.side_effect = [
             Exception("Error parsing file."),
             RawImageInfo(
                 reader_shape=[1466, 256, 512],
