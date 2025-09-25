@@ -230,11 +230,11 @@ class TestBergamoExtractor(unittest.TestCase):
         self.assertEqual(TifFileGroup.STACK, group2)
         self.assertEqual(TifFileGroup.SPONTANEOUS, group3)
 
-    @patch("aind_metadata_extractor.bergamo.extractor.Extractor.extract_raw_info_from_file")
-    def test_extract_parsed_metadata_info_from_files(self, mock_extract_info: MagicMock):
-        """Tests extract_parsed_metadata_info_from_files."""
+    @patch("aind_metadata_extractor.bergamo.extractor.Extractor._extract")
+    def test_extract(self, mock_extract: MagicMock):
+        """Tests _extract."""
 
-        mock_extract_info.side_effect = [
+        mock_extract.side_effect = [
             Exception("Error parsing file."),
             RawImageInfo(
                 reader_shape=[1466, 256, 512],
@@ -262,12 +262,12 @@ class TestBergamoExtractor(unittest.TestCase):
         self.assertEqual(["WARNING:root:Error parsing file."], captured.output)
 
     @patch("aind_metadata_extractor.bergamo.extractor.Extractor.get_tif_file_locations")
-    @patch("aind_metadata_extractor.bergamo.extractor.Extractor.extract_parsed_metadata_info_from_files")
+    @patch("aind_metadata_extractor.bergamo.extractor.Extractor._extract")
     @patch("builtins.open", new_callable=mock_open)
-    def test_run_job(self, mock_file_open: MagicMock, mock_extract_info: MagicMock, mock_tif_file_locations: MagicMock):
+    def test_run_job(self, mock_file_open: MagicMock, mock_extract: MagicMock, mock_tif_file_locations: MagicMock):
         """Tests run_job."""
         extracted_info = self.extracted_info_example
-        mock_extract_info.return_value = extracted_info
+        mock_extract.return_value = extracted_info
         Extractor(settings=self.example_job_settings).run_job()
         mock_tif_file_locations.assert_called_once()
         mock_file_open.assert_called_once_with(Path("extracted_info.json"), "w")
