@@ -155,12 +155,12 @@ class TestMesoscopeExtract(unittest.TestCase):
         result = extractor._extract()
         # _extract now returns a MesoscopeExtractModel instance, not a dict
         self.assertIsNotNone(result)
-        self.assertTrue(hasattr(result, 'model_dump'))
+        self.assertTrue(hasattr(result, "model_dump"))
         # Test the model has expected attributes
-        self.assertTrue(hasattr(result, 'session_metadata'))
-        self.assertTrue(hasattr(result, 'camstim_epchs'))
-        self.assertTrue(hasattr(result, 'camstim_session_type'))
-        self.assertTrue(hasattr(result, 'tiff_header'))
+        self.assertTrue(hasattr(result, "session_metadata"))
+        self.assertTrue(hasattr(result, "camstim_epchs"))
+        self.assertTrue(hasattr(result, "camstim_session_type"))
+        self.assertTrue(hasattr(result, "tiff_header"))
 
     @patch.object(MesoscopeExtract, "_extract")
     def test_run_job(self, mock_extract):
@@ -175,13 +175,13 @@ class TestMesoscopeExtract(unittest.TestCase):
 
         # Verify _extract was called once
         mock_extract.assert_called_once()
-        
+
         # Verify model_dump was called
         mock_model_instance.model_dump.assert_called_once()
-        
+
         # Verify the return value is the result of model_dump
         self.assertEqual(result, {"dumped": "data"})
-        
+
         # Verify metadata is stored on the instance
         self.assertEqual(extractor.metadata, mock_model_instance)
 
@@ -367,18 +367,20 @@ class TestMesoscopeExtract(unittest.TestCase):
     def test_constructor_with_string_behavior_source_manual_assignment(self):
         """test constructor with behavior_source as string via JSON"""
         # Test the behavior_source string conversion in the constructor by using JSON
-        job_settings_json = json.dumps({
-            "input_source": str(self.resource_dir),
-            "output_directory": str(self.resource_dir),
-            "session_id": "0123456789",
-            "behavior_source": str(self.resource_dir),  # String instead of Path
-            "session_start_time": datetime.datetime.now().isoformat(),
-            "session_end_time": datetime.datetime.now().isoformat(),
-            "subject_id": "subject1",
-            "project": "test_project",
-            "experimenter_full_name": ["John Doe"],
-            "make_camsitm_dir": False,
-        })
+        job_settings_json = json.dumps(
+            {
+                "input_source": str(self.resource_dir),
+                "output_directory": str(self.resource_dir),
+                "session_id": "0123456789",
+                "behavior_source": str(self.resource_dir),  # String instead of Path
+                "session_start_time": datetime.datetime.now().isoformat(),
+                "session_end_time": datetime.datetime.now().isoformat(),
+                "subject_id": "subject1",
+                "project": "test_project",
+                "experimenter_full_name": ["John Doe"],
+                "make_camsitm_dir": False,
+            }
+        )
         extractor = MesoscopeExtract(job_settings_json)
         self.assertIsInstance(extractor.job_settings.behavior_source, Path)
 
