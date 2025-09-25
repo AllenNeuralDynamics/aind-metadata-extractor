@@ -56,13 +56,13 @@ class TestUtils(unittest.TestCase):
     def test_read_json_as_dict_invalid_json(self, mock_exists, mock_open_func, mock_json_loads, mock_json_load):
         """Test reading invalid JSON file."""
         mock_exists.return_value = True
-        
+
         # Mock json.load to raise JSONDecodeError on first call
         mock_json_load.side_effect = json.JSONDecodeError("Expecting value", "doc", 0)
 
         # Mock open calls: first for text mode (fails), second for binary mode (succeeds)
         mock_text_file = mock_open()()
-        mock_binary_file = mock_open(read_data=b'invalid json')()
+        mock_binary_file = mock_open(read_data=b"invalid json")()
         mock_open_func.side_effect = [mock_text_file, mock_binary_file]
 
         # Mock json.loads to also raise JSONDecodeError for the binary fallback

@@ -1,4 +1,5 @@
 """Helper script to grab example metadata from VAST and run it through the extractor"""
+
 # pragma: no cover
 from aind_metadata_extractor.smartspim.job_settings import JobSettings
 from aind_metadata_extractor.smartspim.extractor import SmartspimExtractor

@@ -29,7 +29,7 @@ def read_json_as_dict(filepath: str) -> dict:
         except (UnicodeDecodeError, json.JSONDecodeError) as e:
             print(f"Error reading json with utf-8: {e}")
             print("Falling back to binary read with character replacement.")
-            
+
             # Fallback: read as binary and replace problematic characters
             with open(filepath, "rb") as json_file:
                 data = json_file.read()
