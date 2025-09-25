@@ -49,13 +49,24 @@ class TestUtils(unittest.TestCase):
         result = read_json_as_dict("/nonexistent/file.json")
         self.assertEqual(result, {})
 
-    @patch("builtins.open", new_callable=mock_open, read_data="{}")
-    @patch("os.path.exists")
     @patch("json.load")
-    def test_read_json_as_dict_invalid_json(self, mock_json_load, mock_exists, mock_file):
+    @patch("json.loads")
+    @patch("builtins.open")
+    @patch("os.path.exists")
+    def test_read_json_as_dict_invalid_json(self, mock_exists, mock_open_func, mock_json_loads, mock_json_load):
         """Test reading invalid JSON file."""
         mock_exists.return_value = True
+        
+        # Mock json.load to raise JSONDecodeError on first call
         mock_json_load.side_effect = json.JSONDecodeError("Expecting value", "doc", 0)
+
+        # Mock open calls: first for text mode (fails), second for binary mode (succeeds)
+        mock_text_file = mock_open()()
+        mock_binary_file = mock_open(read_data=b'invalid json')()
+        mock_open_func.side_effect = [mock_text_file, mock_binary_file]
+
+        # Mock json.loads to also raise JSONDecodeError for the binary fallback
+        mock_json_loads.side_effect = json.JSONDecodeError("Expecting value", "doc", 0)
 
         with self.assertRaises(json.JSONDecodeError):
             read_json_as_dict("/fake/path.json")
@@ -68,21 +79,19 @@ class TestUtils(unittest.TestCase):
         """Test reading JSON with unicode decode errors."""
         mock_exists.return_value = True
 
-        # Mock the first json.load call to raise UnicodeDecodeError
+        # Mock json.load to raise UnicodeDecodeError on first call
         mock_json_load.side_effect = UnicodeDecodeError("utf-8", b"", 0, 1, "invalid start byte")
 
-        # Mock the second call (binary mode) to return valid JSON
-        mock_binary_file = mock_open(read_data=b'{"test": "valid"}\xff\xfe')()
-        mock_open_func.side_effect = [
-            mock_open()(),  # First call (text mode) - will raise UnicodeDecodeError via json.load
-            mock_binary_file,  # Second call (binary mode)
-        ]
+        # Mock open calls: first for text mode (fails), second for binary mode (succeeds)
+        mock_text_file = mock_open()()
+        mock_binary_file = mock_open(read_data=b'{"test": "valid"}')()
+        mock_open_func.side_effect = [mock_text_file, mock_binary_file]
 
-        # Mock json.loads to return the expected result after decoding with errors='ignore'
+        # Mock json.loads to return the expected result after decoding with errors='replace'
         mock_json_loads.return_value = {"test": "valid"}
 
         result = read_json_as_dict("/fake/path.json")
-        # Should handle the error and return partial data
+        # Should handle the error and return data from binary fallback
         self.assertEqual(result, {"test": "valid"})
 
     def test_get_anatomical_direction_basic(self):
