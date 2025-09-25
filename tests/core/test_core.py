@@ -83,6 +83,7 @@ class TestBaseExtractor(unittest.TestCase):
         """Mock extractor for testing purposes"""
 
         def __init__(self, job_settings=None, metadata=None):
+            """Create mock extractor"""
             self.job_settings = job_settings
             self.metadata = metadata
 
@@ -98,6 +99,7 @@ class TestBaseExtractor(unittest.TestCase):
         """Mock job settings for testing"""
 
         def __init__(self, output_directory=None):
+            """Create mock job settings"""
             self.output_directory = Path(output_directory) if output_directory else None
 
     def setUp(self):
