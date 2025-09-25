@@ -5,9 +5,11 @@ import os
 import re
 from typing import Optional
 from pathlib import Path
+import json
 
 import requests
 
+from aind_metadata_extractor.core import BaseExtractor
 from aind_metadata_extractor.smartspim.job_settings import JobSettings
 from aind_metadata_extractor.models.smartspim import SmartspimModel, FileMetadataModel, SlimsMetadataModel
 from aind_metadata_extractor.smartspim.utils import get_excitation_emission_waves, get_session_end, read_json_as_dict
@@ -16,14 +18,20 @@ REGEX_DATE = r"(20[0-9]{2})-([0-9]{2})-([0-9]{2})_([0-9]{2})-" r"([0-9]{2})-([0-
 REGEX_MOUSE_ID = r"([0-9]{6})"
 
 
-class SmartspimExtractor:
+class SmartspimExtractor(BaseExtractor):
     """Extractor for SmartSPIM metadata from microscope files and SLIMS."""
 
     def __init__(self, job_settings: JobSettings):
         """Initialize the SmartSPIM extractor with job settings."""
+        self.metadata = None
         self.job_settings = job_settings
 
-    def extract(self) -> dict:
+    def run_job(self):
+        """Run the extraction job."""
+        self.metadata = self._extract()
+        return self.metadata
+
+    def _extract(self) -> dict:
         """Run extraction process"""
 
         file_metadata = self._extract_metadata_from_microscope_files()
