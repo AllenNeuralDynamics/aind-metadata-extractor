@@ -8,8 +8,9 @@ job_settings = JobSettings(
     metadata_service_path="http://aind-metadata-service/slims/smartspim_imaging",
     output_directory=".",
     acquisition_type="SmartSPIM",
-    input_source=vast_dir+"SmartSPIM_762444_2025-07-16_20-47-57",
-    slims_datetime="2025-0422T18:30:08.915000Z")
+    input_source=vast_dir + "SmartSPIM_762444_2025-07-16_20-47-57",
+    slims_datetime="2025-0422T18:30:08.915000Z",
+)
 extractor = SmartspimExtractor(job_settings=job_settings)
 response = extractor.extract()
 
