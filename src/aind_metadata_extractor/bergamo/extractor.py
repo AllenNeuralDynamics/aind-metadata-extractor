@@ -12,10 +12,11 @@ from typing import Dict, List
 from ScanImageTiffReader import ScanImageTiffReader
 
 from aind_metadata_extractor.bergamo.settings import Settings
+from aind_metadata_extractor.core import BaseExtractor
 from aind_metadata_extractor.models.bergamo import ExtractedInfo, ExtractedInfoItem, RawImageInfo, TifFileGroup
 
 
-class Extractor:
+class Extractor(BaseExtractor):
     """Class to manage extracting metadata from files."""
 
     def __init__(self, settings: Settings):
