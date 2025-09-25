@@ -359,6 +359,27 @@ class TestSmartspimExtractor(unittest.TestCase):
 
         self.assertIn("Error while extracting session date", str(context.exception))
 
+    @patch.object(SmartspimExtractor, "extract")
+    def test_run_job(self, mock_extract):
+        """Test run_job method returns dictionary from extract."""
+        # Create a mock SmartspimModel object
+        mock_model = MagicMock()
+        mock_model.model_dump.return_value = {"test": "data", "acquisition_type": "SmartSPIM"}
+        mock_extract.return_value = mock_model
+
+        extractor = SmartspimExtractor(self.job_settings)
+        result = extractor.run_job()
+
+        # Verify extract was called
+        mock_extract.assert_called_once()
+        
+        # Verify model_dump was called
+        mock_model.model_dump.assert_called_once()
+        
+        # Verify result is the expected dictionary
+        self.assertEqual(result, {"test": "data", "acquisition_type": "SmartSPIM"})
+        self.assertIsInstance(result, dict)
+
 
 if __name__ == "__main__":
     unittest.main()
