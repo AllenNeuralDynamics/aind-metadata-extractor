@@ -242,10 +242,10 @@ class TestSmartspimExtractor(unittest.TestCase):
         mock_get.return_value = mock_response
 
         extractor = SmartspimExtractor(self.job_settings)
-        
+
         with self.assertRaises(ValueError) as context:
             extractor._extract_metadata_from_slims()
-        
+
         self.assertIn("No imaging session found", str(context.exception))
 
     @patch("aind_metadata_extractor.smartspim.extractor.requests.get")
@@ -291,6 +291,7 @@ class TestSmartspimExtractor(unittest.TestCase):
 
         # Verify the result is a SmartspimModel object
         from aind_metadata_extractor.models.smartspim import SmartspimModel
+
         self.assertIsInstance(result, SmartspimModel)
 
         # Verify structure has the expected attributes
