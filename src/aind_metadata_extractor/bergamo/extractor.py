@@ -186,14 +186,16 @@ class Extractor(BaseExtractor):
                 files=files,
             )
             extracted_info.append(extracted_item)
-        return ExtractedInfo(info=extracted_info)
+
+        self.metadata = ExtractedInfo(info=extracted_info)
+        return self.metadata
 
     def run_job(self):
         """Main entrypoint to extract info and save to file"""
         tif_file_locations = self.get_tif_file_locations()
-        extracted_info = self.extract_parsed_metadata_info_from_files(tif_file_locations)
+        metadata = self.extract_parsed_metadata_info_from_files(tif_file_locations)
         with open(self.settings.output_filepath, "w") as f:
-            json.dump(extracted_info.model_dump(mode="json"), f, indent=3)
+            json.dump(metadata.model_dump(mode="json"), f, indent=3)
 
 
 if __name__ == "__main__":

@@ -26,12 +26,12 @@ class SmartspimExtractor(BaseExtractor):
         self.metadata = None
         self.job_settings = job_settings
 
-    def run_job(self):
+    def run_job(self) -> dict:
         """Run the extraction job."""
         self.metadata = self._extract()
-        return self.metadata
+        return self.metadata.model_dump()
 
-    def _extract(self) -> dict:
+    def _extract(self) -> SmartspimModel:
         """Run extraction process"""
 
         file_metadata = self._extract_metadata_from_microscope_files()
@@ -47,7 +47,7 @@ class SmartspimExtractor(BaseExtractor):
             slims_metadata=slims_metadata_model,
         )
 
-        return smartspim_metadata.model_dump()
+        return smartspim_metadata
 
     def _extract_metadata_from_microscope_files(self) -> dict:
         """
