@@ -2,6 +2,7 @@
 
 import json
 import unittest
+import unittest.mock
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 from aind_metadata_extractor.mesoscope.extractor import MesoscopeExtract
@@ -384,6 +385,30 @@ class TestMesoscopeExtract(unittest.TestCase):
             }
         )
         extractor = MesoscopeExtract(job_settings_json)
+        self.assertIsInstance(extractor.job_settings.behavior_source, Path)
+
+    def test_constructor_with_string_behavior_source_direct_modification(self):
+        """test constructor with behavior_source manually converted from string in constructor"""
+        # Create a JobSettings object normally
+        job_settings = JobSettings(
+            input_source=self.resource_dir,
+            output_directory=self.resource_dir,
+            session_id="0123456789",
+            behavior_source=self.resource_dir,
+            session_start_time=datetime.datetime.now(),
+            session_end_time=datetime.datetime.now(),
+            subject_id="subject1",
+            project="test_project",
+            experimenter_full_name=["John Doe"],
+            make_camsitm_dir=False,
+        )
+        
+        # Use a hack to bypass pydantic validation and set behavior_source to string
+        # This is to test the string-to-Path conversion logic in the MesoscopeExtract constructor
+        object.__setattr__(job_settings, 'behavior_source', str(self.resource_dir))
+        
+        # Now create the extractor - this should trigger the conversion on line 48
+        extractor = MesoscopeExtract(job_settings)
         self.assertIsInstance(extractor.job_settings.behavior_source, Path)
 
 
