@@ -12,10 +12,11 @@ from typing import Dict, List
 from ScanImageTiffReader import ScanImageTiffReader
 
 from aind_metadata_extractor.bergamo.settings import Settings
+from aind_metadata_extractor.core import BaseExtractor
 from aind_metadata_extractor.models.bergamo import ExtractedInfo, ExtractedInfoItem, RawImageInfo, TifFileGroup
 
 
-class Extractor:
+class Extractor(BaseExtractor):
     """Class to manage extracting metadata from files."""
 
     def __init__(self, settings: Settings):
@@ -153,7 +154,7 @@ class Extractor:
         else:
             return TifFileGroup.SPONTANEOUS
 
-    def extract_parsed_metadata_info_from_files(self, tif_file_locations: Dict[str, List[Path]]) -> ExtractedInfo:
+    def _extract(self, tif_file_locations: Dict[str, List[Path]]) -> ExtractedInfo:
         """
         Loop through list of files and use ScanImageTiffReader to read metadata
         Parameters
@@ -185,14 +186,15 @@ class Extractor:
                 files=files,
             )
             extracted_info.append(extracted_item)
+
         return ExtractedInfo(info=extracted_info)
 
     def run_job(self):
         """Main entrypoint to extract info and save to file"""
         tif_file_locations = self.get_tif_file_locations()
-        extracted_info = self.extract_parsed_metadata_info_from_files(tif_file_locations)
+        self.metadata = self._extract(tif_file_locations)
         with open(self.settings.output_filepath, "w") as f:
-            json.dump(extracted_info.model_dump(mode="json"), f, indent=3)
+            json.dump(self.metadata.model_dump(mode="json"), f, indent=3)
 
 
 if __name__ == "__main__":
