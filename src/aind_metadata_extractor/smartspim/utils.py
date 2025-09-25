@@ -9,7 +9,7 @@ from typing import Any, List, Optional
 
 def read_json_as_dict(filepath: str) -> dict:
     """
-    Reads a json as dictionary.
+    Reads a json as dictionary with robust encoding handling.
     Parameters
     ------------------------
     filepath: PathLike
@@ -23,19 +23,31 @@ def read_json_as_dict(filepath: str) -> dict:
     dictionary = {}
 
     if os.path.exists(filepath):
-        try:
-            with open(filepath) as json_file:
-                dictionary = json.load(json_file)
-
-        except UnicodeDecodeError:
-            print(
-                "Error reading json with utf-8, trying different approach."
-                " This might lose data: verify the JSON encoding."
-            )
-            with open(filepath, "rb") as json_file:
-                data = json_file.read()
-                data_str = data.decode("utf-8", errors="ignore")
-                dictionary = json.loads(data_str)
+        # Try multiple encoding strategies
+        encodings_to_try = ['utf-8', 'utf-8-sig', 'latin1', 'cp1252']
+        
+        for encoding in encodings_to_try:
+            try:
+                with open(filepath, 'r', encoding=encoding) as json_file:
+                    dictionary = json.load(json_file)
+                break  # Successfully loaded, exit the loop
+                
+            except (UnicodeDecodeError, json.JSONDecodeError) as e:
+                if encoding == encodings_to_try[-1]:  # Last encoding attempt
+                    print(f"Error reading json with {encoding}: {e}")
+                    print("Falling back to binary read with character replacement.")
+                    
+                    # Final fallback: read as binary and replace problematic characters
+                    with open(filepath, "rb") as json_file:
+                        data = json_file.read()
+                        # Try utf-8 with replacement, then clean up common problematic characters
+                        data_str = data.decode("utf-8", errors="replace")
+                        # Replace common non-UTF-8 micrometer symbols with proper UTF-8 µ
+                        data_str = data_str.replace('�m', 'um')  # Replace replacement char + m with µm
+                        data_str = data_str.replace('μm', 'um')  # Replace Greek mu with micro sign
+                        dictionary = json.loads(data_str)
+                continue  # Try next encoding
+                
     return dictionary
 
 
