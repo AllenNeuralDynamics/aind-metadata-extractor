@@ -372,10 +372,10 @@ class TestSmartspimExtractor(unittest.TestCase):
 
         # Verify extract was called
         mock_extract.assert_called_once()
-        
+
         # Verify model_dump was called
         mock_model.model_dump.assert_called_once()
-        
+
         # Verify result is the expected dictionary
         self.assertEqual(result, {"test": "data", "acquisition_type": "SmartSPIM"})
         self.assertIsInstance(result, dict)
