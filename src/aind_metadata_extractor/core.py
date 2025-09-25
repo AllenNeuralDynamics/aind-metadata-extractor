@@ -1,6 +1,7 @@
 """Core module for metadata extraction job settings."""
 
 import argparse
+import json
 import logging
 from pydantic_settings import (
     BaseSettings,
@@ -12,6 +13,50 @@ from pydantic_settings import (
 from pydantic import Field
 from typing import Optional, Union, List, Type, Tuple
 from pathlib import Path
+
+
+class BaseExtractor():
+    """Parent class for metadata extractors."""
+
+    def _extract(self):
+        """Load and extract metadata from input source."""
+        raise NotImplementedError("This method should be implemented by subclasses.")
+
+    def run_job(self):
+        """Run the extraction job."""
+        raise NotImplementedError("This method should be implemented by subclasses.")
+
+    def write(self) -> None:
+        """Save extraction results to a standardized JSON file."""
+        if not hasattr(self, "metadata"):
+            raise ValueError("No metadata found. Please run the job first.")
+        
+        job_settings = getattr(self, "job_settings", None)
+        if job_settings is None or getattr(job_settings, "output_directory", None) is None:
+            raise ValueError("No output directory specified in job settings.")
+        
+        job_settings.output_directory.mkdir(parents=True, exist_ok=True)
+        
+        # Generate filename from the module's parent directory name
+        # e.g., aind_metadata_extractor.mesoscope.extractor -> "mesoscope"
+        module_path = self.__class__.__module__
+        module_parts = module_path.split('.')
+        if len(module_parts) >= 2:
+            folder_name = module_parts[-2]  # Get the parent folder name
+        else:
+            raise ValueError("Cannot determine folder name from module path.")
+        
+        output_path = job_settings.output_directory / f"{folder_name}.json"
+        
+        metadata = getattr(self, "metadata")
+        with open(output_path, "w") as f:
+            # Handle both pydantic models and plain dicts
+            if hasattr(metadata, "model_dump"):
+                json.dump(metadata.model_dump(), f, indent=4)
+            else:
+                json.dump(metadata, f, default=str, indent=4)
+        
+        logging.info(f"Metadata written to {output_path}")
 
 
 class BaseJobSettings(BaseSettings):
