@@ -1,8 +1,7 @@
 """Tests for testing ophys benchmark extractor"""
-
+import json
 import tempfile
 import unittest
-from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -30,9 +29,20 @@ class TestOphysIndicatorBenchMarkExtractor(unittest.TestCase):
 
         # Sample stim CSV
         df = pd.DataFrame(
-            {"SoftwareTS": [450, 455]}
+            {"SoftwareTime": [450, 455]}
         )
         df.to_csv(self.data_dir / "Stim_2025-08-01T17_48_50.csv", index=False)
+
+        # Minimal valid fiber_params.json (required fields only)
+        fiber_params = {
+            "job_settings_name": "FiberPhotometry",
+            "subject_id": "mouse123",
+            "rig_id": "rigA",
+            "iacuc_protocol": "IACUC-001",
+            "notes": "test session",
+            "data_directory": str(self.data_dir),
+        }
+        (self.data_dir / "fiber_params.json").write_text(json.dumps(fiber_params))
 
         # Valid JobSettings
         self.job_settings = JobSettings(
@@ -50,6 +60,18 @@ class TestOphysIndicatorBenchMarkExtractor(unittest.TestCase):
             power=2.5,
             job_settings_name="Optogenetics",
         )
+
+    def test_init_with_jobsettings_path(self):
+        """Initialize extractor using a JobSettings JSON file path."""
+        # Dump JobSettings to a temporary JSON file
+        job_path = self.data_dir / "job_settings.json"
+        job_path.write_text(self.job_settings.model_dump_json())
+
+        # Initialize extractor with the file path
+        extractor = OphysIndicatorBenchMarkExtractor(str(job_path))
+        self.assertEqual(extractor.job_settings.stimulus_name, "LaserStim")
+        self.assertEqual(extractor.job_settings.pulse_shape, "square")
+        self.assertIsInstance(extractor.job_settings.pulse_frequency, list)
 
     def tearDown(self):
         """Clean up"""
