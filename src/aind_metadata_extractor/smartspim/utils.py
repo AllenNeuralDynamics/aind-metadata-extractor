@@ -9,7 +9,7 @@ from typing import Any, List, Optional
 
 def read_json_as_dict(filepath: str) -> dict:
     """
-    Reads a json as dictionary.
+    Reads a json as dictionary with robust encoding handling.
     Parameters
     ------------------------
     filepath: PathLike
@@ -24,18 +24,22 @@ def read_json_as_dict(filepath: str) -> dict:
 
     if os.path.exists(filepath):
         try:
-            with open(filepath) as json_file:
+            with open(filepath, "r", encoding="utf-8") as json_file:
                 dictionary = json.load(json_file)
+        except (UnicodeDecodeError, json.JSONDecodeError) as e:
+            print(f"Error reading json with utf-8: {e}")
+            print("Falling back to binary read with character replacement.")
 
-        except UnicodeDecodeError:
-            print(
-                "Error reading json with utf-8, trying different approach."
-                " This might lose data: verify the JSON encoding."
-            )
+            # Fallback: read as binary and replace problematic characters
             with open(filepath, "rb") as json_file:
                 data = json_file.read()
-                data_str = data.decode("utf-8", errors="ignore")
+                # Decode with replacement, then clean up common problematic characters
+                data_str = data.decode("utf-8", errors="replace")
+                # Replace common non-UTF-8 micrometer symbols with proper UTF-8 µ
+                data_str = data_str.replace("�m", "um")  # Replace replacement char + m with µm
+                data_str = data_str.replace("μm", "um")  # Replace Greek mu with micro sign
                 dictionary = json.loads(data_str)
+
     return dictionary
 
 
