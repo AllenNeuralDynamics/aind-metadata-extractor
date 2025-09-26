@@ -213,7 +213,7 @@ class FiberPhotometryExtractor:
         metadata_dict = {
             "start_time": start_time,
             "end_time": end_time,
-            "data_files": data_files,
+            "data_files": [str(f) for f in data_files],
             "timestamps": timestamps,
             "light_source_configs": light_source_configs,
             "detector_configs": detector_configs,
