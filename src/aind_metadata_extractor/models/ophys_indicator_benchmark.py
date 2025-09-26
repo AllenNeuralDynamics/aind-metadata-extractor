@@ -1,6 +1,7 @@
 """Ophys Indicator Benchmark metadata model"""
 
 from pydantic import BaseModel, Field
+from aind_metadata_extractor.models.fip import FiberData
 
 
 class OptoModel(BaseModel):
@@ -23,3 +24,4 @@ class OphysIndicatorBenchmarkModel(BaseModel):
     """Intermediate data structure"""
 
     opto_data: OptoModel
+    fiber_data: FiberData

@@ -1,8 +1,9 @@
 """
 Ophys Indicator Benchmark Optogenetics Extractor
 """
-
+import json
 from datetime import datetime
+from pathlib import Path
 from typing import Union
 
 import pandas as pd
@@ -11,10 +12,16 @@ from aind_metadata_extractor.models.ophys_indicator_benchmark import (
     OphysIndicatorBenchmarkModel,
     OptoModel,
 )
+from aind_metadata_extractor.fip_legacy.job_settings import (
+    JobSettings as FiberJobSettings 
+) 
+from aind_metadata_extractor.models.fip import FiberData
+
 from aind_metadata_extractor.ophys_indictor_benchmark.job_settings import (
     JobSettings,
 )
 
+from aind_metadata_extractor.fip_legacy.extractor import FiberPhotometryExtractor
 
 class OphysIndicatorBenchMarkExtractor:
     """Extractor for Ophys Benchmark Opto Metadata."""
@@ -22,9 +29,20 @@ class OphysIndicatorBenchMarkExtractor:
     def __init__(self, job_settings: Union[str, JobSettings]):
         """Initialize the Ophys Benchmark extractor with job settings."""
         if isinstance(job_settings, str):
+            if Path(job_settings).exists():
+                with open(job_settings, "r") as f:
+                    jobs_settings_params = json.load(f)
+                    job_settings = json.dumps(jobs_settings_params)
+
             self.job_settings = JobSettings.model_validate_json(job_settings)
         else:
             self.job_settings = job_settings
+        
+        with open(self.job_settings.data_directory / "fiber_params.json", "r") as f:
+            fiber_params = json.load(f)
+            fiber_job_settings = FiberJobSettings(**fiber_params)
+            self.fiber_data = FiberPhotometryExtractor(fiber_job_settings)
+
 
     def extract(self) -> OphysIndicatorBenchmarkModel:
         """Run extraction process"""
@@ -34,7 +52,8 @@ class OphysIndicatorBenchMarkExtractor:
             opto_metadata=opto_params, stimulus_epochs=stimulus_epochs
         )
 
-        return OphysIndicatorBenchmarkModel(opto_data=opto_model)
+        fiber_metadata = FiberData(**self.fiber_data.extract())
+        return OphysIndicatorBenchmarkModel(opto_data=opto_model, fiber_data=fiber_metadata)
 
     def _extract_opto_parameters(self) -> dict:
         """Returns opto parameters"""
@@ -63,6 +82,7 @@ class OphysIndicatorBenchMarkExtractor:
 
         # Parse directly with the format
         start_time = datetime.strptime(filename, "Stim_%Y-%m-%dT%H_%M_%S")
+        start_time = start_time + pd.to_timedelta(self.job_settings.baseline_duration, unit="s")
         # Compute end time
         end_time = start_time + pd.to_timedelta(
             stim_df["SoftwareTS"].max(), unit="us"
