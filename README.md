@@ -10,6 +10,29 @@ During installation pass the extractor as an optional dependency:
 pip install 'aind-metadata-extractor[<your-extractor>]'
 ```
 
+## Develop
+
+### Testing
+
+When testing locally you only need to run your own tests (i.e. `coverage run -m unittest discover -s tests/<new-extractor>`). Do not modify the tests for other extractors in your PRs.
+
+Before opening a PR, modify the file `test_and_lint.yml` and add a new test-group:
+
+```
+test-group: ['core', 'smartspim', 'mesoscope', 'utils', '<new-extractor>']
+```
+
+Then add the test-group settings below that:
+
+```
+    - test-group: '<new-extractor>'
+    dependencies: '[dev,<new-extractor>]'
+    test-path: 'tests/<new-extractor>'
+    test-pattern: 'test_*.py'
+```
+
+When running on GitHub, all of the test groups will be run independently with their separate dependencies and then their coverage results are gathered together in a final step.
+
 ## Run
 
 Each extractor uses a `JobSettings` object to collect necessary information about data and metadata files to create an `Extractor` which is run by calling `.extract()`. For example, for *smartspim*:
