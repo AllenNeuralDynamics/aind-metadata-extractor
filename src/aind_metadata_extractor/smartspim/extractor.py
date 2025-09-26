@@ -136,10 +136,9 @@ class SmartspimExtractor(BaseExtractor):
             Dictionary containing metadata from SLIMS for an acquisition.
         """
         query_params = {"subject_id": self.job_settings.subject_id}
-        if start_date_gte:
-            query_params["start_date_gte"] = start_date_gte
-        if end_date_lte:
-            query_params["end_date_lte"] = end_date_lte
+        query_params["start_date_gte"] = start_date_gte if start_date_gte else "2020-01-01"
+        query_params["end_date_lte"] = end_date_lte if end_date_lte else "2100-01-01"
+
         response = requests.get(
             f"{self.job_settings.metadata_service_path}",
             params=query_params,
@@ -153,5 +152,5 @@ class SmartspimExtractor(BaseExtractor):
         elif response.status_code == 200 and len(response_data) == 1:
             imaging_info = response_data[0]
         else:
-            imaging_info = {}
+            raise ValueError("No imaging session found for the given subject_id and date range.")
         return imaging_info
