@@ -287,25 +287,24 @@ class TestSmartspimExtractor(unittest.TestCase):
         mock_extract_slims.return_value = example_imaging_info_from_slims
 
         extractor = SmartspimExtractor(self.job_settings)
-        result = extractor.extract()
+        result = extractor.run_job()
 
-        # Verify the result is a SmartspimModel object
-        from aind_metadata_extractor.models.smartspim import SmartspimModel
-
-        self.assertIsInstance(result, SmartspimModel)
+        # Verify the result is a dictionary (from model_dump())
+        self.assertIsInstance(result, dict)
 
         # Verify structure has the expected attributes
-        self.assertEqual(result.acquisition_type, "some_acquisition_type")
-        self.assertIsNotNone(result.file_metadata)
-        self.assertIsNotNone(result.slims_metadata)
+        self.assertEqual(result["acquisition_type"], "some_acquisition_type")
+        self.assertIn("file_metadata", result)
+        self.assertIn("slims_metadata", result)
 
         # Verify file metadata
-        self.assertEqual(result.file_metadata.session_config, example_metadata_info["session_config"])
-        self.assertEqual(result.file_metadata.wavelength_config, example_metadata_info["wavelength_config"])
-        self.assertEqual(result.file_metadata.session_end_time, example_session_end_time)
+        self.assertEqual(result["file_metadata"]["session_config"], example_metadata_info["session_config"])
+        self.assertEqual(result["file_metadata"]["wavelength_config"], example_metadata_info["wavelength_config"])
+        # Convert datetime to string format for comparison (since model_dump serializes datetimes)
+        self.assertEqual(result["file_metadata"]["session_end_time"], example_session_end_time)
 
         # Verify SLIMS metadata
-        self.assertEqual(result.slims_metadata.subject_id, example_imaging_info_from_slims["subject_id"])
+        self.assertEqual(result["slims_metadata"]["subject_id"], example_imaging_info_from_slims["subject_id"])
 
     def test_regex_date_extraction(self):
         """Test date extraction from input path."""
@@ -359,7 +358,7 @@ class TestSmartspimExtractor(unittest.TestCase):
 
         self.assertIn("Error while extracting session date", str(context.exception))
 
-    @patch.object(SmartspimExtractor, "extract")
+    @patch.object(SmartspimExtractor, "_extract")
     def test_run_job(self, mock_extract):
         """Test run_job method returns dictionary from extract."""
         # Create a mock SmartspimModel object
@@ -370,7 +369,7 @@ class TestSmartspimExtractor(unittest.TestCase):
         extractor = SmartspimExtractor(self.job_settings)
         result = extractor.run_job()
 
-        # Verify extract was called
+        # Verify _extract was called
         mock_extract.assert_called_once()
 
         # Verify model_dump was called

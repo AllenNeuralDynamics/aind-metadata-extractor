@@ -10,13 +10,14 @@ from typing import Tuple, Union
 import h5py as h5
 import tifffile
 
+from aind_metadata_extractor.core import BaseExtractor
 from aind_metadata_extractor.mesoscope.job_settings import JobSettings
 from aind_metadata_extractor.utils.camstim_sync.camstim import Camstim, CamstimSettings
 
 from aind_metadata_extractor.models.mesoscope import MesoscopeExtractModel
 
 
-class MesoscopeExtract:
+class MesoscopeExtract(BaseExtractor):
     """Class to manage transforming mesoscope platform json and metadata into
     a mesoscope model model."""
 
@@ -151,7 +152,7 @@ class MesoscopeExtract:
 
         return meta
 
-    def _extract(self) -> dict:
+    def _extract(self) -> MesoscopeExtractModel:
         """extract data from the platform json file and tiff file (in the
         future).
         If input source is a file, will extract the data from the file.
@@ -177,7 +178,13 @@ class MesoscopeExtract:
             "time_series_header": meta,
             "job_settings": user_settings,
         }
-        return data
+        return MesoscopeExtractModel(
+            tiff_header=data["time_series_header"],
+            session_metadata=data["session_metadata"],
+            camstim_epchs=data["camstim_epochs"],
+            camstim_session_type=data["camstim_session_type"],
+            job_settings=data["job_settings"],
+        )
 
     def _camstim_epoch_and_session(self) -> Tuple[list, str]:
         """Get the camstim table and epochs
@@ -193,22 +200,12 @@ class MesoscopeExtract:
             self.camstim.build_stimulus_table(modality="ophys")
         return self.camstim.epochs_from_stim_table(), self.camstim.session_type
 
-    def run_job(self) -> None:
+    def run_job(self) -> dict:
         """
-        Run the etl job
-        Returns
-        -------
-        None
+        Run the extraction job.
         """
-        data = self._extract()
-        mesoscope_metadata = MesoscopeExtractModel(
-            tiff_header=data["time_series_header"],
-            session_metadata=data["session_metadata"],
-            camstim_epchs=data["camstim_epochs"],
-            camstim_session_type=data["camstim_session_type"],
-            job_settings=data["job_settings"],
-        )
-        return mesoscope_metadata.model_dump()
+        self.metadata = self._extract()
+        return self.metadata.model_dump()
 
     @classmethod
     def from_args(cls, args: list):
