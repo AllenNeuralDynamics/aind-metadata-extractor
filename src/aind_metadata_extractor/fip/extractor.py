@@ -25,7 +25,7 @@ class FiberPhotometryExtractor:
             Configuration settings for the extraction process
         """
         self.job_settings = job_settings
-        self.dataset = None
+        self._dataset = None
 
     def extract(self) -> dict:
         """Run extraction process using the GitHub data contract.
@@ -39,7 +39,7 @@ class FiberPhotometryExtractor:
             Extracted metadata as a dictionary
         """
 
-        self.dataset = dataset(self.job_settings.data_directory)
+        self._dataset = dataset(self.job_settings.data_directory)
 
         # Extract metadata using the data contract
         file_metadata = self._extract_metadata_from_contract()
@@ -48,7 +48,7 @@ class FiberPhotometryExtractor:
         print(json.dumps(file_metadata, indent=3, default=str))
 
         # Create the fiber data model
-        fiber_data = FiberData(**file_metadata)
+        fiber_data = FiberData.model_validate(file_metadata)
 
         return fiber_data.model_dump()
 
@@ -63,7 +63,7 @@ class FiberPhotometryExtractor:
         """
         metadata = {}
 
-        print(self.dataset)
+        print(self._dataset)
         timing_data = self._extract_timing_from_csv()
         metadata.update(timing_data)
 
@@ -172,8 +172,13 @@ class FiberPhotometryExtractor:
         DataStream
             The requested data stream, or None if not found.
         """
-        for stream in self.dataset._data:
-            if hasattr(stream, "name") and stream.name == stream_name:
+        streams = getattr(self._dataset, "_data", None)
+        if streams is None:
+            return None
+        for stream in streams:
+            if not hasattr(stream, "name"):
+                raise AttributeError("Data stream is missing required 'name' attribute")
+            if stream.name == stream_name:
                 return stream
         return None
 
@@ -221,13 +226,19 @@ class FiberPhotometryExtractor:
         rig_stream = self._get_data_stream("rig_input")
         if rig_stream:
             rig_data = rig_stream.read()
-            hardware_data["rig_config"] = rig_data.model_dump() if hasattr(rig_data, "model_dump") else {}
+            if hasattr(rig_data, "model_dump"):
+                hardware_data["rig_config"] = rig_data.model_dump()
+            else:
+                raise AttributeError("Rig data must have a 'model_dump' method")
 
         # Try to extract session configuration
         session_stream = self._get_data_stream("session_input")
         if session_stream:
             session_data = session_stream.read()
-            hardware_data["session_config"] = session_data.model_dump() if hasattr(session_data, "model_dump") else {}
+            if hasattr(session_data, "model_dump"):
+                hardware_data["session_config"] = session_data.model_dump()
+            else:
+                raise AttributeError("Session data must have a 'model_dump' method")
 
         return hardware_data
 
