@@ -11,6 +11,11 @@ from aind_physiology_fip.data_contract import dataset
 from aind_metadata_extractor.fip.job_settings import JobSettings
 from aind_metadata_extractor.models.fip import FIPDataModel as FiberData
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 class FiberPhotometryExtractor:
     """Extractor for Fiber Photometry metadata using data contract."""
@@ -46,8 +51,8 @@ class FiberPhotometryExtractor:
         file_metadata.update(self.job_settings.model_dump())
 
 
-        print("Extracted metadata from data contract:")
-        print(json.dumps(file_metadata, indent=3, default=str))
+        logger.info("Extracted metadata from data contract:")
+        logger.info(json.dumps(file_metadata, indent=3, default=str))
 
         # Create the fiber data model
         fiber_data = FiberData.model_validate(file_metadata)
@@ -65,7 +70,6 @@ class FiberPhotometryExtractor:
         """
         metadata = {}
 
-        print(self._dataset)
         timing_data = self._extract_timing_from_csv()
         metadata.update(timing_data)
 

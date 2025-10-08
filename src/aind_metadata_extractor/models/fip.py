@@ -34,7 +34,7 @@ class FIPDataModel(BaseModel):
     animal_weight_prior: float = Field(..., description="Animal weight before session")
     protocol_id: List[str] = Field(default_factory=list, description="List of protocol identifiers")
     data_directory: Union[str, Path] = Field(..., description="Path to data directory containing fiber photometry files")
-    data_files: Union[str, Path]  = Field(default_factory=list, description="List of data file paths")
+    data_files: List[Union[str, Path]]  = Field(default_factory=list, description="List of data file paths")
     rig_config: dict = Field(..., description="Rig configuration dictionary")
     session_config: dict = Field(..., description="Session configuration dictionary")
     output_directory: Union[str, Path] = Field(..., description="Output directory for generated files")
