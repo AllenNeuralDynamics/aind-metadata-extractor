@@ -11,7 +11,7 @@ from aind_metadata_extractor.core import BaseJobSettings
 class JobSettings(BaseJobSettings):
     """Data to be entered by the user for Fiber Photometry."""
 
-    job_settings_name: Literal["FiberPhotometry"] = Field(default="FiberPhotometry", title="Name of the job settings")
+    job_settings_name: Literal["FIP"] = Field(default="FIP", title="Name of the job settings")
     data_directory: Union[str, Path] = Field(..., title="Path to data directory containing fiber photometry files")
     experimenter_full_name: List[str] = Field(default_factory=list, title="List of experimenter names")
     subject_id: Optional[str] = Field(default=None, title="Subject identifier")
@@ -27,7 +27,7 @@ class JobSettings(BaseJobSettings):
     animal_weight_post: Optional[float] = Field(default=None, title="Animal weight after session")
     animal_weight_prior: Optional[float] = Field(default=None, title="Animal weight before session")
     protocol_id: Optional[List[str]] = Field(default_factory=list, title="List of protocol identifiers")
-    session_type: Optional[str] = Field(default="FIB", title="Type of session")
+    session_type: Optional[str] = Field(default="FIP", title="Type of session")
     session_start_time: Optional[datetime] = Field(default=None, title="Start time of the session")
     session_end_time: Optional[datetime] = Field(default=None, title="End time of the session")
     data_files: Optional[List[str]] = Field(default_factory=list, title="List of data file paths")

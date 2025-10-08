@@ -9,7 +9,7 @@ from typing import Optional
 from aind_physiology_fip.data_contract import dataset
 
 from aind_metadata_extractor.fip.job_settings import JobSettings
-from aind_metadata_extractor.models.fip import FiberData
+from aind_metadata_extractor.models.fip import FIPDataModel as FiberData
 
 
 class FiberPhotometryExtractor:
@@ -43,6 +43,8 @@ class FiberPhotometryExtractor:
 
         # Extract metadata using the data contract
         file_metadata = self._extract_metadata_from_contract()
+        file_metadata.update(self.job_settings.model_dump())
+
 
         print("Extracted metadata from data contract:")
         print(json.dumps(file_metadata, indent=3, default=str))
