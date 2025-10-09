@@ -50,7 +50,6 @@ class FiberPhotometryExtractor:
         file_metadata = self._extract_metadata_from_contract()
         file_metadata.update(self.job_settings.model_dump())
 
-
         logger.info("Extracted metadata from data contract:")
         logger.info(json.dumps(file_metadata, indent=3, default=str))
 
