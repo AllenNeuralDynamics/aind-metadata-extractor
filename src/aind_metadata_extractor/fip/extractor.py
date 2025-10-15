@@ -56,12 +56,11 @@ class FiberPhotometryExtractor:
         if "end_time" in file_metadata:
             file_metadata["session_end_time"] = file_metadata.pop("end_time")
         
-        # Update with job settings, but don't overwrite extracted times
+        # Update with job settings, but don't overwrite extracted values
         job_settings_dict = self.job_settings.model_dump()
-        if "session_start_time" in file_metadata:
-            job_settings_dict.pop("session_start_time", None)
-        if "session_end_time" in file_metadata:
-            job_settings_dict.pop("session_end_time", None)
+        for key in ["session_start_time", "session_end_time", "rig_config", "session_config"]:
+            if key in file_metadata and file_metadata[key] is not None:
+                job_settings_dict.pop(key, None)
         file_metadata.update(job_settings_dict)
 
         logger.info("Extracted metadata from data contract:")
