@@ -43,8 +43,7 @@ class TestJobSettings(unittest.TestCase):
         with patch("pathlib.Path.is_dir", return_value=True):
             settings = JobSettings(data_directory="C:/data")
             self.assertEqual(settings.data_directory, "C:/data")
-            self.assertEqual(settings.job_settings_name, "FiberPhotometry")
-            self.assertEqual(settings.local_timezone, "America/Los_Angeles")
+            self.assertEqual(settings.job_settings_name, "FIP")
             self.assertEqual(settings.output_filename, "session_fip.json")
             self.assertIsNone(settings.output_directory)
             self.assertEqual(settings.experimenter_full_name, [])

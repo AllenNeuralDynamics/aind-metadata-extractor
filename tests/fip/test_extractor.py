@@ -8,7 +8,7 @@ from datetime import datetime
 
 from aind_metadata_extractor.fip.extractor import FiberPhotometryExtractor
 from aind_metadata_extractor.fip.job_settings import JobSettings
-from aind_metadata_extractor.models.fip import FiberData
+from aind_metadata_extractor.models.fip import FIPDataModel
 
 
 class TestFiberPhotometryExtractor(unittest.TestCase):
@@ -95,9 +95,9 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         self.assertIn("session_config", result)
 
     def test_save_to_file(self):
-        """Test saving FiberData to file."""
+        """Test saving FIPDataModel to file."""
         extractor = FiberPhotometryExtractor(self.job_settings)
-        fiber_data = FiberData(
+        fiber_data = FIPDataModel(
             job_settings_name="FiberPhotometry",
             experimenter_full_name=["John Doe"],
             subject_id="mouse_001",
