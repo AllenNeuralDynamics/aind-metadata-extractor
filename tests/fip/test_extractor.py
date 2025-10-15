@@ -314,8 +314,8 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         green_stream.name = "green"
         red_stream = MagicMock()
         red_stream.name = "red"
-        extractor.dataset = MagicMock()
-        extractor.dataset._data = [green_stream, red_stream]
+        extractor._dataset = MagicMock()
+        extractor._dataset._data = [green_stream, red_stream]
 
         # Should return green stream
         result = extractor._get_data_stream("green")
