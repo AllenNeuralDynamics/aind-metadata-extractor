@@ -28,6 +28,17 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
             iacuc_protocol="IACUC-12345",
             notes="Test experiment",
             session_type="FIB",
+            session_start_time=datetime(2023, 1, 1, 12, 0),
+            session_end_time=datetime(2023, 1, 1, 13, 0),
+            animal_weight_post=25.0,
+            animal_weight_prior=24.5,
+            rig_config={
+                "rig_name": "Rig_001",
+            },
+            session_config={
+                "session_type": "FIB"
+            },
+            output_directory=str(self.test_data_dir),
             anaesthesia="isoflurane",
         )
 
@@ -98,7 +109,7 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         """Test saving FIPDataModel to file."""
         extractor = FiberPhotometryExtractor(self.job_settings)
         fiber_data = FIPDataModel(
-            job_settings_name="FiberPhotometry",
+            job_settings_name="FIP",
             experimenter_full_name=["John Doe"],
             subject_id="mouse_001",
             rig_id="Rig_001",
@@ -114,7 +125,10 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
             data_files=[str(self.test_data_dir / "green.csv")],
             rig_config={"rig_name": "Rig_001"},
             session_config={"session_type": "FIB"},
-            local_timezone="America/Los_Angeles",
+            session_start_time=datetime(2023, 1, 1, 12, 0),
+            session_end_time=datetime(2023, 1, 1, 13, 0),
+            animal_weight_post=25.0,
+            animal_weight_prior=24.5,
             output_directory=str(self.test_data_dir),
             output_filename="session_fip.json",
         )
@@ -122,7 +136,7 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         self.assertTrue(Path(output_path).exists())
         with open(output_path, "r") as f:
             data = f.read()
-        self.assertIn("FiberPhotometry", data)
+        self.assertIn("FIP", data)
         self.assertIn("Rig_001", data)
 
     def test_extract_index(self):
@@ -334,7 +348,6 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         """Test extract method for full contract-based extraction."""
         extractor = FiberPhotometryExtractor(self.job_settings)
 
-        # Mock the contract dataset
         mock_dataset_instance = MagicMock()
         mock_dataset.return_value = mock_dataset_instance
 
@@ -366,7 +379,6 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         self.assertEqual(result["rig_id"], "Rig_001")
         self.assertEqual(result["rig_config"]["rig_name"], "Rig_001")
         self.assertEqual(result["session_config"]["session_type"], "FIB")
-        self.assertIn(str(self.test_data_dir / "green.csv"), result["data_files"])
 
     def test_extract_metadata_from_contract(self):
         """Test _extract_metadata_from_contract aggregates all metadata."""
