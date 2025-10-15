@@ -56,9 +56,14 @@ class FiberPhotometryExtractor:
         if "end_time" in file_metadata:
             file_metadata["session_end_time"] = file_metadata.pop("end_time")
         
+        # Extract rig_id from rig_config if available
+        if "rig_config" in file_metadata and file_metadata["rig_config"]:
+            if "rig_name" in file_metadata["rig_config"]:
+                file_metadata["rig_id"] = file_metadata["rig_config"]["rig_name"]
+        
         # Update with job settings, but don't overwrite extracted values
         job_settings_dict = self.job_settings.model_dump()
-        for key in ["rig_config", "session_config"]:
+        for key in ["rig_config", "session_config", "rig_id"]:
             if key in file_metadata and file_metadata[key] is not None:
                 job_settings_dict.pop(key, None)
         file_metadata.update(job_settings_dict)
