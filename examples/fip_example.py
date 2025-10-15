@@ -26,6 +26,7 @@ job_settings = JobSettings(
     anaesthesia="none",
     animal_weight_prior=25.0,
     animal_weight_post=25.0,
+    local_timezone="America/Los_Angeles",
     output_directory=DATA_DIR,
 )
 extractor = FiberPhotometryExtractor(job_settings=job_settings)

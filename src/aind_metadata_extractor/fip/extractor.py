@@ -1,10 +1,10 @@
 """Fiber Photometry extractor module using data contract"""
 
 import json
-import re
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 
 from aind_physiology_fip.data_contract import dataset
@@ -128,8 +128,10 @@ class FiberPhotometryExtractor:
 
     def _extract_timing_from_csv(self) -> dict:
         """
-        Extract session timing from CSV data streams using
-            the contract's index key.
+        Extract session timing from camera metadata CSV files.
+        
+        Uses CpuTime column which contains timezone-aware ISO 8601 timestamps,
+        and converts them to the local timezone specified in job_settings.
 
         Returns
         -------
@@ -137,64 +139,40 @@ class FiberPhotometryExtractor:
             Extracted timing information with 'start_time' and 'end_time' keys
         """
         timing_data = {}
-        duration_seconds = None
+        local_tz = ZoneInfo(self.job_settings.local_timezone)
         
-        # Try to get timing from green channel CSV
-        green_stream = self._get_data_stream("green")
-        if green_stream:
-            green_data = green_stream.read()
-            # Get the index key from the contract configuration
-            index_key = self._extract_index().get("index_key", "ReferenceTime")
-
-            # Use the index key to access the timing column
-            if index_key in green_data.columns:
-                start_ts = green_data[index_key].min()
-                end_ts = green_data[index_key].max()
-                duration_seconds = end_ts - start_ts
-            # Check if it's the DataFrame index instead
-            elif not green_data.index.empty and green_data.index.name == index_key:
-                start_ts = green_data.index.min()
-                end_ts = green_data.index.max()
-                duration_seconds = end_ts - start_ts
-
-        # Fall back to red channel CSV (also uses index key from contract)
-        if duration_seconds is None:
-            red_stream = self._get_data_stream("red")
-            if red_stream:
-                red_data = red_stream.read()
-                # Get the index key from the contract configuration
-                index_key = self._extract_index().get("index_key", "ReferenceTime")
-
-                # Use the index key to access the timing column
-                if index_key in red_data.columns:
-                    start_ts = red_data[index_key].min()
-                    end_ts = red_data[index_key].max()
-                    duration_seconds = end_ts - start_ts
-                # Fallback to DataFrame index if column not found
-                elif not red_data.index.empty and red_data.index.name == index_key:
-                    start_ts = red_data.index.min()
-                    end_ts = red_data.index.max()
-                    duration_seconds = end_ts - start_ts
-
-        # Parse session start from directory name
-        data_dir = Path(self.job_settings.data_directory)
-        for name in [data_dir.parent.name, data_dir.name]:
-            match = re.search(r'(\d{4})-(\d{2})-(\d{2})T(\d{2})(\d{2})(\d{2})', name)
-            if match:
-                year, month, day, hour, minute, second = map(int, match.groups())
-                session_start = datetime(year, month, day, hour, minute, second)
-                timing_data["start_time"] = session_start
-                if duration_seconds is not None:
-                    timing_data["end_time"] = session_start + timedelta(seconds=duration_seconds)
-                else:
-                    timing_data["end_time"] = session_start
+        # Try to get timing from camera_green_iso_metadata stream
+        metadata_stream = self._get_data_stream("camera_green_iso_metadata")
+        if metadata_stream:
+            metadata = metadata_stream.read()
+            if "CpuTime" in metadata.columns and not metadata.empty:
+                # CpuTime is in timezone-aware ISO 8601 format (UTC)
+                # Convert to local timezone
+                start_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[0])
+                end_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[-1])
+                timing_data["start_time"] = start_utc.astimezone(local_tz)
+                timing_data["end_time"] = end_utc.astimezone(local_tz)
                 return timing_data
 
-        # If no timing found, use current time as fallback
+        # Fall back to camera_red_metadata
+        if not timing_data:
+            metadata_stream = self._get_data_stream("camera_red_metadata")
+            if metadata_stream:
+                metadata = metadata_stream.read()
+                if "CpuTime" in metadata.columns and not metadata.empty:
+                    start_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[0])
+                    end_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[-1])
+                    timing_data["start_time"] = start_utc.astimezone(local_tz)
+                    timing_data["end_time"] = end_utc.astimezone(local_tz)
+                    return timing_data
+
+        # If no timing found, raise an error - don't use current time as fallback
         if "start_time" not in timing_data:
-            current_time = datetime.now()
-            timing_data["start_time"] = current_time
-            timing_data["end_time"] = current_time
+            raise ValueError(
+                "Could not extract session timing from camera metadata. "
+                "Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. "
+                "Please verify that camera metadata files exist in the data directory."
+            )
 
         return timing_data
 
