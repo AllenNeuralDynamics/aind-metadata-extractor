@@ -1,0 +1,27 @@
+{
+  "job_settings_name": "FIP",
+  "experimenter_full_name": [],
+  "session_start_time": "2025-07-18 19:29:10",
+  "session_end_time": "2025-07-18 19:46:24",
+  "subject_id": "781896",
+  "rig_id": "323_FIP_OPTO_2",
+  "mouse_platform_name": "Standard",
+  "active_mouse_platform": false,
+  "data_streams": [],
+  "session_type": "FIP",
+  "iacuc_protocol": "2115",
+  "notes": "Example extraction",
+  "anaesthesia": "none",
+  "animal_weight_post": 25.0,
+  "animal_weight_prior": 25.0,
+  "protocol_id": [],
+  "data_directory": "/allen/aind/scratch/bruno.cruz/fip_tests/781896_2025-07-18T192910Z/fib/fip_2025-07-18T192959Z",
+  "data_files": [],
+  "rig_config": {
+    "rig_id": "323_FIP_OPTO_2"
+  },
+  "session_config": {
+    "session_type": "FIP"
+  },
+  "output_directory": "/allen/aind/scratch/bruno.cruz/fip_tests/781896_2025-07-18T192910Z/fib/fip_2025-07-18T192959Z"
+}
