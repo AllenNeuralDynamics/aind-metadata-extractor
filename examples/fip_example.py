@@ -1,4 +1,11 @@
-"""Simple example demonstrating FiberPhotometryExtractor usage."""
+"""Simple example demonstrating FiberPhotometryExtractor usage.
+
+To run this example:
+    conda create -n fip-extractor python=3.11 -y
+    conda activate fip-extractor
+    pip install -e .[fip]
+    python examples/fip_example.py
+"""
 
 import json
 from pathlib import Path
