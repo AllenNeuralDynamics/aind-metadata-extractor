@@ -58,7 +58,7 @@ class FiberPhotometryExtractor:
         
         # Update with job settings, but don't overwrite extracted values
         job_settings_dict = self.job_settings.model_dump()
-        for key in ["session_start_time", "session_end_time", "rig_config", "session_config"]:
+        for key in ["rig_config", "session_config"]:
             if key in file_metadata and file_metadata[key] is not None:
                 job_settings_dict.pop(key, None)
         file_metadata.update(job_settings_dict)
