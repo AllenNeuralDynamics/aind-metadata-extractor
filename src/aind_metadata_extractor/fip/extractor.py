@@ -178,8 +178,6 @@ class FiberPhotometryExtractor:
             The requested data stream, or None if not found.
         """
         streams = getattr(self._dataset, "_data", None)
-        if streams is None:
-            return None
         for stream in streams:
             if not hasattr(stream, "name"):
                 raise AttributeError("Data stream is missing required 'name' attribute")

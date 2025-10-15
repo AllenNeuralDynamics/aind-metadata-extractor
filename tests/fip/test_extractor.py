@@ -320,6 +320,55 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
             self.assertEqual(result["rig_config"]["rig_name"], "Rig_001")
             self.assertEqual(result["session_config"]["session_type"], "FIB")
 
+    def test_extract_hardware_config_no_rig_dump(self):
+        """Test _extract_hardware_config raises error if model_dump is missing."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+
+        # Mock rig stream without model_dump
+        rig_stream = MagicMock()
+        rig_data = MagicMock()
+        if hasattr(rig_data, "model_dump"):
+            del rig_data.model_dump
+        rig_stream.read.return_value = rig_data
+
+        with patch.object(extractor,
+                          "_get_data_stream",
+                          side_effect=lambda name: rig_stream if name == "rig_input" else None):
+            with self.assertRaises(AttributeError) as context:
+                extractor._extract_hardware_config()
+            self.assertIn("Rig data must have a 'model_dump' method", str(context.exception))
+
+    def test_extract_hardware_no_session_dump(self):
+        """Test _extract_hardware_config raises error if session model_dump is missing."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+
+        # Mock session stream without model_dump
+        session_stream = MagicMock()
+        session_data = MagicMock()
+        if hasattr(session_data, "model_dump"):
+            del session_data.model_dump
+        session_stream.read.return_value = session_data
+
+        with patch.object(extractor,
+                          "_get_data_stream",
+                          side_effect=lambda name: session_stream if name == "session_input" else None):
+            with self.assertRaises(AttributeError) as context:
+                extractor._extract_hardware_config()
+            self.assertIn("Session data must have a 'model_dump' method", str(context.exception))
+
+    def test_get_data_stream_missing_name_attribute(self):
+        """Test _get_data_stream raises AttributeError if stream lacks 'name'."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        # Create a mock stream without 'name'
+        bad_stream = MagicMock()
+        if hasattr(bad_stream, "name"):
+            del bad_stream.name
+        extractor._dataset = MagicMock()
+        extractor._dataset._data = [bad_stream]
+        with self.assertRaises(AttributeError) as context:
+            extractor._get_data_stream("green")
+        self.assertIn("Data stream is missing required 'name' attribute", str(context.exception))
+
     def test_get_data_stream(self):
         """Test _get_data_stream returns correct stream or None."""
         extractor = FiberPhotometryExtractor(self.job_settings)
