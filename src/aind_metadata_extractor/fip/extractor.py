@@ -1,8 +1,9 @@
 """Fiber Photometry extractor module using data contract"""
 
 import json
+import re
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 
@@ -48,7 +49,20 @@ class FiberPhotometryExtractor:
 
         # Extract metadata using the data contract
         file_metadata = self._extract_metadata_from_contract()
-        file_metadata.update(self.job_settings.model_dump())
+        
+        # Map extracted start_time/end_time to session_start_time/session_end_time  
+        if "start_time" in file_metadata:
+            file_metadata["session_start_time"] = file_metadata.pop("start_time")
+        if "end_time" in file_metadata:
+            file_metadata["session_end_time"] = file_metadata.pop("end_time")
+        
+        # Update with job settings, but don't overwrite extracted times
+        job_settings_dict = self.job_settings.model_dump()
+        if "session_start_time" in file_metadata:
+            job_settings_dict.pop("session_start_time", None)
+        if "session_end_time" in file_metadata:
+            job_settings_dict.pop("session_end_time", None)
+        file_metadata.update(job_settings_dict)
 
         logger.info("Extracted metadata from data contract:")
         logger.info(json.dumps(file_metadata, indent=3, default=str))
@@ -124,6 +138,8 @@ class FiberPhotometryExtractor:
             Extracted timing information with 'start_time' and 'end_time' keys
         """
         timing_data = {}
+        duration_seconds = None
+        
         # Try to get timing from green channel CSV
         green_stream = self._get_data_stream("green")
         if green_stream:
@@ -133,26 +149,46 @@ class FiberPhotometryExtractor:
 
             # Use the index key to access the timing column
             if index_key in green_data.columns:
-                timing_data["start_time"] = green_data[index_key].min()
-                timing_data["end_time"] = green_data[index_key].max()
-                return timing_data
+                start_ts = green_data[index_key].min()
+                end_ts = green_data[index_key].max()
+                duration_seconds = end_ts - start_ts
+            # Check if it's the DataFrame index instead
+            elif not green_data.index.empty and green_data.index.name == index_key:
+                start_ts = green_data.index.min()
+                end_ts = green_data.index.max()
+                duration_seconds = end_ts - start_ts
 
         # Fall back to red channel CSV (also uses index key from contract)
-        red_stream = self._get_data_stream("red")
-        if red_stream:
-            red_data = red_stream.read()
-            # Get the index key from the contract configuration
-            index_key = self._extract_index().get("index_key", "ReferenceTime")
+        if duration_seconds is None:
+            red_stream = self._get_data_stream("red")
+            if red_stream:
+                red_data = red_stream.read()
+                # Get the index key from the contract configuration
+                index_key = self._extract_index().get("index_key", "ReferenceTime")
 
-            # Use the index key to access the timing column
-            if index_key in red_data.columns:
-                timing_data["start_time"] = red_data[index_key].min()
-                timing_data["end_time"] = red_data[index_key].max()
-                return timing_data
-            # Fallback to DataFrame index if column not found
-            elif not red_data.index.empty:
-                timing_data["start_time"] = red_data.index.min()
-                timing_data["end_time"] = red_data.index.max()
+                # Use the index key to access the timing column
+                if index_key in red_data.columns:
+                    start_ts = red_data[index_key].min()
+                    end_ts = red_data[index_key].max()
+                    duration_seconds = end_ts - start_ts
+                # Fallback to DataFrame index if column not found
+                elif not red_data.index.empty and red_data.index.name == index_key:
+                    start_ts = red_data.index.min()
+                    end_ts = red_data.index.max()
+                    duration_seconds = end_ts - start_ts
+
+        # Parse session start from directory name
+        data_dir = Path(self.job_settings.data_directory)
+        for name in [data_dir.parent.name, data_dir.name]:
+            match = re.search(r'(\d{4})-(\d{2})-(\d{2})T(\d{2})(\d{2})(\d{2})', name)
+            if match:
+                year, month, day, hour, minute, second = map(int, match.groups())
+                session_start = datetime(year, month, day, hour, minute, second)
+                timing_data["start_time"] = session_start
+                if duration_seconds is not None:
+                    timing_data["end_time"] = session_start + timedelta(seconds=duration_seconds)
+                else:
+                    timing_data["end_time"] = session_start
                 return timing_data
 
         # If no timing found, use current time as fallback

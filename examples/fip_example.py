@@ -9,7 +9,6 @@ To run this example:
 
 import json
 from pathlib import Path
-from datetime import datetime
 from aind_metadata_extractor.fip.job_settings import JobSettings
 from aind_metadata_extractor.fip.extractor import FiberPhotometryExtractor
 
@@ -27,8 +26,6 @@ job_settings = JobSettings(
     anaesthesia="none",
     animal_weight_prior=25.0,
     animal_weight_post=25.0,
-    session_start_time=datetime(2025, 7, 18, 19, 29, 10),
-    session_end_time=datetime(2025, 7, 18, 19, 46, 24),
     rig_config={"rig_id": "323_FIP_OPTO_2"},
     session_config={"session_type": "FIP"},
     output_directory=DATA_DIR,
