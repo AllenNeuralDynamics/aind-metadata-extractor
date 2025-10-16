@@ -3,9 +3,16 @@
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING, cast
 from zoneinfo import ZoneInfo
 
+if TYPE_CHECKING:
+    from pandas import DataFrame
+    from contraqctor.contract import DataStream, Dataset
+else:
+    DataFrame = "DataFrame"
+    DataStream = "DataStream"
+    Dataset = "Dataset"
 
 from aind_physiology_fip.data_contract import dataset
 
@@ -31,7 +38,14 @@ class FiberPhotometryExtractor:
             Configuration settings for the extraction process
         """
         self.job_settings = job_settings
-        self._dataset = None
+        self._dataset: Optional[Dataset] = None
+
+    @property
+    def dataset(self) -> Dataset:
+        # This is a read-only property to access the dataset and ensures it is not null for type hinting
+        if self._dataset is None:
+            raise ValueError("Dataset has not been initialized.")
+        return self._dataset
 
     def extract(self) -> dict:
         """Run extraction process using the GitHub data contract.
@@ -94,8 +108,9 @@ class FiberPhotometryExtractor:
         """
         metadata = {}
 
-        timing_data = self._extract_timing_from_csv()
-        metadata.update(timing_data)
+        start_time, end_time = self._extract_timing_from_csv()
+        metadata["start_time"] = start_time
+        metadata["end_time"] = end_time
 
         # Extract data files information
         files_data = self._extract_data_files()
@@ -138,7 +153,7 @@ class FiberPhotometryExtractor:
 
         return index_data
 
-    def _extract_timing_from_csv(self) -> dict:
+    def _extract_timing_from_csv(self) -> tuple[datetime, datetime]:
         """
         Extract session timing from camera metadata CSV files.
 
@@ -147,44 +162,26 @@ class FiberPhotometryExtractor:
 
         Returns
         -------
-        dict
-            Extracted timing information with 'start_time' and 'end_time' keys
+        tuple[datetime, datetime]
+            Start and end time of the session as timezone-aware datetime objects
         """
-        timing_data = {}
+
         local_tz = ZoneInfo(self.job_settings.local_timezone)
-
+        _known_streams = ["camera_green_iso_metadata", "camera_red_metadata"]
         # Try to get timing from camera_green_iso_metadata stream
-        metadata_stream = self._get_data_stream("camera_green_iso_metadata")
-        if metadata_stream:
-            metadata = metadata_stream.read()
-            if "CpuTime" in metadata.columns and not metadata.empty:
-                # CpuTime is in timezone-aware ISO 8601 format (UTC)
-                # Convert to local timezone
-                start_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[0])
-                end_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[-1])
-                timing_data["start_time"] = start_utc.astimezone(local_tz)
-                timing_data["end_time"] = end_utc.astimezone(local_tz)
-                return timing_data
+        for stream in _known_streams:
+            logger.debug(f"Checking for timing in stream: {stream}")
+            metadata_stream = cast(DataFrame, self.dataset[stream].read())
+            if metadata_stream is not None and not metadata_stream.empty:
+                start_utc = datetime.fromisoformat(metadata_stream["CpuTime"].iloc[0])
+                end_utc = datetime.fromisoformat(metadata_stream["CpuTime"].iloc[-1])
+                return start_utc.astimezone(local_tz), end_utc.astimezone(local_tz)
 
-        # Fall back to camera_red_metadata
-        if not timing_data:
-            metadata_stream = self._get_data_stream("camera_red_metadata")
-            if metadata_stream:
-                metadata = metadata_stream.read()
-                if "CpuTime" in metadata.columns and not metadata.empty:
-                    start_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[0])
-                    end_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[-1])
-                    timing_data["start_time"] = start_utc.astimezone(local_tz)
-                    timing_data["end_time"] = end_utc.astimezone(local_tz)
-                    return timing_data
-
-        # If no timing found, raise an error - don't use current time as fallback
-        if "start_time" not in timing_data:
-            raise ValueError(
-                "Could not extract session timing from camera metadata. "
-                "Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. "
-                "Please verify that camera metadata files exist in the data directory."
-            )
+        raise ValueError(
+            "Could not extract session timing from camera metadata. "
+            "Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. "
+            "Please verify that camera metadata files exist in the data directory."
+        )
 
     def _get_data_stream(self, stream_name: str):
         """
