@@ -35,9 +35,7 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
             rig_config={
                 "rig_name": "Rig_001",
             },
-            session_config={
-                "session_type": "FIB"
-            },
+            session_config={"session_type": "FIB"},
             output_directory=str(self.test_data_dir),
             anaesthesia="isoflurane",
         )
@@ -199,12 +197,14 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         green_data.columns = ["CpuTime"]
         green_data.empty = False
         cpu_time_series = MagicMock()
-        cpu_time_series.iloc = [ "2023-01-01T12:00:00+00:00", "2023-01-01T13:00:00+00:00" ]
+        cpu_time_series.iloc = ["2023-01-01T12:00:00+00:00", "2023-01-01T13:00:00+00:00"]
         green_data.__getitem__.side_effect = lambda key: cpu_time_series if key == "CpuTime" else MagicMock()
         green_stream.read.return_value = green_data
 
         with patch.object(
-            extractor, "_get_data_stream", side_effect=lambda name: green_stream if name == "camera_green_iso_metadata" else None
+            extractor,
+            "_get_data_stream",
+            side_effect=lambda name: green_stream if name == "camera_green_iso_metadata" else None,
         ):
             timing = extractor._extract_timing_from_csv()
             self.assertEqual(timing["start_time"].hour, 4)
@@ -223,20 +223,24 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         red_stream.read.return_value = red_data
 
         with patch.object(
-            extractor, "_get_data_stream", side_effect=lambda name: red_stream if name == "camera_red_metadata" else None
+            extractor,
+            "_get_data_stream",
+            side_effect=lambda name: red_stream if name == "camera_red_metadata" else None,
         ):
             timing = extractor._extract_timing_from_csv()
             self.assertEqual(timing["start_time"].hour, 6)
             self.assertEqual(timing["end_time"].hour, 7)
 
-
         # Case 3: Both streams missing, should error
-        with patch.object(
-            extractor, "_get_data_stream", return_value=None
-        ):
+        with patch.object(extractor, "_get_data_stream", return_value=None):
             with self.assertRaises(ValueError) as context:
                 extractor._extract_timing_from_csv()
-            self.assertIn("Could not extract session timing from camera metadata. Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. Please verify that camera metadata files exist in the data directory.", str(context.exception))
+            self.assertIn(
+                "Could not extract session timing from camera metadata. \
+                Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. \
+                Please verify that camera metadata files exist in the data directory.",
+                str(context.exception),
+            )
 
     def test_extract_data_files(self):
         """Test _extract_data_files method for existing and non-existing files."""
@@ -311,9 +315,9 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
             del rig_data.model_dump
         rig_stream.read.return_value = rig_data
 
-        with patch.object(extractor,
-                          "_get_data_stream",
-                          side_effect=lambda name: rig_stream if name == "rig_input" else None):
+        with patch.object(
+            extractor, "_get_data_stream", side_effect=lambda name: rig_stream if name == "rig_input" else None
+        ):
             with self.assertRaises(AttributeError) as context:
                 extractor._extract_hardware_config()
             self.assertIn("Rig data must have a 'model_dump' method", str(context.exception))
@@ -329,9 +333,9 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
             del session_data.model_dump
         session_stream.read.return_value = session_data
 
-        with patch.object(extractor,
-                          "_get_data_stream",
-                          side_effect=lambda name: session_stream if name == "session_input" else None):
+        with patch.object(
+            extractor, "_get_data_stream", side_effect=lambda name: session_stream if name == "session_input" else None
+        ):
             with self.assertRaises(AttributeError) as context:
                 extractor._extract_hardware_config()
             self.assertIn("Session data must have a 'model_dump' method", str(context.exception))
