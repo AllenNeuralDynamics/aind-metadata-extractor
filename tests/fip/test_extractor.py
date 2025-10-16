@@ -189,74 +189,54 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         # Case 1: Green stream has index key in columns
         green_stream = MagicMock()
         green_data = MagicMock()
-        green_data.columns = ["ReferenceTime"]
+        green_data.columns = ["CpuTime"]
         # Mock the Series returned by green_data["ReferenceTime"]
         reference_time_series = MagicMock()
         reference_time_series.min.return_value = 1
         reference_time_series.max.return_value = 2
-        green_data.__getitem__.side_effect = lambda key: (
-            reference_time_series if key == "ReferenceTime" else MagicMock()
-        )
-        green_data.index = MagicMock(empty=False, min=lambda: 1, max=lambda: 2)
+
+        green_data.__getitem__.side_effect = lambda key: reference_time_series if key == "CpuTime" else MagicMock()
+        green_data.columns = ["CpuTime"]
+        green_data.empty = False
+        cpu_time_series = MagicMock()
+        cpu_time_series.iloc = [ "2023-01-01T12:00:00+00:00", "2023-01-01T13:00:00+00:00" ]
+        green_data.__getitem__.side_effect = lambda key: cpu_time_series if key == "CpuTime" else MagicMock()
         green_stream.read.return_value = green_data
 
-        with (
-            patch.object(
-                extractor, "_get_data_stream", side_effect=lambda color: green_stream if color == "green" else None
-            ),
-            patch.object(extractor, "_extract_index", return_value={"index_key": "ReferenceTime"}),
+        with patch.object(
+            extractor, "_get_data_stream", side_effect=lambda name: green_stream if name == "camera_green_iso_metadata" else None
         ):
             timing = extractor._extract_timing_from_csv()
-            self.assertEqual(timing["start_time"], 1)
-            self.assertEqual(timing["end_time"], 2)
+            self.assertEqual(timing["start_time"].hour, 4)
+            self.assertEqual(timing["end_time"].hour, 5)
 
         # Case 2: Green stream missing, red stream has index key in columns
         red_stream = MagicMock()
         red_data = MagicMock()
-        red_data.columns = ["ReferenceTime"]
-        reference_time_series_red = MagicMock()
-        reference_time_series_red.min.return_value = 3
-        reference_time_series_red.max.return_value = 4
-        red_data.__getitem__.side_effect = lambda key: (
-            reference_time_series_red if key == "ReferenceTime" else MagicMock()
-        )
-        red_data.index = MagicMock(empty=False, min=lambda: 3, max=lambda: 4)
+        red_data.columns = ["CpuTime"]
+        red_data.empty = False
+
+        # Mock the Series returned by red_data["CpuTime"]
+        cpu_time_series_red = MagicMock()
+        cpu_time_series_red.iloc = ["2023-01-01T14:00:00+00:00", "2023-01-01T15:00:00+00:00"]
+        red_data.__getitem__.side_effect = lambda key: cpu_time_series_red if key == "CpuTime" else MagicMock()
         red_stream.read.return_value = red_data
 
-        with (
-            patch.object(
-                extractor, "_get_data_stream", side_effect=lambda color: red_stream if color == "red" else None
-            ),
-            patch.object(extractor, "_extract_index", return_value={"index_key": "ReferenceTime"}),
+        with patch.object(
+            extractor, "_get_data_stream", side_effect=lambda name: red_stream if name == "camera_red_metadata" else None
         ):
             timing = extractor._extract_timing_from_csv()
-            self.assertEqual(timing["start_time"], 3)
-            self.assertEqual(timing["end_time"], 4)
+            self.assertEqual(timing["start_time"].hour, 6)
+            self.assertEqual(timing["end_time"].hour, 7)
 
-        # Case 3: Red stream has no index key in columns but has index
-        red_data_no_col = MagicMock()
-        red_data_no_col.columns = []
-        red_data_no_col.index = MagicMock(empty=False, min=lambda: 5, max=lambda: 6)
-        red_stream.read.return_value = red_data_no_col
 
-        with (
-            patch.object(
-                extractor, "_get_data_stream", side_effect=lambda color: red_stream if color == "red" else None
-            ),
-            patch.object(extractor, "_extract_index", return_value={"index_key": "ReferenceTime"}),
+        # Case 3: Both streams missing, should error
+        with patch.object(
+            extractor, "_get_data_stream", return_value=None
         ):
-            timing = extractor._extract_timing_from_csv()
-            self.assertEqual(timing["start_time"], 5)
-            self.assertEqual(timing["end_time"], 6)
-
-        # Case 4: Both streams missing, should fallback to now
-        with (
-            patch.object(extractor, "_get_data_stream", return_value=None),
-            patch.object(extractor, "_extract_index", return_value={"index_key": "ReferenceTime"}),
-        ):
-            timing = extractor._extract_timing_from_csv()
-            self.assertTrue(isinstance(timing["start_time"], datetime))
-            self.assertTrue(isinstance(timing["end_time"], datetime))
+            with self.assertRaises(ValueError) as context:
+                extractor._extract_timing_from_csv()
+            self.assertIn("Could not extract session timing from camera metadata. Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. Please verify that camera metadata files exist in the data directory.", str(context.exception))
 
     def test_extract_data_files(self):
         """Test _extract_data_files method for existing and non-existing files."""
