@@ -5,10 +5,13 @@ from pathlib import Path
 from datetime import datetime
 from typing import Any, Optional, TYPE_CHECKING, cast
 from zoneinfo import ZoneInfo
+from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from pandas import DataFrame
     from contraqctor.contract import DataStream, Dataset, FilePathBaseParam
+    from aind_physiology_fip.rig import AindPhysioFipRig
+    from aind_behavior_services.session import AindBehaviorSessionModel
 else:
     DataFrame = "DataFrame"
     DataStream = "DataStream"
@@ -115,38 +118,6 @@ class FiberPhotometryExtractor:
 
         return metadata
 
-    def _extract_index(self) -> dict:
-        """
-        Extract index key information from the dataset contract configuration.
-
-        Returns
-        -------
-        dict
-            Extracted index key information as a dictionary
-        """
-        index_data = {}
-
-        # Try to get index key from green channel CSV configuration
-        green_stream = self._get_data_stream("green")
-        if green_stream and hasattr(green_stream, "reader_params"):
-            index_key = getattr(green_stream.reader_params, "index", None)
-            if index_key:
-                index_data["index_key"] = index_key
-                return index_data
-
-        # Fall back to red channel CSV configuration
-        red_stream = self._get_data_stream("red")
-        if red_stream and hasattr(red_stream, "reader_params"):
-            index_key = getattr(red_stream.reader_params, "index", None)
-            if index_key:
-                index_data["index_key"] = index_key
-                return index_data
-
-        # Default index key if none found
-        index_data["index_key"] = "ReferenceTime"
-
-        return index_data
-
     def _extract_timing_from_csv(self) -> tuple[datetime, datetime]:
         """
         Extract session timing from camera metadata CSV files.
@@ -176,28 +147,6 @@ class FiberPhotometryExtractor:
             "Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. "
             "Please verify that camera metadata files exist in the data directory."
         )
-
-    def _get_data_stream(self, stream_name: str):
-        """
-        Get a data stream by name from the dataset.
-
-        Parameters
-        ----------
-        stream_name : str
-            The name of the data stream to retrieve.
-
-        Returns
-        -------
-        DataStream
-            The requested data stream, or None if not found.
-        """
-        streams = getattr(self._dataset, "_data", None)
-        for stream in streams:
-            if not hasattr(stream, "name"):
-                raise AttributeError("Data stream is missing required 'name' attribute")
-            if stream.name == stream_name:
-                return stream
-        return None
 
     def _extract_data_files(self) -> list[str]:
         """
