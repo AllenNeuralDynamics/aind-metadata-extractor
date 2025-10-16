@@ -1,6 +1,9 @@
 {
   "job_settings_name": "FIP",
-  "experimenter_full_name": [],
+  "experimenter_full_name": [
+    "Foo",
+    "Bar"
+  ],
   "session_start_time": "2025-07-18 12:32:35.275046-07:00",
   "session_end_time": "2025-07-18 12:49:22.448358-07:00",
   "subject_id": "test",
