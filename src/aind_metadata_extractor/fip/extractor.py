@@ -5,7 +5,6 @@ from pathlib import Path
 from datetime import datetime
 from typing import Any, Optional, TYPE_CHECKING, cast
 from zoneinfo import ZoneInfo
-from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from pandas import DataFrame
