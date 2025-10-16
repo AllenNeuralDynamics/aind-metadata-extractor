@@ -19,11 +19,6 @@ job_settings = JobSettings(
     data_directory=DATA_DIR,
     mouse_platform_name="Standard",
     active_mouse_platform=False,
-    iacuc_protocol="2115",
-    notes="Example extraction",
-    anaesthesia="none",
-    animal_weight_prior=25.0,
-    animal_weight_post=25.0,
     local_timezone="America/Los_Angeles",
     output_directory=DATA_DIR,
 )
