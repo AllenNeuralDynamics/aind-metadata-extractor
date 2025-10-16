@@ -236,9 +236,9 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
             with self.assertRaises(ValueError) as context:
                 extractor._extract_timing_from_csv()
             self.assertIn(
-                "Could not extract session timing from camera metadata. \
-                Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. \
-                Please verify that camera metadata files exist in the data directory.",
+                "Could not extract session timing from camera metadata. "
+                "Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. "
+                "Please verify that camera metadata files exist in the data directory.",
                 str(context.exception),
             )
 
@@ -290,7 +290,10 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         # Mock session stream with model_dump
         session_stream = MagicMock()
         session_data = MagicMock()
-        session_data.model_dump.return_value = {"session_type": "FIB"}
+        session_data.model_dump.return_value = {
+            "session_type": "FIB",
+            "experimenter_full_name": ["John Doe", "Jane Smith"],
+        }
         session_stream.read.return_value = session_data
 
         with patch.object(
@@ -303,6 +306,7 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
             result = extractor._extract_hardware_config()
             self.assertEqual(result["rig_config"]["rig_name"], "Rig_001")
             self.assertEqual(result["session_config"]["session_type"], "FIB")
+            self.assertEqual(result["session_config"]["experimenter_full_name"], ["John Doe", "Jane Smith"])
 
     def test_extract_hardware_config_no_rig_dump(self):
         """Test _extract_hardware_config raises error if model_dump is missing."""
@@ -387,7 +391,6 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         # Patch _extract_metadata_from_contract to return valid metadata
         metadata = {
             "job_settings_name": "FiberPhotometry",
-            "experimenter_full_name": ["John Doe", "Jane Smith"],
             "subject_id": "mouse_001",
             "rig_id": "Rig_001",
             "mouse_platform_name": "Platform_A",
@@ -400,7 +403,11 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
             "session_end_time": 933754.601152,
             "data_files": [str(self.test_data_dir / "green.csv")],
             "rig_config": {"rig_name": "Rig_001"},
-            "session_config": {"session_type": "FIB"},
+            "session_config": {
+                "session_type": "FIB",
+                "experimenter": ["John Doe", "Jane Smith"],
+                "subject": "mouse_001",
+            },
             "local_timezone": "America/Los_Angeles",
             "output_directory": str(self.test_data_dir),
             "output_filename": "session_fip.json",
@@ -412,6 +419,7 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         self.assertEqual(result["rig_id"], "Rig_001")
         self.assertEqual(result["rig_config"]["rig_name"], "Rig_001")
         self.assertEqual(result["session_config"]["session_type"], "FIB")
+        self.assertEqual(result["experimenter_full_name"], ["John Doe", "Jane Smith"])
 
     def test_extract_metadata_from_contract(self):
         """Test _extract_metadata_from_contract aggregates all metadata."""

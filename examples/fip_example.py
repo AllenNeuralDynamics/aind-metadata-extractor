@@ -28,4 +28,3 @@ with open(OUTPUT_FILE, "w") as f:
     json.dump(response, f, indent=2, default=str)
 
 print(f"Extraction complete! Saved metadata to {OUTPUT_FILE}")
-

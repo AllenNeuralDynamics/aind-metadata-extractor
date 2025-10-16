@@ -49,25 +49,25 @@ class FiberPhotometryExtractor:
 
         # Extract metadata using the data contract
         file_metadata = self._extract_metadata_from_contract()
-        
-        # Map extracted start_time/end_time to session_start_time/session_end_time  
+
+        # Map extracted start_time/end_time to session_start_time/session_end_time
         if "start_time" in file_metadata:
             file_metadata["session_start_time"] = file_metadata.pop("start_time")
         if "end_time" in file_metadata:
             file_metadata["session_end_time"] = file_metadata.pop("end_time")
-        
+
         # Extract rig_id from rig_config if available
         if "rig_config" in file_metadata and file_metadata["rig_config"]:
             if "rig_name" in file_metadata["rig_config"]:
                 file_metadata["rig_id"] = file_metadata["rig_config"]["rig_name"]
-        
+
         # Extract subject_id from session_config if available
         if "session_config" in file_metadata and file_metadata["session_config"]:
             if "subject" in file_metadata["session_config"]:
                 file_metadata["subject_id"] = file_metadata["session_config"]["subject"]
             if "experimenter" in file_metadata["session_config"]:
                 file_metadata["experimenter_full_name"] = file_metadata["session_config"]["experimenter"]
-        
+
         # Update with job settings, but don't overwrite extracted values
         job_settings_dict = self.job_settings.model_dump()
         for key in ["rig_config", "session_config", "rig_id", "subject_id", "experimenter_full_name"]:
@@ -141,7 +141,7 @@ class FiberPhotometryExtractor:
     def _extract_timing_from_csv(self) -> dict:
         """
         Extract session timing from camera metadata CSV files.
-        
+
         Uses CpuTime column which contains timezone-aware ISO 8601 timestamps,
         and converts them to the local timezone specified in job_settings.
 
@@ -152,7 +152,7 @@ class FiberPhotometryExtractor:
         """
         timing_data = {}
         local_tz = ZoneInfo(self.job_settings.local_timezone)
-        
+
         # Try to get timing from camera_green_iso_metadata stream
         metadata_stream = self._get_data_stream("camera_green_iso_metadata")
         if metadata_stream:
@@ -185,8 +185,6 @@ class FiberPhotometryExtractor:
                 "Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. "
                 "Please verify that camera metadata files exist in the data directory."
             )
-
-        return timing_data
 
     def _get_data_stream(self, stream_name: str):
         """
