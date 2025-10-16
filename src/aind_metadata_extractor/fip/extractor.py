@@ -109,16 +109,9 @@ class FiberPhotometryExtractor:
         """
         metadata: dict[str, Any] = {}
 
-        start_time, end_time = self._extract_timing_from_csv()
-        metadata["start_time"] = start_time
-        metadata["end_time"] = end_time
-
-        # Extract data files information
-        files_data = self._extract_data_files()
-        metadata["data_files"] = files_data
-
-        hardware_data = self._extract_hardware_config()
-        metadata.update(hardware_data)
+        metadata["start_time"], metadata["end_time"] = self._extract_timing_from_csv()
+        metadata["data_files"] = self._extract_data_files()
+        metadata["session_config"], metadata["rig_config"] = self._extract_hardware_config()
 
         return metadata
 
@@ -235,7 +228,7 @@ class FiberPhotometryExtractor:
 
         return data_files
 
-    def _extract_hardware_config(self) -> dict:
+    def _extract_hardware_config(self) -> tuple[AindPhysioFipRig, AindBehaviorSessionModel]:
         """
         Extract hardware configuration from rig and session inputs.
 
@@ -245,27 +238,15 @@ class FiberPhotometryExtractor:
             Extracted hardware configuration with
                 'rig_config' and 'session_config' keys
         """
-        hardware_data = {}
 
         # Try to extract rig configuration
-        rig_stream = self._get_data_stream("rig_input")
-        if rig_stream:
-            rig_data = rig_stream.read()
-            if hasattr(rig_data, "model_dump"):
-                hardware_data["rig_config"] = rig_data.model_dump()
-            else:
-                raise AttributeError("Rig data must have a 'model_dump' method")
+        rig_config = self.dataset["rig_input"].read()
+        assert isinstance(rig_config, AindPhysioFipRig)
 
-        # Try to extract session configuration
-        session_stream = self._get_data_stream("session_input")
-        if session_stream:
-            session_data = session_stream.read()
-            if hasattr(session_data, "model_dump"):
-                hardware_data["session_config"] = session_data.model_dump()
-            else:
-                raise AttributeError("Session data must have a 'model_dump' method")
+        session_config = self.dataset["session_input"].read()
+        assert isinstance(session_config, AindBehaviorSessionModel)
 
-        return hardware_data
+        return rig_config, session_config
 
     def _extract_basic_metadata(self) -> dict:
         """
