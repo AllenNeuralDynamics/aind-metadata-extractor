@@ -17,8 +17,8 @@ class JobSettings(BaseJobSettings):
     subject_id: Optional[str] = Field(default=None, title="Subject identifier")
     rig_id: Optional[str] = Field(default=None, title="Identifier for the experimental rig")
     mouse_platform_name: Optional[str] = Field(default=None, title="Name of the mouse platform used")
-    active_mouse_platform: Optional[bool] = Field(
-        default=None, title="Whether the mouse platform was active during the session"
+    active_mouse_platform: bool = Field(
+        default=False, title="Whether the mouse platform was actively controlled (motor-driven) during the session"
     )
     data_streams: Optional[List[dict]] = Field(default_factory=list, title="List of data stream configurations")
     iacuc_protocol: Optional[str] = Field(default=None, title="IACUC protocol identifier")
