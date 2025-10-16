@@ -182,9 +182,8 @@ class FiberPhotometryExtractor:
 
         Returns
         -------
-        dict
-            Extracted hardware configuration with
-                'rig_config' and 'session_config' keys
+        tuple[AindPhysioFipRig, AindBehaviorSessionModel]
+            Extracted rig configuration and session configuration
         """
 
         # Try to extract rig configuration
@@ -195,34 +194,6 @@ class FiberPhotometryExtractor:
         assert isinstance(session_config, AindBehaviorSessionModel)
 
         return rig_config, session_config
-
-    def _extract_basic_metadata(self) -> dict:
-        """
-        Extract basic metadata when contract approach needs fallback data.
-
-        Returns
-        -------
-        dict
-            Extracted basic metadata with 'start_time',
-                'end_time', and 'data_files' keys
-        """
-        data_dir = Path(self.job_settings.data_directory)
-
-        # Find any available data files
-        data_files = []
-        for pattern in ["*.bin", "*.csv", "*.json"]:
-            data_files.extend([str(f) for f in data_dir.glob(pattern)])
-
-        # Use current time as fallback
-        current_time = datetime.now()
-
-        return {
-            "start_time": current_time,
-            "end_time": current_time,
-            "data_files": data_files,
-            "rig_config": {},
-            "session_config": {},
-        }
 
     def save_to_file(self, fiber_data: FiberData, output_path: Optional[Path] = None) -> Path:
         """Save FiberData to a JSON file.
