@@ -17,7 +17,6 @@ OUTPUT_FILE = Path(__file__).parent / "fip_extracted_metadata.json"
 
 job_settings = JobSettings(
     data_directory=DATA_DIR,
-    subject_id="781896",
     mouse_platform_name="Standard",
     active_mouse_platform=False,
     iacuc_protocol="2115",
