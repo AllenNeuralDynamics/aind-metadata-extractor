@@ -1,6 +1,5 @@
 """Module defining JobSettings for Fiber Photometry Contract-based Extractor"""
 
-from datetime import datetime
 from pathlib import Path
 from typing import List, Literal, Optional, Union
 
