@@ -3,16 +3,17 @@
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING, cast
+from typing import Any, Optional, TYPE_CHECKING, cast
 from zoneinfo import ZoneInfo
 
 if TYPE_CHECKING:
     from pandas import DataFrame
-    from contraqctor.contract import DataStream, Dataset
+    from contraqctor.contract import DataStream, Dataset, FilePathBaseParam
 else:
     DataFrame = "DataFrame"
     DataStream = "DataStream"
     Dataset = "Dataset"
+    FilePathBaseParam = "FilePathBaseParam"
 
 from aind_physiology_fip.data_contract import dataset
 
@@ -106,7 +107,7 @@ class FiberPhotometryExtractor:
         dict
             Extracted metadata as a dictionary
         """
-        metadata = {}
+        metadata: dict[str, Any] = {}
 
         start_time, end_time = self._extract_timing_from_csv()
         metadata["start_time"] = start_time
@@ -114,7 +115,7 @@ class FiberPhotometryExtractor:
 
         # Extract data files information
         files_data = self._extract_data_files()
-        metadata.update(files_data)
+        metadata["data_files"] = files_data
 
         hardware_data = self._extract_hardware_config()
         metadata.update(hardware_data)
@@ -205,14 +206,14 @@ class FiberPhotometryExtractor:
                 return stream
         return None
 
-    def _extract_data_files(self) -> dict:
+    def _extract_data_files(self) -> list[str]:
         """
         Extract data files information from the dataset.
 
         Returns
         -------
-        dict
-            Extracted data files information with 'data_files' key
+        list[str]
+            Extracted data files information. Each entry is a file path string.
         """
         data_files = []
 
@@ -225,13 +226,14 @@ class FiberPhotometryExtractor:
             "red",
             "iso",
         ]:
-            stream = self._get_data_stream(stream_name)
-            if stream:
-                file_path = getattr(stream.reader_params, "path", None)
-                if file_path and Path(file_path).exists():
-                    data_files.append(str(file_path))
+            stream = self.dataset[stream_name]
+            assert isinstance(stream.reader_params, FilePathBaseParam)
+            if Path(stream.reader_params.path).exists():
+                data_files.append(str(stream.reader_params.path))
+            else:
+                logger.warning(f"Data file for stream '{stream_name}' does not exist: {stream.reader_params.path}")
 
-        return {"data_files": data_files}
+        return data_files
 
     def _extract_hardware_config(self) -> dict:
         """
