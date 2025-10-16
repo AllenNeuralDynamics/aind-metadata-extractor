@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 
 from aind_physiology_fip.data_contract import dataset
@@ -48,7 +49,31 @@ class FiberPhotometryExtractor:
 
         # Extract metadata using the data contract
         file_metadata = self._extract_metadata_from_contract()
-        file_metadata.update(self.job_settings.model_dump())
+        
+        # Map extracted start_time/end_time to session_start_time/session_end_time  
+        if "start_time" in file_metadata:
+            file_metadata["session_start_time"] = file_metadata.pop("start_time")
+        if "end_time" in file_metadata:
+            file_metadata["session_end_time"] = file_metadata.pop("end_time")
+        
+        # Extract rig_id from rig_config if available
+        if "rig_config" in file_metadata and file_metadata["rig_config"]:
+            if "rig_name" in file_metadata["rig_config"]:
+                file_metadata["rig_id"] = file_metadata["rig_config"]["rig_name"]
+        
+        # Extract subject_id from session_config if available
+        if "session_config" in file_metadata and file_metadata["session_config"]:
+            if "subject" in file_metadata["session_config"]:
+                file_metadata["subject_id"] = file_metadata["session_config"]["subject"]
+            if "experimenter" in file_metadata["session_config"]:
+                file_metadata["experimenter_full_name"] = file_metadata["session_config"]["experimenter"]
+        
+        # Update with job settings, but don't overwrite extracted values
+        job_settings_dict = self.job_settings.model_dump()
+        for key in ["rig_config", "session_config", "rig_id", "subject_id", "experimenter_full_name"]:
+            if key in file_metadata and file_metadata[key] is not None:
+                job_settings_dict.pop(key, None)
+        file_metadata.update(job_settings_dict)
 
         logger.info("Extracted metadata from data contract:")
         logger.info(json.dumps(file_metadata, indent=3, default=str))
@@ -115,8 +140,10 @@ class FiberPhotometryExtractor:
 
     def _extract_timing_from_csv(self) -> dict:
         """
-        Extract session timing from CSV data streams using
-            the contract's index key.
+        Extract session timing from camera metadata CSV files.
+        
+        Uses CpuTime column which contains timezone-aware ISO 8601 timestamps,
+        and converts them to the local timezone specified in job_settings.
 
         Returns
         -------
@@ -124,42 +151,40 @@ class FiberPhotometryExtractor:
             Extracted timing information with 'start_time' and 'end_time' keys
         """
         timing_data = {}
-        # Try to get timing from green channel CSV
-        green_stream = self._get_data_stream("green")
-        if green_stream:
-            green_data = green_stream.read()
-            # Get the index key from the contract configuration
-            index_key = self._extract_index().get("index_key", "ReferenceTime")
-
-            # Use the index key to access the timing column
-            if index_key in green_data.columns:
-                timing_data["start_time"] = green_data[index_key].min()
-                timing_data["end_time"] = green_data[index_key].max()
+        local_tz = ZoneInfo(self.job_settings.local_timezone)
+        
+        # Try to get timing from camera_green_iso_metadata stream
+        metadata_stream = self._get_data_stream("camera_green_iso_metadata")
+        if metadata_stream:
+            metadata = metadata_stream.read()
+            if "CpuTime" in metadata.columns and not metadata.empty:
+                # CpuTime is in timezone-aware ISO 8601 format (UTC)
+                # Convert to local timezone
+                start_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[0])
+                end_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[-1])
+                timing_data["start_time"] = start_utc.astimezone(local_tz)
+                timing_data["end_time"] = end_utc.astimezone(local_tz)
                 return timing_data
 
-        # Fall back to red channel CSV (also uses index key from contract)
-        red_stream = self._get_data_stream("red")
-        if red_stream:
-            red_data = red_stream.read()
-            # Get the index key from the contract configuration
-            index_key = self._extract_index().get("index_key", "ReferenceTime")
+        # Fall back to camera_red_metadata
+        if not timing_data:
+            metadata_stream = self._get_data_stream("camera_red_metadata")
+            if metadata_stream:
+                metadata = metadata_stream.read()
+                if "CpuTime" in metadata.columns and not metadata.empty:
+                    start_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[0])
+                    end_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[-1])
+                    timing_data["start_time"] = start_utc.astimezone(local_tz)
+                    timing_data["end_time"] = end_utc.astimezone(local_tz)
+                    return timing_data
 
-            # Use the index key to access the timing column
-            if index_key in red_data.columns:
-                timing_data["start_time"] = red_data[index_key].min()
-                timing_data["end_time"] = red_data[index_key].max()
-                return timing_data
-            # Fallback to DataFrame index if column not found
-            elif not red_data.index.empty:
-                timing_data["start_time"] = red_data.index.min()
-                timing_data["end_time"] = red_data.index.max()
-                return timing_data
-
-        # If no timing found, use current time as fallback
+        # If no timing found, raise an error - don't use current time as fallback
         if "start_time" not in timing_data:
-            current_time = datetime.now()
-            timing_data["start_time"] = current_time
-            timing_data["end_time"] = current_time
+            raise ValueError(
+                "Could not extract session timing from camera metadata. "
+                "Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. "
+                "Please verify that camera metadata files exist in the data directory."
+            )
 
         return timing_data
 

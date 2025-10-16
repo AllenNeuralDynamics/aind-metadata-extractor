@@ -17,19 +17,17 @@ class JobSettings(BaseJobSettings):
     subject_id: Optional[str] = Field(default=None, title="Subject identifier")
     rig_id: Optional[str] = Field(default=None, title="Identifier for the experimental rig")
     mouse_platform_name: Optional[str] = Field(default=None, title="Name of the mouse platform used")
-    active_mouse_platform: Optional[bool] = Field(
-        default=None, title="Whether the mouse platform was active during the session"
+    active_mouse_platform: bool = Field(
+        default=False, title="Whether the mouse platform was actively controlled (motor-driven) during the session"
     )
     data_streams: Optional[List[dict]] = Field(default_factory=list, title="List of data stream configurations")
-    iacuc_protocol: Optional[str] = Field(default=None, title="IACUC protocol identifier")
+    ethics_review_id: Optional[str] = Field(default=None, title="Ethics review protocol identifier")
     notes: Optional[str] = Field(default=None, title="Session notes")
     anaesthesia: Optional[str] = Field(default=None, title="Anaesthesia used")
     animal_weight_post: Optional[float] = Field(default=None, title="Animal weight after session")
     animal_weight_prior: Optional[float] = Field(default=None, title="Animal weight before session")
     protocol_id: Optional[List[str]] = Field(default_factory=list, title="List of protocol identifiers")
     session_type: Optional[str] = Field(default="FIP", title="Type of session")
-    session_start_time: Optional[datetime] = Field(default=None, title="Start time of the session")
-    session_end_time: Optional[datetime] = Field(default=None, title="End time of the session")
     data_files: Optional[List[str]] = Field(default_factory=list, title="List of data file paths")
     rig_config: Optional[dict] = Field(default=None, title="Rig configuration dictionary")
     session_config: Optional[dict] = Field(default=None, title="Session configuration dictionary")

@@ -1,6 +1,6 @@
 """Data models of extracted information from FIP files."""
 
-from typing import Literal, Union, List
+from typing import Literal, Union, List, Optional
 from datetime import datetime
 from pathlib import Path
 from pydantic import BaseModel, Field
@@ -27,11 +27,11 @@ class FIPDataModel(BaseModel):
     active_mouse_platform: bool = Field(..., description="Whether the mouse platform was active during the session")
     data_streams: List[dict] = Field(default_factory=list, description="List of data stream configurations")
     session_type: str = Field(default="FIP", description="Type of session")
-    iacuc_protocol: str = Field(..., description="IACUC protocol identifier")
-    notes: str = Field(..., description="Session notes")
-    anaesthesia: str = Field(..., description="Anaesthesia used")
-    animal_weight_post: float = Field(..., description="Animal weight after session")
-    animal_weight_prior: float = Field(..., description="Animal weight before session")
+    ethics_review_id: Optional[str] = Field(default=None, description="Ethics review protocol identifier")
+    notes: Optional[str] = Field(default=None, description="Session notes")
+    anaesthesia: Optional[str] = Field(default=None, description="Anaesthesia used")
+    animal_weight_post: Optional[float] = Field(default=None, description="Animal weight after session")
+    animal_weight_prior: Optional[float] = Field(default=None, description="Animal weight before session")
     protocol_id: List[str] = Field(default_factory=list, description="List of protocol identifiers")
     data_directory: Union[str, Path] = Field(..., description="Path to data directory containing FIB files")
     data_files: List[Union[str, Path]] = Field(default_factory=list, description="List of data file paths")
