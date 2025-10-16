@@ -27,7 +27,7 @@ class FIPDataModel(BaseModel):
     active_mouse_platform: bool = Field(..., description="Whether the mouse platform was active during the session")
     data_streams: List[dict] = Field(default_factory=list, description="List of data stream configurations")
     session_type: str = Field(default="FIP", description="Type of session")
-    iacuc_protocol: Optional[str] = Field(default=None, description="IACUC protocol identifier")
+    ethics_review_id: Optional[str] = Field(default=None, description="Ethics review protocol identifier")
     notes: Optional[str] = Field(default=None, description="Session notes")
     anaesthesia: Optional[str] = Field(default=None, description="Anaesthesia used")
     animal_weight_post: Optional[float] = Field(default=None, description="Animal weight after session")

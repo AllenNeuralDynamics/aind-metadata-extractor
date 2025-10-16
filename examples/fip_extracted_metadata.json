@@ -12,7 +12,7 @@
   "active_mouse_platform": false,
   "data_streams": [],
   "session_type": "FIP",
-  "iacuc_protocol": null,
+  "ethics_review_id": null,
   "notes": null,
   "anaesthesia": null,
   "animal_weight_post": null,

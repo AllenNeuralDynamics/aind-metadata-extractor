@@ -21,7 +21,7 @@ class JobSettings(BaseJobSettings):
         default=False, title="Whether the mouse platform was actively controlled (motor-driven) during the session"
     )
     data_streams: Optional[List[dict]] = Field(default_factory=list, title="List of data stream configurations")
-    iacuc_protocol: Optional[str] = Field(default=None, title="IACUC protocol identifier")
+    ethics_review_id: Optional[str] = Field(default=None, title="Ethics review protocol identifier")
     notes: Optional[str] = Field(default=None, title="Session notes")
     anaesthesia: Optional[str] = Field(default=None, title="Anaesthesia used")
     animal_weight_post: Optional[float] = Field(default=None, title="Animal weight after session")
