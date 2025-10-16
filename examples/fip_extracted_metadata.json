@@ -8,7 +8,7 @@
   "session_end_time": "2025-07-18 12:49:22.448358-07:00",
   "subject_id": "test",
   "rig_id": "test_rig",
-  "mouse_platform_name": "Standard",
+  "mouse_platform_name": "wheel",
   "active_mouse_platform": false,
   "data_streams": [],
   "session_type": "FIP",

@@ -17,7 +17,7 @@ OUTPUT_FILE = Path(__file__).parent / "fip_extracted_metadata.json"
 
 job_settings = JobSettings(
     data_directory=DATA_DIR,
-    mouse_platform_name="Standard",
+    mouse_platform_name="wheel",
     local_timezone="America/Los_Angeles",
     output_directory=DATA_DIR,
 )
