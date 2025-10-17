@@ -269,9 +269,9 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         extractor = FiberPhotometryExtractor(self.job_settings)
         extractor._dataset = MagicMock()  # Simulate contract dataset
 
-        timing_data = {"start_time": 1, "end_time": 2}
-        files_data = {"data_files": [str(self.test_data_dir / "green.csv")]}
-        hardware_data = {"rig_config": {"rig_name": "Rig_001"}, "session_config": {"session_type": "FIB"}}
+        timing_data = (1, 2)
+        files_data = [str(self.test_data_dir / "green.csv")]
+        hardware_data = ({"rig_name": "Rig_001"}, {"session_type": "FIB"})
 
         with (
             patch.object(extractor, "_extract_timing_from_csv", return_value=timing_data),
@@ -280,6 +280,7 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         ):
             metadata = extractor._extract_metadata_from_contract()
 
+        print(metadata)
         self.assertEqual(metadata["start_time"], 1)
         self.assertEqual(metadata["end_time"], 2)
         self.assertIn(str(self.test_data_dir / "green.csv"), metadata["data_files"])
