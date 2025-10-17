@@ -1,18 +1,21 @@
 """Fiber Photometry extractor module using data contract"""
 
 import json
-from pathlib import Path
+import logging
 from datetime import datetime
-from typing import Optional
+from pathlib import Path
+from typing import Any, Optional, TYPE_CHECKING, cast
 from zoneinfo import ZoneInfo
 
-
-from aind_physiology_fip.data_contract import dataset
-
+from aind_behavior_services.session import AindBehaviorSessionModel
 from aind_metadata_extractor.fip.job_settings import JobSettings
 from aind_metadata_extractor.models.fip import FIPDataModel as FiberData
+from aind_physiology_fip.data_contract import dataset
+from aind_physiology_fip.rig import AindPhysioFipRig
 
-import logging
+if TYPE_CHECKING:
+    from pandas import DataFrame
+    from contraqctor.contract import Dataset, FilePathBaseParam
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -31,7 +34,14 @@ class FiberPhotometryExtractor:
             Configuration settings for the extraction process
         """
         self.job_settings = job_settings
-        self._dataset = None
+        self._dataset: Optional[Dataset] = None
+
+    @property
+    def dataset(self) -> Dataset:
+        # This is a read-only property to access the dataset and ensures it is not null for type hinting
+        if self._dataset is None:
+            raise ValueError("Dataset has not been initialized.")
+        return self._dataset
 
     def extract(self) -> dict:
         """Run extraction process using the GitHub data contract.
@@ -92,53 +102,15 @@ class FiberPhotometryExtractor:
         dict
             Extracted metadata as a dictionary
         """
-        metadata = {}
+        metadata: dict[str, Any] = {}
 
-        timing_data = self._extract_timing_from_csv()
-        metadata.update(timing_data)
-
-        # Extract data files information
-        files_data = self._extract_data_files()
-        metadata.update(files_data)
-
-        hardware_data = self._extract_hardware_config()
-        metadata.update(hardware_data)
+        metadata["start_time"], metadata["end_time"] = self._extract_timing_from_csv()
+        metadata["data_files"] = self._extract_data_files()
+        metadata["session_config"], metadata["rig_config"] = self._extract_hardware_config()
 
         return metadata
 
-    def _extract_index(self) -> dict:
-        """
-        Extract index key information from the dataset contract configuration.
-
-        Returns
-        -------
-        dict
-            Extracted index key information as a dictionary
-        """
-        index_data = {}
-
-        # Try to get index key from green channel CSV configuration
-        green_stream = self._get_data_stream("green")
-        if green_stream and hasattr(green_stream, "reader_params"):
-            index_key = getattr(green_stream.reader_params, "index", None)
-            if index_key:
-                index_data["index_key"] = index_key
-                return index_data
-
-        # Fall back to red channel CSV configuration
-        red_stream = self._get_data_stream("red")
-        if red_stream and hasattr(red_stream, "reader_params"):
-            index_key = getattr(red_stream.reader_params, "index", None)
-            if index_key:
-                index_data["index_key"] = index_key
-                return index_data
-
-        # Default index key if none found
-        index_data["index_key"] = "ReferenceTime"
-
-        return index_data
-
-    def _extract_timing_from_csv(self) -> dict:
+    def _extract_timing_from_csv(self) -> tuple[datetime, datetime]:
         """
         Extract session timing from camera metadata CSV files.
 
@@ -147,75 +119,35 @@ class FiberPhotometryExtractor:
 
         Returns
         -------
-        dict
-            Extracted timing information with 'start_time' and 'end_time' keys
+        tuple[datetime, datetime]
+            Start and end time of the session as timezone-aware datetime objects
         """
-        timing_data = {}
+
         local_tz = ZoneInfo(self.job_settings.local_timezone)
-
+        _known_streams = ["camera_green_iso_metadata", "camera_red_metadata"]
         # Try to get timing from camera_green_iso_metadata stream
-        metadata_stream = self._get_data_stream("camera_green_iso_metadata")
-        if metadata_stream:
-            metadata = metadata_stream.read()
-            if "CpuTime" in metadata.columns and not metadata.empty:
-                # CpuTime is in timezone-aware ISO 8601 format (UTC)
-                # Convert to local timezone
-                start_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[0])
-                end_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[-1])
-                timing_data["start_time"] = start_utc.astimezone(local_tz)
-                timing_data["end_time"] = end_utc.astimezone(local_tz)
-                return timing_data
+        for stream in _known_streams:
+            logger.debug(f"Checking for timing in stream: {stream}")
+            metadata_stream = cast(DataFrame, self.dataset[stream].read())
+            if metadata_stream is not None and not metadata_stream.empty:
+                start_utc = datetime.fromisoformat(metadata_stream["CpuTime"].iloc[0])
+                end_utc = datetime.fromisoformat(metadata_stream["CpuTime"].iloc[-1])
+                return start_utc.astimezone(local_tz), end_utc.astimezone(local_tz)
 
-        # Fall back to camera_red_metadata
-        if not timing_data:
-            metadata_stream = self._get_data_stream("camera_red_metadata")
-            if metadata_stream:
-                metadata = metadata_stream.read()
-                if "CpuTime" in metadata.columns and not metadata.empty:
-                    start_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[0])
-                    end_utc = datetime.fromisoformat(metadata["CpuTime"].iloc[-1])
-                    timing_data["start_time"] = start_utc.astimezone(local_tz)
-                    timing_data["end_time"] = end_utc.astimezone(local_tz)
-                    return timing_data
+        raise ValueError(
+            "Could not extract session timing from camera metadata. "
+            "Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. "
+            "Please verify that camera metadata files exist in the data directory."
+        )
 
-        # If no timing found, raise an error - don't use current time as fallback
-        if "start_time" not in timing_data:
-            raise ValueError(
-                "Could not extract session timing from camera metadata. "
-                "Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. "
-                "Please verify that camera metadata files exist in the data directory."
-            )
-
-    def _get_data_stream(self, stream_name: str):
-        """
-        Get a data stream by name from the dataset.
-
-        Parameters
-        ----------
-        stream_name : str
-            The name of the data stream to retrieve.
-
-        Returns
-        -------
-        DataStream
-            The requested data stream, or None if not found.
-        """
-        streams = getattr(self._dataset, "_data", None)
-        for stream in streams:
-            if not hasattr(stream, "name"):
-                raise AttributeError("Data stream is missing required 'name' attribute")
-            if stream.name == stream_name:
-                return stream
-        return None
-
-    def _extract_data_files(self) -> dict:
+    def _extract_data_files(self) -> list[str]:
         """
         Extract data files information from the dataset.
 
         Returns
         -------
-        dict
-            Extracted data files information with 'data_files' key
+        list[str]
+            Extracted data files information. Each entry is a file path string.
         """
         data_files = []
 
@@ -228,73 +160,33 @@ class FiberPhotometryExtractor:
             "red",
             "iso",
         ]:
-            stream = self._get_data_stream(stream_name)
-            if stream:
-                file_path = getattr(stream.reader_params, "path", None)
-                if file_path and Path(file_path).exists():
-                    data_files.append(str(file_path))
+            stream = self.dataset[stream_name]
+            assert isinstance(stream.reader_params, FilePathBaseParam)
+            if Path(stream.reader_params.path).exists():
+                data_files.append(str(stream.reader_params.path))
+            else:
+                logger.warning(f"Data file for stream '{stream_name}' does not exist: {stream.reader_params.path}")
 
-        return {"data_files": data_files}
+        return data_files
 
-    def _extract_hardware_config(self) -> dict:
+    def _extract_hardware_config(self) -> tuple[AindPhysioFipRig, AindBehaviorSessionModel]:
         """
         Extract hardware configuration from rig and session inputs.
 
         Returns
         -------
-        dict
-            Extracted hardware configuration with
-                'rig_config' and 'session_config' keys
+        tuple[AindPhysioFipRig, AindBehaviorSessionModel]
+            Extracted rig configuration and session configuration
         """
-        hardware_data = {}
 
         # Try to extract rig configuration
-        rig_stream = self._get_data_stream("rig_input")
-        if rig_stream:
-            rig_data = rig_stream.read()
-            if hasattr(rig_data, "model_dump"):
-                hardware_data["rig_config"] = rig_data.model_dump()
-            else:
-                raise AttributeError("Rig data must have a 'model_dump' method")
+        rig_config = self.dataset["rig_input"].read()
+        assert isinstance(rig_config, AindPhysioFipRig)
 
-        # Try to extract session configuration
-        session_stream = self._get_data_stream("session_input")
-        if session_stream:
-            session_data = session_stream.read()
-            if hasattr(session_data, "model_dump"):
-                hardware_data["session_config"] = session_data.model_dump()
-            else:
-                raise AttributeError("Session data must have a 'model_dump' method")
+        session_config = self.dataset["session_input"].read()
+        assert isinstance(session_config, AindBehaviorSessionModel)
 
-        return hardware_data
-
-    def _extract_basic_metadata(self) -> dict:
-        """
-        Extract basic metadata when contract approach needs fallback data.
-
-        Returns
-        -------
-        dict
-            Extracted basic metadata with 'start_time',
-                'end_time', and 'data_files' keys
-        """
-        data_dir = Path(self.job_settings.data_directory)
-
-        # Find any available data files
-        data_files = []
-        for pattern in ["*.bin", "*.csv", "*.json"]:
-            data_files.extend([str(f) for f in data_dir.glob(pattern)])
-
-        # Use current time as fallback
-        current_time = datetime.now()
-
-        return {
-            "start_time": current_time,
-            "end_time": current_time,
-            "data_files": data_files,
-            "rig_config": {},
-            "session_config": {},
-        }
+        return rig_config, session_config
 
     def save_to_file(self, fiber_data: FiberData, output_path: Optional[Path] = None) -> Path:
         """Save FiberData to a JSON file.
