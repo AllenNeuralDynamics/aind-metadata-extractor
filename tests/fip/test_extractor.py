@@ -9,6 +9,8 @@ from datetime import datetime
 from aind_metadata_extractor.fip.extractor import FiberPhotometryExtractor
 from aind_metadata_extractor.fip.job_settings import JobSettings
 from aind_metadata_extractor.models.fip import FIPDataModel
+from aind_physiology_fip.rig import AindPhysioFipRig
+from aind_behavior_services.session import AindBehaviorSessionModel
 from contraqctor.contract import FilePathBaseParam
 
 
@@ -196,55 +198,30 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
 
         # Mock rig stream with model_dump
         rig_stream = MagicMock()
-        rig_data = MagicMock()
+        rig_data = MagicMock(spec=AindPhysioFipRig)
         rig_data.model_dump.return_value = {"rig_name": "Rig_001"}
         rig_stream.read.return_value = rig_data
 
         # Mock session stream with model_dump
         session_stream = MagicMock()
-        session_data = MagicMock()
+        session_data = MagicMock(spec=AindBehaviorSessionModel)
         session_data.model_dump.return_value = {
             "session_type": "FIB",
             "experimenter_full_name": ["John Doe", "Jane Smith"],
         }
         session_stream.read.return_value = session_data
 
-        result = extractor._extract_hardware_config()
-        self.assertEqual(result["rig_config"]["rig_name"], "Rig_001")
-        self.assertEqual(result["session_config"]["session_type"], "FIB")
-        self.assertEqual(result["session_config"]["experimenter_full_name"], ["John Doe", "Jane Smith"])
+        # Mock the dataset to return the correct streams
+        extractor._dataset = MagicMock()
+        extractor._dataset.__getitem__.side_effect = lambda name: rig_stream if name == "rig_input" else session_stream
 
-    def test_extract_hardware_config_no_rig_dump(self):
-        """Test _extract_hardware_config raises error if model_dump is missing."""
-        extractor = FiberPhotometryExtractor(self.job_settings)
+        rig_config, session_config = extractor._extract_hardware_config()
+        rig_config = rig_config.model_dump()
+        session_config = session_config.model_dump()
+        self.assertEqual(rig_config["rig_name"], "Rig_001")
+        self.assertEqual(session_config["session_type"], "FIB")
+        self.assertEqual(session_config["experimenter_full_name"], ["John Doe", "Jane Smith"])
 
-        # Mock rig stream without model_dump
-        rig_stream = MagicMock()
-        rig_data = MagicMock()
-        if hasattr(rig_data, "model_dump"):
-            del rig_data.model_dump
-        rig_stream.read.return_value = rig_data
-
-
-        with self.assertRaises(AttributeError) as context:
-            extractor._extract_hardware_config()
-        self.assertIn("Rig data must have a 'model_dump' method", str(context.exception))
-
-    def test_extract_hardware_no_session_dump(self):
-        """Test _extract_hardware_config raises error if session model_dump is missing."""
-        extractor = FiberPhotometryExtractor(self.job_settings)
-
-        # Mock session stream without model_dump
-        session_stream = MagicMock()
-        session_data = MagicMock()
-        if hasattr(session_data, "model_dump"):
-            del session_data.model_dump
-        session_stream.read.return_value = session_data
-
-
-        with self.assertRaises(AttributeError) as context:
-            extractor._extract_hardware_config()
-        self.assertIn("Session data must have a 'model_dump' method", str(context.exception))
 
     @patch("aind_metadata_extractor.fip.extractor.dataset")
     def test_extract_full_contract(self, mock_dataset):
@@ -290,7 +267,7 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
     def test_extract_metadata_from_contract(self):
         """Test _extract_metadata_from_contract aggregates all metadata."""
         extractor = FiberPhotometryExtractor(self.job_settings)
-        extractor.dataset = MagicMock()  # Simulate contract dataset
+        extractor._dataset = MagicMock()  # Simulate contract dataset
 
         timing_data = {"start_time": 1, "end_time": 2}
         files_data = {"data_files": [str(self.test_data_dir / "green.csv")]}
