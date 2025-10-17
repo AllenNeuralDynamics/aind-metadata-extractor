@@ -64,23 +64,22 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         mock_dataset.return_value.data_streams = [mock_stream]
 
         extractor = FiberPhotometryExtractor(self.job_settings)
-        with patch.object(extractor, "_get_data_stream", return_value=mock_stream):
+        with patch.object(
+            extractor,
+            "_extract_timing_from_csv",
+            return_value={"start_time": 933019.553312, "end_time": 933754.601152},
+        ):
             with patch.object(
                 extractor,
-                "_extract_timing_from_csv",
-                return_value={"start_time": 933019.553312, "end_time": 933754.601152},
+                "_extract_data_files",
+                return_value={"data_files": [str(self.test_data_dir / "green.csv")]},
             ):
                 with patch.object(
                     extractor,
-                    "_extract_data_files",
-                    return_value={"data_files": [str(self.test_data_dir / "green.csv")]},
+                    "_extract_hardware_config",
+                    return_value={"rig_config": {"rig_name": "Rig_001"}, "session_config": {"session_type": "FIB"}},
                 ):
-                    with patch.object(
-                        extractor,
-                        "_extract_hardware_config",
-                        return_value={"rig_config": {"rig_name": "Rig_001"}, "session_config": {"session_type": "FIB"}},
-                    ):
-                        fiber_data = extractor.extract()
+                    fiber_data = extractor.extract()
         self.assertIn("session_start_time", fiber_data)
         self.assertIn("session_end_time", fiber_data)
         self.assertIn("data_files", fiber_data)
@@ -124,48 +123,6 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         self.assertIn("FIP", data)
         self.assertIn("Rig_001", data)
 
-    def test_extract_index(self):
-        """Test _extract_index method for green, red, and default fallback."""
-        extractor = FiberPhotometryExtractor(self.job_settings)
-
-        # Mock green stream with index
-        green_stream = MagicMock()
-        green_stream.reader_params.index = "GreenIndex"
-        with patch.object(
-            extractor, "_get_data_stream", side_effect=lambda color: green_stream if color == "green" else None
-        ):
-            result = extractor._extract_index()
-            self.assertEqual(result["index_key"], "GreenIndex")
-
-        # Mock green stream without index, red stream with index
-        green_stream_no_index = MagicMock()
-        green_stream_no_index.reader_params.index = None
-        red_stream = MagicMock()
-        red_stream.reader_params.index = "RedIndex"
-        with patch.object(
-            extractor,
-            "_get_data_stream",
-            side_effect=lambda color: (
-                green_stream_no_index if color == "green" else red_stream if color == "red" else None
-            ),
-        ):
-            result = extractor._extract_index()
-            self.assertEqual(result["index_key"], "RedIndex")
-
-        # Both streams missing index, should fallback to default
-        green_stream_no_index = MagicMock()
-        green_stream_no_index.reader_params.index = None
-        red_stream_no_index = MagicMock()
-        red_stream_no_index.reader_params.index = None
-        with patch.object(
-            extractor,
-            "_get_data_stream",
-            side_effect=lambda color: (
-                green_stream_no_index if color == "green" else red_stream_no_index if color == "red" else None
-            ),
-        ):
-            result = extractor._extract_index()
-            self.assertEqual(result["index_key"], "ReferenceTime")
 
     def test_extract_timing_from_csv(self):
         """Test _extract_timing_from_csv for green, red, and fallback cases."""
@@ -188,14 +145,10 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         green_data.__getitem__.side_effect = lambda key: cpu_time_series if key == "CpuTime" else MagicMock()
         green_stream.read.return_value = green_data
 
-        with patch.object(
-            extractor,
-            "_get_data_stream",
-            side_effect=lambda name: green_stream if name == "camera_green_iso_metadata" else None,
-        ):
-            timing = extractor._extract_timing_from_csv()
-            self.assertEqual(timing["start_time"].hour, 4)
-            self.assertEqual(timing["end_time"].hour, 5)
+
+        timing = extractor._extract_timing_from_csv()
+        self.assertEqual(timing["start_time"].hour, 4)
+        self.assertEqual(timing["end_time"].hour, 5)
 
         # Case 2: Green stream missing, red stream has index key in columns
         red_stream = MagicMock()
@@ -209,14 +162,10 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         red_data.__getitem__.side_effect = lambda key: cpu_time_series_red if key == "CpuTime" else MagicMock()
         red_stream.read.return_value = red_data
 
-        with patch.object(
-            extractor,
-            "_get_data_stream",
-            side_effect=lambda name: red_stream if name == "camera_red_metadata" else None,
-        ):
-            timing = extractor._extract_timing_from_csv()
-            self.assertEqual(timing["start_time"].hour, 6)
-            self.assertEqual(timing["end_time"].hour, 7)
+
+        timing = extractor._extract_timing_from_csv()
+        self.assertEqual(timing["start_time"].hour, 6)
+        self.assertEqual(timing["end_time"].hour, 7)
 
         # Case 3: Both streams missing, should error
         with patch.object(extractor, "_get_data_stream", return_value=None):
@@ -243,26 +192,17 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         Path(green_stream.reader_params.path).touch()
         Path(red_stream.reader_params.path).touch()
 
-        with patch.object(
-            extractor,
-            "_get_data_stream",
-            side_effect=lambda color: green_stream if color == "green" else red_stream if color == "red" else None,
-        ):
-            result = extractor._extract_data_files()
-            self.assertIn(str(self.test_data_dir / "green.csv"), result["data_files"])
-            self.assertIn(str(self.test_data_dir / "red.csv"), result["data_files"])
+
+        result = extractor._extract_data_files()
+        self.assertIn(str(self.test_data_dir / "green.csv"), result["data_files"])
+        self.assertIn(str(self.test_data_dir / "red.csv"), result["data_files"])
 
         # Case 2: Files do not exist
         green_stream.reader_params.path = self.test_data_dir / "missing_green.csv"
         red_stream.reader_params.path = self.test_data_dir / "missing_red.csv"
-        with patch.object(
-            extractor,
-            "_get_data_stream",
-            side_effect=lambda color: green_stream if color == "green" else red_stream if color == "red" else None,
-        ):
-            result = extractor._extract_data_files()
-            self.assertNotIn(str(self.test_data_dir / "missing_green.csv"), result["data_files"])
-            self.assertNotIn(str(self.test_data_dir / "missing_red.csv"), result["data_files"])
+        result = extractor._extract_data_files()
+        self.assertNotIn(str(self.test_data_dir / "missing_green.csv"), result["data_files"])
+        self.assertNotIn(str(self.test_data_dir / "missing_red.csv"), result["data_files"])
 
     def test_extract_hardware_config(self):
         """Test _extract_hardware_config for rig and session streams."""
@@ -283,17 +223,10 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         }
         session_stream.read.return_value = session_data
 
-        with patch.object(
-            extractor,
-            "_get_data_stream",
-            side_effect=lambda name: (
-                rig_stream if name == "rig_input" else session_stream if name == "session_input" else None
-            ),
-        ):
-            result = extractor._extract_hardware_config()
-            self.assertEqual(result["rig_config"]["rig_name"], "Rig_001")
-            self.assertEqual(result["session_config"]["session_type"], "FIB")
-            self.assertEqual(result["session_config"]["experimenter_full_name"], ["John Doe", "Jane Smith"])
+        result = extractor._extract_hardware_config()
+        self.assertEqual(result["rig_config"]["rig_name"], "Rig_001")
+        self.assertEqual(result["session_config"]["session_type"], "FIB")
+        self.assertEqual(result["session_config"]["experimenter_full_name"], ["John Doe", "Jane Smith"])
 
     def test_extract_hardware_config_no_rig_dump(self):
         """Test _extract_hardware_config raises error if model_dump is missing."""
@@ -306,12 +239,10 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
             del rig_data.model_dump
         rig_stream.read.return_value = rig_data
 
-        with patch.object(
-            extractor, "_get_data_stream", side_effect=lambda name: rig_stream if name == "rig_input" else None
-        ):
-            with self.assertRaises(AttributeError) as context:
-                extractor._extract_hardware_config()
-            self.assertIn("Rig data must have a 'model_dump' method", str(context.exception))
+
+        with self.assertRaises(AttributeError) as context:
+            extractor._extract_hardware_config()
+        self.assertIn("Rig data must have a 'model_dump' method", str(context.exception))
 
     def test_extract_hardware_no_session_dump(self):
         """Test _extract_hardware_config raises error if session model_dump is missing."""
@@ -324,48 +255,10 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
             del session_data.model_dump
         session_stream.read.return_value = session_data
 
-        with patch.object(
-            extractor, "_get_data_stream", side_effect=lambda name: session_stream if name == "session_input" else None
-        ):
-            with self.assertRaises(AttributeError) as context:
-                extractor._extract_hardware_config()
-            self.assertIn("Session data must have a 'model_dump' method", str(context.exception))
 
-    def test_get_data_stream_missing_name_attribute(self):
-        """Test _get_data_stream raises AttributeError if stream lacks 'name'."""
-        extractor = FiberPhotometryExtractor(self.job_settings)
-        # Create a mock stream without 'name'
-        bad_stream = MagicMock()
-        if hasattr(bad_stream, "name"):
-            del bad_stream.name
-        extractor._dataset = MagicMock()
-        extractor._dataset._data = [bad_stream]
         with self.assertRaises(AttributeError) as context:
-            extractor._get_data_stream("green")
-        self.assertIn("Data stream is missing required 'name' attribute", str(context.exception))
-
-    def test_get_data_stream(self):
-        """Test _get_data_stream returns correct stream or None."""
-        extractor = FiberPhotometryExtractor(self.job_settings)
-        # Mock dataset with two streams
-        green_stream = MagicMock()
-        green_stream.name = "green"
-        red_stream = MagicMock()
-        red_stream.name = "red"
-        extractor._dataset = MagicMock()
-        extractor._dataset._data = [green_stream, red_stream]
-
-        # Should return green stream
-        result = extractor._get_data_stream("green")
-        self.assertIs(result, green_stream)
-
-        # Should return red stream
-        result = extractor._get_data_stream("red")
-        self.assertIs(result, red_stream)
-
-        # Should return None for missing stream
-        result = extractor._get_data_stream("blue")
-        self.assertIsNone(result)
+            extractor._extract_hardware_config()
+        self.assertIn("Session data must have a 'model_dump' method", str(context.exception))
 
     @patch("aind_metadata_extractor.fip.extractor.dataset")
     def test_extract_full_contract(self, mock_dataset):
