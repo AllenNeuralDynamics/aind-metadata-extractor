@@ -36,7 +36,7 @@ class FiberPhotometryExtractor:
 
     @property
     def dataset(self) -> Dataset:
-        # This is a read-only property to access the dataset and ensures it is not null for type hinting
+        """This is a read-only property to access the dataset and ensures it is not null for type hinting"""
         if self._dataset is None:
             raise ValueError("Dataset has not been initialized.")
         return self._dataset
