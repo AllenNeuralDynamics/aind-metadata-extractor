@@ -9,6 +9,7 @@ from datetime import datetime
 from aind_metadata_extractor.fip.extractor import FiberPhotometryExtractor
 from aind_metadata_extractor.fip.job_settings import JobSettings
 from aind_metadata_extractor.models.fip import FIPDataModel
+from contraqctor.contract import FilePathBaseParam
 
 
 class TestFiberPhotometryExtractor(unittest.TestCase):
@@ -184,25 +185,27 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
 
         # Case 1: Both files exist
         green_stream = MagicMock()
-        green_stream.reader_params.path = self.test_data_dir / "green.csv"
+        green_stream.reader_params = FilePathBaseParam(path=self.test_data_dir / "green.csv")
         red_stream = MagicMock()
-        red_stream.reader_params.path = self.test_data_dir / "red.csv"
+        red_stream.reader_params = FilePathBaseParam(path=self.test_data_dir / "red.csv")
 
-        # Actually create the files so Path.exists() returns True
         Path(green_stream.reader_params.path).touch()
         Path(red_stream.reader_params.path).touch()
 
+        extractor._dataset = MagicMock()
+        extractor._dataset.__getitem__.side_effect = lambda name: green_stream if "green" in name else red_stream
 
         result = extractor._extract_data_files()
-        self.assertIn(str(self.test_data_dir / "green.csv"), result["data_files"])
-        self.assertIn(str(self.test_data_dir / "red.csv"), result["data_files"])
+        print(result)
+        self.assertIn(str(self.test_data_dir / "green.csv"), result)
+        self.assertIn(str(self.test_data_dir / "red.csv"), result)
 
         # Case 2: Files do not exist
-        green_stream.reader_params.path = self.test_data_dir / "missing_green.csv"
-        red_stream.reader_params.path = self.test_data_dir / "missing_red.csv"
+        green_stream.reader_params = FilePathBaseParam(path=self.test_data_dir / "missing_green.csv")
+        red_stream.reader_params = FilePathBaseParam(path=self.test_data_dir / "missing_red.csv")
         result = extractor._extract_data_files()
-        self.assertNotIn(str(self.test_data_dir / "missing_green.csv"), result["data_files"])
-        self.assertNotIn(str(self.test_data_dir / "missing_red.csv"), result["data_files"])
+        self.assertNotIn(str(self.test_data_dir / "missing_green.csv"), result)
+        self.assertNotIn(str(self.test_data_dir / "missing_red.csv"), result)
 
     def test_extract_hardware_config(self):
         """Test _extract_hardware_config for rig and session streams."""

@@ -13,9 +13,7 @@ from aind_metadata_extractor.models.fip import FIPDataModel as FiberData
 from aind_physiology_fip.data_contract import dataset
 from aind_physiology_fip.rig import AindPhysioFipRig
 from contraqctor.contract import Dataset, FilePathBaseParam
-
-if TYPE_CHECKING:
-    from pandas import DataFrame
+from pandas import DataFrame
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
