@@ -4,7 +4,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING, cast
+from typing import Any, Optional, cast
 from zoneinfo import ZoneInfo
 
 from aind_behavior_services.session import AindBehaviorSessionModel

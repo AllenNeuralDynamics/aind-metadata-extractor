@@ -91,7 +91,6 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         self.assertEqual(fiber_data["rig_config"]["rig_name"], "Rig_001")
         self.assertEqual(fiber_data["session_config"]["session_type"], "FIB")
 
-
     def test_save_to_file(self):
         """Test saving FIPDataModel to file."""
         extractor = FiberPhotometryExtractor(self.job_settings)
@@ -126,7 +125,6 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         self.assertIn("FIP", data)
         self.assertIn("Rig_001", data)
 
-
     def test_extract_timing_from_csv(self):
         """Test _extract_timing_from_csv for green, red, and fallback cases."""
         extractor = FiberPhotometryExtractor(self.job_settings)
@@ -142,7 +140,9 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         green_stream.read.return_value = green_data
 
         extractor._dataset = MagicMock()
-        extractor._dataset.__getitem__.side_effect = lambda name: green_stream if name == "camera_green_iso_metadata" else MagicMock()
+        extractor._dataset.__getitem__.side_effect = lambda name: (
+            green_stream if name == "camera_green_iso_metadata" else MagicMock()
+        )
 
         timing = extractor._extract_timing_from_csv()
         self.assertEqual(timing[0].hour, 20)
@@ -222,7 +222,6 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         self.assertEqual(session_config["session_type"], "FIB")
         self.assertEqual(session_config["experimenter_full_name"], ["John Doe", "Jane Smith"])
 
-
     @patch("aind_metadata_extractor.fip.extractor.dataset")
     def test_extract_full_contract(self, mock_dataset):
         """Test extract method for full contract-based extraction."""
@@ -287,7 +286,6 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         self.assertEqual(metadata["rig_config"]["rig_name"], "Rig_001")
         self.assertEqual(metadata["session_config"]["session_type"], "FIB")
 
-    
     def test_dataset_property(self):
         """Test that dataset property raises ValueError if not initialized, and returns dataset if set."""
         extractor = FiberPhotometryExtractor(self.job_settings)
@@ -299,6 +297,7 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         mock_dataset = MagicMock()
         extractor._dataset = mock_dataset
         self.assertIs(extractor.dataset, mock_dataset)
+
 
 if __name__ == "__main__":
     unittest.main()
