@@ -287,6 +287,18 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         self.assertEqual(metadata["rig_config"]["rig_name"], "Rig_001")
         self.assertEqual(metadata["session_config"]["session_type"], "FIB")
 
+    
+    def test_dataset_property(self):
+        """Test that dataset property raises ValueError if not initialized, and returns dataset if set."""
+        extractor = FiberPhotometryExtractor(self.job_settings)
+        # Should raise ValueError when _dataset is None
+        with self.assertRaises(ValueError):
+            _ = extractor.dataset
+
+        # Should return the dataset when _dataset is set
+        mock_dataset = MagicMock()
+        extractor._dataset = mock_dataset
+        self.assertIs(extractor.dataset, mock_dataset)
 
 if __name__ == "__main__":
     unittest.main()
