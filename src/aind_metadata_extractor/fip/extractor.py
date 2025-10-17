@@ -1,28 +1,21 @@
 """Fiber Photometry extractor module using data contract"""
 
 import json
-from pathlib import Path
+import logging
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Optional, TYPE_CHECKING, cast
 from zoneinfo import ZoneInfo
 
-if TYPE_CHECKING:
-    from pandas import DataFrame
-    from contraqctor.contract import DataStream, Dataset, FilePathBaseParam
-    from aind_physiology_fip.rig import AindPhysioFipRig
-    from aind_behavior_services.session import AindBehaviorSessionModel
-else:
-    DataFrame = "DataFrame"
-    DataStream = "DataStream"
-    Dataset = "Dataset"
-    FilePathBaseParam = "FilePathBaseParam"
-
-from aind_physiology_fip.data_contract import dataset
-
+from aind_behavior_services.session import AindBehaviorSessionModel
 from aind_metadata_extractor.fip.job_settings import JobSettings
 from aind_metadata_extractor.models.fip import FIPDataModel as FiberData
+from aind_physiology_fip.data_contract import dataset
+from aind_physiology_fip.rig import AindPhysioFipRig
 
-import logging
+if TYPE_CHECKING:
+    from pandas import DataFrame
+    from contraqctor.contract import Dataset, FilePathBaseParam
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
