@@ -104,7 +104,7 @@ class FiberPhotometryExtractor:
 
         metadata["start_time"], metadata["end_time"] = self._extract_timing_from_csv()
         metadata["data_files"] = self._extract_data_files()
-        metadata["session_config"], metadata["rig_config"] = self._extract_hardware_config()
+        metadata["rig_config"], metadata["session_config"] = self._extract_hardware_config()
 
         return metadata
 
