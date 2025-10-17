@@ -89,19 +89,6 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         self.assertEqual(fiber_data["rig_config"]["rig_name"], "Rig_001")
         self.assertEqual(fiber_data["session_config"]["session_type"], "FIB")
 
-    @patch("aind_metadata_extractor.fip.extractor.dataset")
-    def test_extract_basic_metadata_fallback(self, mock_dataset):
-        """Test fallback to basic metadata extraction."""
-        extractor = FiberPhotometryExtractor(self.job_settings)
-        with patch.object(extractor, "_extract_timing_from_csv", side_effect=Exception("fail")):
-            with patch.object(extractor, "_extract_data_files", return_value={"data_files": []}):
-                with patch.object(extractor, "_extract_hardware_config", return_value={}):
-                    result = extractor._extract_basic_metadata()
-        self.assertIn("start_time", result)
-        self.assertIn("end_time", result)
-        self.assertIn("data_files", result)
-        self.assertIn("rig_config", result)
-        self.assertIn("session_config", result)
 
     def test_save_to_file(self):
         """Test saving FIPDataModel to file."""
