@@ -56,7 +56,7 @@ mesoscope = [
 ]
 
 fip = [
-    "aind-physiology-fip @ git+https://github.com/AllenNeuralDynamics/FIP_DAQ_Control.git@feat-add-contract-and-qc",
+    "aind-physiology-fip",
     "contraqctor <0.5"
 ]
 
