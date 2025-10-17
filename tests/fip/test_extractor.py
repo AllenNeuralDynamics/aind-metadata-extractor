@@ -78,7 +78,7 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
                 with patch.object(
                     extractor,
                     "_extract_hardware_config",
-                    return_value={"rig_config": {"rig_name": "Rig_001"}, "session_config": {"session_type": "FIB"}},
+                    return_value=({"rig_name": "Rig_001"}, {"session_type": "FIB"}),
                 ):
                     fiber_data = extractor.extract()
         self.assertIn("session_start_time", fiber_data)
