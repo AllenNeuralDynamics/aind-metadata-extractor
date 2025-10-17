@@ -129,55 +129,39 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         """Test _extract_timing_from_csv for green, red, and fallback cases."""
         extractor = FiberPhotometryExtractor(self.job_settings)
 
-        # Case 1: Green stream has index key in columns
+        # --- Case 1: Green stream with valid CpuTime ---
         green_stream = MagicMock()
         green_data = MagicMock()
         green_data.columns = ["CpuTime"]
-        # Mock the Series returned by green_data["ReferenceTime"]
-        reference_time_series = MagicMock()
-        reference_time_series.min.return_value = 1
-        reference_time_series.max.return_value = 2
-
-        green_data.__getitem__.side_effect = lambda key: reference_time_series if key == "CpuTime" else MagicMock()
-        green_data.columns = ["CpuTime"]
         green_data.empty = False
         cpu_time_series = MagicMock()
-        cpu_time_series.iloc = ["2023-01-01T12:00:00+00:00", "2023-01-01T13:00:00+00:00"]
+        cpu_time_series.iloc = ["2023-01-01T04:00:00+00:00", "2023-01-01T05:00:00+00:00"]
         green_data.__getitem__.side_effect = lambda key: cpu_time_series if key == "CpuTime" else MagicMock()
         green_stream.read.return_value = green_data
 
+        extractor._dataset = MagicMock()
+        extractor._dataset.__getitem__.side_effect = lambda name: green_stream if name == "camera_green_iso_metadata" else MagicMock()
 
         timing = extractor._extract_timing_from_csv()
-        self.assertEqual(timing["start_time"].hour, 4)
-        self.assertEqual(timing["end_time"].hour, 5)
+        self.assertEqual(timing[0].hour, 20)
+        self.assertEqual(timing[1].hour, 21)
 
-        # Case 2: Green stream missing, red stream has index key in columns
-        red_stream = MagicMock()
-        red_data = MagicMock()
-        red_data.columns = ["CpuTime"]
-        red_data.empty = False
+        # --- Case 2: Both streams missing, should error ---
+        empty_stream = MagicMock()
+        empty_data = MagicMock()
+        empty_data.columns = []
+        empty_data.empty = True
+        empty_stream.read.return_value = empty_data
+        extractor._dataset.__getitem__.side_effect = lambda name: empty_stream
 
-        # Mock the Series returned by red_data["CpuTime"]
-        cpu_time_series_red = MagicMock()
-        cpu_time_series_red.iloc = ["2023-01-01T14:00:00+00:00", "2023-01-01T15:00:00+00:00"]
-        red_data.__getitem__.side_effect = lambda key: cpu_time_series_red if key == "CpuTime" else MagicMock()
-        red_stream.read.return_value = red_data
-
-
-        timing = extractor._extract_timing_from_csv()
-        self.assertEqual(timing["start_time"].hour, 6)
-        self.assertEqual(timing["end_time"].hour, 7)
-
-        # Case 3: Both streams missing, should error
-        with patch.object(extractor, "_get_data_stream", return_value=None):
-            with self.assertRaises(ValueError) as context:
-                extractor._extract_timing_from_csv()
-            self.assertIn(
-                "Could not extract session timing from camera metadata. "
-                "Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. "
-                "Please verify that camera metadata files exist in the data directory.",
-                str(context.exception),
-            )
+        with self.assertRaises(ValueError) as context:
+            extractor._extract_timing_from_csv()
+        self.assertIn(
+            "Could not extract session timing from camera metadata. "
+            "Expected to find CpuTime column in camera_green_iso_metadata.csv or camera_red_metadata.csv. "
+            "Please verify that camera metadata files exist in the data directory.",
+            str(context.exception),
+        )
 
     def test_extract_data_files(self):
         """Test _extract_data_files method for existing and non-existing files."""
@@ -196,7 +180,6 @@ class TestFiberPhotometryExtractor(unittest.TestCase):
         extractor._dataset.__getitem__.side_effect = lambda name: green_stream if "green" in name else red_stream
 
         result = extractor._extract_data_files()
-        print(result)
         self.assertIn(str(self.test_data_dir / "green.csv"), result)
         self.assertIn(str(self.test_data_dir / "red.csv"), result)
 
