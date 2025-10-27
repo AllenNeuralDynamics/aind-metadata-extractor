@@ -1,5 +1,11 @@
 # aind-metadata-extractor
 
+**Extractors** handle pulling metadata from acquisition data files. The output of an extractor is a data model (stored in the `models/` subfolder) which is a contract with the corresponding **mapper** in [aind-metadata-mapper](https://github.com/AllenNeuralDynamics/aind-metadata-mapper/).
+
+Extractors need to be run on the rig immediately following acquisition.
+
+Mappers are run by the `GatherMetadataJob` on the data-transfer-service.
+
 ## Install
 
 You should only install the dependencies for the specific extractor you plan to run. You can see the list of available extractors in the `pyproject.toml` file or in the folders in `src/aind_metadata/extractor`
