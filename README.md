@@ -44,21 +44,36 @@ The results will be saved in `smartspim.json`
 
 ## Why
 
-Every data acquisition is required to capture [Acquisition](https://aind-data-schema.readthedocs.io/en/latest/acquisition.html) metadata. In many situations this requires accessing the raw data files, which can mean installing custom rig-specific libraries. To maintain a clean separation of logic we are putting all rig-specific code into the **extractors** in this repository and keeping any code related to transforming to [aind-data-schema](https://github.com/allenNeuralDynamics/aind-data-schema) in the **mapper**. In between the extractor and the mapper there is a **contract**, a pydantic model that contains all of the necessary information to run the mapper -- with the exception of metadata that will be acquired from the aind-metadata-service.
+Every data acquisition is required to capture [Acquisition](https://aind-data-schema.readthedocs.io/en/latest/acquisition.html) metadata. In many situations this requires accessing the raw data files, which can mean installing custom rig-specific libraries. To maintain a clean separation of logic we are putting all rig-specific code into the **extractors** in this repository and keeping any code related to transforming to [aind-data-schema](https://github.com/allenNeuralDynamics/aind-data-schema) in the **mapper**. In between the extractor and the mapper there is a **contract**, a pydantic model that contains all of the necessary information to run the mapper.
+
+This pattern also allows us to keep any code that access metadata services (e.g. [aind-metadata-service](http://aind-metadata-service)) off of the rigs.
+
+Finally, this separation means that your mappers can be run automatically! You can find more details about mappers in the [aind-metadata-mapper](https://github.com/AllenNeuralDynamics/aind-metadata-mapper/) repository.
 
 ## Develop
 
-The only requirement for extractors is that you output a file `<your-extractor-name>.json` which validates against the corresponding model in the `models/` subfolder. You do not need to keep your extractor code in this repository, but if you do put it here it will make it easier for us to coordinate updates with you in the future as metadata requirements evolve.
+The only requirement for extractors is that you output a file `<your-extractor-name>.json` which validates against the corresponding model in the `models/` subfolder.
 
-To build a new extractor:
+### Define a model
 
-1. Define a new contract model in the `models/` folder.
-2. Then create a new extractor folder with a matching name and inherit from `BaseExtractor`. Implement the functions:
+Define a new contract model in the `models/` folder. Your model class should inherit from `pydantic.BaseModel`. You can nest sub-models if you find it helpful for organizing your metadata, see `models/smartspim.py` as an example.
+
+### Define extractor code
+
+You do not need to keep your extractor code in this repository, but if you do put it here it will make it easier for us to coordinate updates with you in the future as metadata requirements evolve.
+
+### Option 1: Extractor code maintained elsewhere
+
+Have your extractor code (in your acquisition code) output a file named `<your-extractor-name>.json` that is validated against your model. The intermediate model file should be stored alongside any other metadata files you are providing (usually the instrument.json, at a minimum).
+
+### Option 2: Extractor code in aind-metadata-extractor
+
+Create a new extractor folder with a matching name and inherit from `BaseExtractor`. Implement the functions:
 
 - `.run_job()` accepts a `JobSettings` object as a parameter and should store the metadata output object (matching the model) in `self.metadata`. Return a *dictionary* with the `model_dump()` contents.
 - `._extract()` should perform the actual data loading, metadata-service calls, etc, necessary to build the metadata model and return it. This function should return the actual model, validated against what is in the `models/` folder.
 
-Extractor classes inherit the `.write()` function, which writes the metadata to the file <your-extractor-name>.json.
+Extractor classes inherit the `.write()` function, which writes the metadata to the file <your-extractor-name>.json. Users will then be able to run your extractor according to the instructions in the [run](#run) block, above.
 
 ### Testing
 
