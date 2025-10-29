@@ -4,7 +4,7 @@
 
 Extractors need to be run on the rig immediately following acquisition.
 
-Mappers are run by the `GatherMetadataJob` on the data-transfer-service.
+Mappers are run automatically by the `GatherMetadataJob` on the data-transfer-service.
 
 ## Install
 
@@ -15,36 +15,6 @@ During installation pass the extractor as an optional dependency:
 ```
 pip install 'aind-metadata-extractor[<your-extractor>]'
 ```
-
-## Develop
-
-To build a new extractor, define a new output model in the models/ folder. Then create a new extractor folder and inherit from `BaseExtractor`. Implement the functions:
-
-- `.run_job()` should store the metadata output object (matching the model) in self.metadata and return a dictionary with the `model_dump()` contents
-- `._extract()` should perform the actual data loading, metadata-service calls, etc, necessary to build the metadata model and return it
-
-Your extractor comes with an inherited function `.write()` which writes the metadata to the file <extractor>.json.
-
-### Testing
-
-When testing locally you only need to run your own tests (i.e. `coverage run -m unittest discover -s tests/<new-extractor>`). Do not modify the tests for other extractors in your PRs.
-
-Before opening a PR, modify the file `test_and_lint.yml` and add a new test-group:
-
-```
-test-group: ['core', 'smartspim', 'mesoscope', 'utils', '<new-extractor>']
-```
-
-Then add the test-group settings below that:
-
-```
-    - test-group: '<new-extractor>'
-    dependencies: '[dev,<new-extractor>]'
-    test-path: 'tests/<new-extractor>'
-    test-pattern: 'test_*.py'
-```
-
-When running on GitHub, all of the test groups will be run independently with their separate dependencies and then their coverage results are gathered together in a final step.
 
 ## Run
 
@@ -70,4 +40,43 @@ extractor.run_job()
 extractor.write()
 ```
 
-The results will be saved in `smartspin.json`
+The results will be saved in `smartspim.json`
+
+## Why
+
+Every data acquisition is required to capture [Acquisition](https://aind-data-schema.readthedocs.io/en/latest/acquisition.html) metadata. In many situations this requires accessing the raw data files, which can mean installing custom rig-specific libraries. To maintain a clean separation of logic we are putting all rig-specific code into the **extractors** in this repository and keeping any code related to transforming to [aind-data-schema](https://github.com/allenNeuralDynamics/aind-data-schema) in the **mapper**. In between the extractor and the mapper there is a **contract**, a pydantic model that contains all of the necessary information to run the mapper -- with the exception of metadata that will be acquired from the aind-metadata-service.
+
+## Develop
+
+The only requirement for extractors is that you output a file `<your-extractor-name>.json` which validates against the corresponding model in the `models/` subfolder. You do not need to keep your extractor code in this repository, but if you do put it here it will make it easier for us to coordinate updates with you in the future as metadata requirements evolve.
+
+To build a new extractor:
+
+1. Define a new contract model in the `models/` folder.
+2. Then create a new extractor folder with a matching name and inherit from `BaseExtractor`. Implement the functions:
+
+- `.run_job()` accepts a `JobSettings` object as a parameter and should store the metadata output object (matching the model) in `self.metadata`. Return a *dictionary* with the `model_dump()` contents.
+- `._extract()` should perform the actual data loading, metadata-service calls, etc, necessary to build the metadata model and return it. This function should return the actual model, validated against what is in the `models/` folder.
+
+Extractor classes inherit the `.write()` function, which writes the metadata to the file <your-extractor-name>.json.
+
+### Testing
+
+When testing locally you only need to run your own tests (i.e. `coverage run -m unittest discover -s tests/<new-extractor>`). Do not modify the tests for other extractors in your PRs.
+
+Before opening a PR, modify the file `test_and_lint.yml` and add a new test-group:
+
+```
+test-group: ['core', 'smartspim', 'mesoscope', 'utils', '<new-extractor>']
+```
+
+Then add the test-group settings below that:
+
+```
+    - test-group: '<new-extractor>'
+    dependencies: '[dev,<new-extractor>]'
+    test-path: 'tests/<new-extractor>'
+    test-pattern: 'test_*.py'
+```
+
+When running on GitHub, all of the test groups will be run independently with their separate dependencies and then their coverage results are gathered together in a final step.
