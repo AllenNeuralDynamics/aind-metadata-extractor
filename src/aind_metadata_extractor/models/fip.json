@@ -1,6 +1,6 @@
 {
   "$defs": {
-    "AindBehaviorSessionModel": {
+    "AindBehaviorSessionModelUnsafeVersion": {
       "properties": {
         "aind_behavior_services_pkg_version": {
           "default": "0.12.3",
@@ -9,7 +9,6 @@
           "type": "string"
         },
         "version": {
-          "const": "0.12.3",
           "default": "0.12.3",
           "title": "Version",
           "type": "string"
@@ -115,10 +114,10 @@
         "root_path",
         "subject"
       ],
-      "title": "AindBehaviorSessionModel",
+      "title": "AindBehaviorSessionModelUnsafeVersion",
       "type": "object"
     },
-    "AindPhysioFipRig": {
+    "AindPhysioFipRigUnsafeVersion": {
       "description": "Complete rig configuration model for AIND FIP photometry system.",
       "properties": {
         "aind_behavior_services_pkg_version": {
@@ -128,7 +127,6 @@
           "type": "string"
         },
         "version": {
-          "const": "0.1.2",
           "default": "0.1.2",
           "title": "Version",
           "type": "string"
@@ -210,7 +208,7 @@
         "light_source_lime",
         "cuttlefish_fip"
       ],
-      "title": "AindPhysioFipRig",
+      "title": "AindPhysioFipRigUnsafeVersion",
       "type": "object"
     },
     "BaseModel": {
@@ -801,6 +799,7 @@
       "type": "object"
     },
     "_FipDataStreamMetadata": {
+      "description": "Internal metadata model for individual FIP data streams.\n\nCaptures timing information for a single data stream within a FIP\nacquisition epoch, including the stream identifier and temporal\nboundaries.\n\nAttributes:\n    id (str): Unique identifier for the data stream (typically the\n        epoch name).\n    start_time (pydantic.AwareDatetime): Timezone-aware timestamp\n        marking the beginning of data collection for this stream.\n    end_time (pydantic.AwareDatetime): Timezone-aware timestamp\n        marking the end of data collection for this stream.",
       "properties": {
         "id": {
           "title": "Id",
@@ -826,7 +825,7 @@
       "type": "object"
     }
   },
-  "description": "Prototype Acquisition model for raw acquisition data.\nThis will get used by the upstream aind-data-schema metadata mapper to\ncreate a final Acquisition object.",
+  "description": "Prototype acquisition model for raw acquisition data.\n\nThis model represents the intermediate data structure for acquisition\nmetadata before final transformation to the AIND data schema\nAcquisition format. It aggregates timing information from multiple\ndata streams along with session and rig configuration metadata.\n\nThis prototype will be consumed by upstream aind-metadata-extractor or\naind-data-schema metadata mappers to create the final standardized Acquisition object.\n\nAttributes:\n    data_stream_metadata (list[_FipDataStreamMetadata]): List of\n        metadata objects for each data stream in the acquisition,\n        including timing information. Must contain at least one entry.\n    session (AindBehaviorSessionModel): The behavior session metadata\n        that instantiated this acquisition.\n    rig (AindPhysioFipRig): The FIP rig configuration metadata that\n        was used for this acquisition.",
   "properties": {
     "data_stream_metadata": {
       "description": "Metadata for each data stream in the acquisition.",
@@ -838,11 +837,11 @@
       "type": "array"
     },
     "session": {
-      "$ref": "#/$defs/AindBehaviorSessionModel",
+      "$ref": "#/$defs/AindBehaviorSessionModelUnsafeVersion",
       "description": "The session information that instantiated the acquisition."
     },
     "rig": {
-      "$ref": "#/$defs/AindPhysioFipRig",
+      "$ref": "#/$defs/AindPhysioFipRigUnsafeVersion",
       "description": "The rig configuration that instantiated the acquisition."
     }
   },
