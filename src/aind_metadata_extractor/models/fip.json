@@ -127,7 +127,7 @@
           "type": "string"
         },
         "version": {
-          "default": "0.1.2",
+          "default": "0.1.4",
           "title": "Version",
           "type": "string"
         },

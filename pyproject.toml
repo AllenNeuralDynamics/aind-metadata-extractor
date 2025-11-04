@@ -55,7 +55,7 @@ mesoscope = [
     "tifffile==2024.2.12",
 ]
 
-fip = ["aind-physiology-fip[mappers] @git+https://github.com/AllenNeuralDynamics/Aind.Physiology.Fip@feat-aind-data-schema-mapper"]
+fip = ["aind-physiology-fip[data]"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
