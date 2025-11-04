@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def write_schema_to_file(file_path: str) -> None:
+    """Write the JSON schema to a file."""
     logger.info(f"Writing schema to {file_path}. Using aind-physiology-fip version {__VERSION__}")
     schema = export_schema(_patch_model(ProtoAcquisitionDataSchema), remove_root=False)
     with open(file_path, "w", encoding="utf-8") as f:
