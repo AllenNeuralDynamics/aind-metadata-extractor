@@ -55,6 +55,8 @@ mesoscope = [
     "tifffile==2024.2.12",
 ]
 
+fip = ["aind-physiology-fip[data]"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
@@ -84,7 +86,7 @@ exclude = '''
 '''
 
 [tool.coverage.run]
-omit = ["*__init__*"]
+omit = ["*__init__*", "*/_generate_schema.py"]
 # Use command-line --source flag for better control over what gets measured
 source = ["aind_metadata_extractor", "tests"]
 
