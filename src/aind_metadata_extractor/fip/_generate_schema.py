@@ -1,3 +1,5 @@
+"""Generate JSON schema for FIP data model."""
+
 import argparse
 import logging
 import os
