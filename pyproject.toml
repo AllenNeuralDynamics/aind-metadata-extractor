@@ -60,6 +60,9 @@ fip = ["aind-physiology-fip[data]"]
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+aind_metadata_extractor = ["models/*.json"]
+
 [tool.setuptools.dynamic]
 version = {attr = "aind_metadata_extractor.__version__"}
 
