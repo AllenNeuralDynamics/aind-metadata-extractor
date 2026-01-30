@@ -77,7 +77,7 @@ jobs:
     - name: Install dependencies
       run: python -m pip install -e .[dev]
     - name: Download all coverage data
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         pattern: coverage-data-py*
         merge-multiple: true
