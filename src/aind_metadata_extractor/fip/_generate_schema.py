@@ -7,7 +7,7 @@ from typing import Annotated, Type
 
 import aind_physiology_fip
 from aind_behavior_services.base import SchemaVersionedModel
-from aind_behavior_services.utils import export_schema
+from aind_behavior_services.schema import export_schema
 from aind_physiology_fip.data_mappers import ProtoAcquisitionDataSchema
 from pydantic import BaseModel, create_model
 
@@ -18,7 +18,9 @@ logger = logging.getLogger(__name__)
 
 def write_schema_to_file(file_path: str) -> None:
     """Write the JSON schema to a file."""
-    logger.info(f"Writing schema to {file_path}. Using aind-physiology-fip version {__VERSION__}")
+    logger.info(
+        f"Writing schema to {file_path}. Using aind-physiology-fip version {__VERSION__}"
+    )
     schema = export_schema(_patch_model(ProtoAcquisitionDataSchema), remove_root=False)
     with open(file_path, "w", encoding="utf-8") as f:
         f.write((schema))
@@ -27,13 +29,18 @@ def write_schema_to_file(file_path: str) -> None:
 def _patch_model(m: Type[BaseModel]) -> Type[BaseModel]:
     """Recursively patch a pydantic model to make version fields unsafe."""
     for field_name, field in m.model_fields.items():
-        if isinstance(field.annotation, type) and issubclass(field.annotation, SchemaVersionedModel):
+        if isinstance(field.annotation, type) and issubclass(
+            field.annotation, SchemaVersionedModel
+        ):
             updates = {}
             if "version" in field.annotation.model_fields:
-                updates["version"] = Annotated[str, field.annotation.model_fields["version"]]
+                updates["version"] = Annotated[
+                    str, field.annotation.model_fields["version"]
+                ]
             if "aind_behavior_services_pkg_version" in field.annotation.model_fields:
                 updates["aind_behavior_services_pkg_version"] = Annotated[
-                    str, field.annotation.model_fields["aind_behavior_services_pkg_version"]
+                    str,
+                    field.annotation.model_fields["aind_behavior_services_pkg_version"],
                 ]
             new_model = create_model(
                 f"{field.annotation.__name__}UnsafeVersion",
@@ -43,7 +50,9 @@ def _patch_model(m: Type[BaseModel]) -> Type[BaseModel]:
             )
             m.model_fields[field_name].annotation = new_model
             _patch_model(new_model)
-        elif isinstance(field.annotation, type) and issubclass(field.annotation, BaseModel):
+        elif isinstance(field.annotation, type) and issubclass(
+            field.annotation, BaseModel
+        ):
             _patch_model(field.annotation)
     return m
 
