@@ -1,2 +1,1 @@
 """mesoscope metadata extractor"""
-

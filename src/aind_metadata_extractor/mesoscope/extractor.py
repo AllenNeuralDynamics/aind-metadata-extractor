@@ -225,8 +225,7 @@ class MesoscopeExtract(BaseExtractor):
             "--job-settings",
             required=True,
             type=json.loads,
-            help=(
-                """
+            help=("""
                 Custom settings defined by the user defined as a json
                  string. For example: -u
                  '{"experimenter_full_name":["John Smith","Jane Smith"],
@@ -234,8 +233,7 @@ class MesoscopeExtract(BaseExtractor):
                  "session_start_time":"2023-10-10T10:10:10",
                  "session_end_time":"2023-10-10T18:10:10",
                  "project":"my_project"}
-                """
-            ),
+                """),
         )
         job_args = parser.parse_args(args)
         job_settings_from_args = JobSettings(**job_args.job_settings)

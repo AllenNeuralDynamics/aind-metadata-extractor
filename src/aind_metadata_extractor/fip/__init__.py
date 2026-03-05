@@ -1,2 +1,1 @@
 """FIP metadata extractor module."""
-
