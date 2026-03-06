@@ -24,6 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent.resolve()
 VENVS_DIR = ROOT / ".test_venvs"
 
+
 # Mirror of each GitHub Actions workflow
 def _omit(*rel_paths: str) -> list[str]:
     """Return absolute omit glob patterns for coverage."""
@@ -81,6 +82,7 @@ def ensure_venv(suite_name: str, recreate: bool) -> Path:
         return venv_path
     if venv_path.exists():
         import shutil
+
         print(f"  [venv] Removing old venv...")
         shutil.rmtree(venv_path)
     print(f"  [venv] Creating venv at {venv_path.relative_to(ROOT)}")
@@ -156,9 +158,7 @@ def run_suite(suite_name: str, recreate: bool, with_coverage: bool) -> bool:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Run tests locally, mirroring GitHub Actions workflows."
-    )
+    parser = argparse.ArgumentParser(description="Run tests locally, mirroring GitHub Actions workflows.")
     parser.add_argument(
         "suites",
         nargs="*",
