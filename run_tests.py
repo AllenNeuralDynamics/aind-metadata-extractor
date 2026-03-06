@@ -83,7 +83,7 @@ def ensure_venv(suite_name: str, recreate: bool) -> Path:
     if venv_path.exists():
         import shutil
 
-        print(f"  [venv] Removing old venv...")
+        print("  [venv] Removing old venv...")
         shutil.rmtree(venv_path)
     print(f"  [venv] Creating venv at {venv_path.relative_to(ROOT)}")
     venv.create(str(venv_path), with_pip=True, clear=True)
