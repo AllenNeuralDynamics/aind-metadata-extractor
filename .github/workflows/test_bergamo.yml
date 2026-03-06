@@ -1,0 +1,29 @@
+name: Test - bergamo
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/aind_metadata_extractor/bergamo/**'
+      - 'src/aind_metadata_extractor/models/bergamo.py'
+      - 'tests/bergamo/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+    - uses: actions/checkout@v5
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: python -m pip install -e .[dev,bergamo]
+    - name: Run tests and coverage
+      run: |
+        coverage run --source=src/aind_metadata_extractor/bergamo -m unittest discover -s tests/bergamo -p 'test_*.py'
+        coverage report

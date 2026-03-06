@@ -170,9 +170,7 @@ class Camstim:
             naming_utils.default_column_renames
 
         """
-        assert (
-            not self.behavior
-        ), "Can't generate regular stim table from behavior pkl. \
+        assert not self.behavior, "Can't generate regular stim table from behavior pkl. \
             Use build_behavior_table instead."
 
         vsync_times = stim_utils.extract_frame_times_from_vsync(self.sync_data)
