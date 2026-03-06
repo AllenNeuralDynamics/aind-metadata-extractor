@@ -25,5 +25,5 @@ jobs:
       run: python -m pip install -e .[dev]
     - name: Run tests and coverage
       run: |
-        coverage run --source=src/aind_metadata_extractor --omit='src/aind_metadata_extractor/*/,src/aind_metadata_extractor/utils/*' -m unittest discover -s tests/core -p 'test_*.py'
+        coverage run --source=aind_metadata_extractor --omit='src/aind_metadata_extractor/*/,src/aind_metadata_extractor/utils/*' -m unittest discover -s tests/core -p 'test_*.py'
         coverage report
