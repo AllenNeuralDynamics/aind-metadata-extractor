@@ -8,3 +8,4 @@ exclude =
     .conda
 max-complexity = 10
 max-line-length = 120
+extend-ignore = E203
