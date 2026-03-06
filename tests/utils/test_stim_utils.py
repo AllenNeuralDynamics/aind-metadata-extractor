@@ -850,20 +850,20 @@ class TestStimUtils(unittest.TestCase):
             # Results should be close to original vsync times (possibly with delay adjustment)
             self.assertTrue(np.allclose(result, mock_vsync_edges, atol=0.1))
 
-    def test_enforce_df_int_typing_fillna_path_bug(self):
+    def test_enforce_df_int_typing_fillna_path(self):
         """
         Test enforce_df_int_typing with use_pandas_type=False.
-        This exposes a bug in the source code where fillna() is called without a value.
+        NaN values should be filled with INT_NULL (-1) and the column cast to int.
         """
-        # Create DataFrame
-        df = pd.DataFrame({"int_col": [1.0, 2.0, 3.0, 4.0], "other_col": ["a", "b", "c", "d"]})
+        # DataFrame with NaN values that need filling
+        df = pd.DataFrame(
+            {"int_col": [1.0, float("nan"), 3.0, float("nan")], "other_col": ["a", "b", "c", "d"]}
+        )
 
-        # The source code has a bug: fillna() is called without a value parameter
-        # This should raise a ValueError
-        with self.assertRaises(ValueError) as context:
-            stim.enforce_df_int_typing(df, ["int_col"], use_pandas_type=False)
+        result = stim.enforce_df_int_typing(df, ["int_col"], use_pandas_type=False)
 
-        self.assertIn("Must specify a fill 'value' or 'method'", str(context.exception))
+        self.assertEqual(result["int_col"].dtype, int)
+        self.assertEqual(list(result["int_col"]), [1, -1, 3, -1])
 
     @patch("aind_metadata_extractor.utils.camstim_sync.sync_utils.get_edges")
     def test_extract_frame_times_with_delay_exception_path(self, mock_get_edges):

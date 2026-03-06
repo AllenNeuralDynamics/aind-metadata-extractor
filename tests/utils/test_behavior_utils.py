@@ -1248,8 +1248,8 @@ class TestBehaviorUtils(unittest.TestCase):
         # Actual input data
         data = {
             "start_time": [0.0, 1.0, 2.0, 3.0],
-            "stop_time": [0, 0, 0, 0],
-            "duration": [1, 1, 0, 0],
+            "stop_time": [0.0, 0.0, 0.0, 0.0],
+            "duration": [1.0, 1.0, 0.0, 0.0],
             "omitted": [False, True, False, True],
         }
         df = pd.DataFrame(data)

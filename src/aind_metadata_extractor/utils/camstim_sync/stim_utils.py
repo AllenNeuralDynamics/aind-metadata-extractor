@@ -65,6 +65,9 @@ def convert_filepath_caseinsensitive(filename_in):
     return filename_in.replace("TRAINING", "training")
 
 
+INT_NULL = -1
+
+
 def enforce_df_int_typing(
     input_df: pd.DataFrame,
     int_columns: List[str],
@@ -78,11 +81,10 @@ def enforce_df_int_typing(
     input_df : pandas.DataFrame
         DataFrame with typing to enforce.
     int_columns : list of str
-        Columns to enforce int typing and fill any NaN/None values with the
-        value set in INT_NULL in this file. Requested columns not in the
-        dataframe are ignored.
+        Columns to enforce int typing and fill any NaN/None values with
+        INT_NULL (-1). Requested columns not in the dataframe are ignored.
     use_pandas_type : bool
-        Instead of filling with the value INT_NULL to enforce integer typing,
+        Instead of filling with INT_NULL to enforce integer typing,
         use the pandas type Int64. This type can have issues converting to
         numpy/array type values.
 
@@ -97,7 +99,7 @@ def enforce_df_int_typing(
             if use_pandas_type:
                 input_df[col] = input_df[col].astype("Int64")
             else:
-                input_df[col] = input_df[col].fillna().astype(int)
+                input_df[col] = input_df[col].fillna(INT_NULL).astype(int)
     return input_df
 
 
