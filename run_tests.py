@@ -72,10 +72,12 @@ SUITES = {
 
 
 def python_in_venv(venv_path: Path) -> Path:
+    """Return path to the python executable in the given venv."""
     return venv_path / "bin" / "python"
 
 
 def ensure_venv(suite_name: str, recreate: bool) -> Path:
+    """Ensure a virtual environment exists for the given suite."""
     venv_path = VENVS_DIR / suite_name
     if venv_path.exists() and not recreate:
         print(f"  [venv] Reusing existing venv at {venv_path.relative_to(ROOT)}")
@@ -91,6 +93,7 @@ def ensure_venv(suite_name: str, recreate: bool) -> Path:
 
 
 def install_deps(suite_name: str, cfg: dict, venv_path: Path) -> bool:
+    """Install dependencies for the given suite into its venv."""
     extras = cfg["extras"]
     print(f"  [pip]  Installing .[{extras}]")
     result = subprocess.run(
@@ -106,6 +109,7 @@ def install_deps(suite_name: str, cfg: dict, venv_path: Path) -> bool:
 
 
 def run_tests(suite_name: str, cfg: dict, venv_path: Path, with_coverage: bool) -> bool:
+    """Run tests for the given suite in its venv."""
     python = str(python_in_venv(venv_path))
     test_dir = cfg["test_dir"]
     source = cfg["source"]
@@ -140,6 +144,7 @@ def run_tests(suite_name: str, cfg: dict, venv_path: Path, with_coverage: bool) 
 
 
 def run_suite(suite_name: str, recreate: bool, with_coverage: bool) -> bool:
+    """Run the given test suite."""
     cfg = SUITES[suite_name]
     print(f"\n{'='*60}")
     print(f"Suite: {suite_name}  (extras: [{cfg['extras']}])")
@@ -158,6 +163,7 @@ def run_suite(suite_name: str, recreate: bool, with_coverage: bool) -> bool:
 
 
 def main() -> None:
+    """Main entry point."""
     parser = argparse.ArgumentParser(description="Run tests locally, mirroring GitHub Actions workflows.")
     parser.add_argument(
         "suites",
@@ -223,4 +229,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    """Run the main function."""
     main()
