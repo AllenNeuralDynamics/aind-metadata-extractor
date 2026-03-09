@@ -77,21 +77,30 @@ Extractor classes inherit the `.write()` function, which writes the metadata to 
 
 ### Testing
 
-When testing locally you only need to run your own tests (i.e. `coverage run -m unittest discover -s tests/<new-extractor>`). Do not modify the tests for other extractors in your PRs.
+To run all test suites locally (mirroring GitHub Actions, with isolated virtual environments per suite):
 
-Before opening a PR, modify the file `test_and_lint.yml` and add a new test-group:
-
-```
-test-group: ['core', 'smartspim', 'mesoscope', 'utils', '<new-extractor>']
+```bash
+python run_tests.py
 ```
 
-Then add the test-group settings below that:
+To run only the tests for the extractor you are working on:
 
-```
-    - test-group: '<new-extractor>'
-    dependencies: '[dev,<new-extractor>]'
-    test-path: 'tests/<new-extractor>'
-    test-pattern: 'test_*.py'
+```bash
+coverage run --source=aind_metadata_extractor.<your-extractor> -m unittest discover -s tests/<your-extractor> -p 'test_*.py'
+coverage report
 ```
 
-When running on GitHub, all of the test groups will be run independently with their separate dependencies and then their coverage results are gathered together in a final step.
+For example, for *mesoscope*:
+
+```bash
+coverage run --source=aind_metadata_extractor.mesoscope -m unittest discover -s tests/mesoscope -p 'test_*.py'
+coverage report
+```
+
+Before opening a PR, add a new GitHub Actions workflow file for your extractor. Copy an existing workflow (e.g. `.github/workflows/test_smartspim.yml`) and update the following fields:
+
+- `name:` — change to `Test - <your-extractor>`
+- `filters:` paths — point to your extractor's source and test folders
+- `pip install` — add your extractor as an optional dependency: `.[dev,<your-extractor>]`
+- `coverage run --source` — set to `aind_metadata_extractor.<your-extractor>`
+- `unittest discover -s` — set to `tests/<your-extractor>`
