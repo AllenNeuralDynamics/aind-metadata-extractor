@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "aind-metadata-extractor"
 description = "Generated from aind-library-template"
 license = "MIT"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 authors = [
     {name = "Allen Institute for Neural Dynamics"}
 ]
