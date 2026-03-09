@@ -90,8 +90,7 @@ exclude = '''
 
 [tool.coverage.run]
 omit = ["*__init__*", "*/_generate_schema.py"]
-# Use command-line --source flag for better control over what gets measured
-source = ["aind_metadata_extractor", "tests"]
+# Source is controlled per-suite via the --source CLI flag
 
 [tool.coverage.report]
 exclude_lines = [

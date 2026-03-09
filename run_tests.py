@@ -26,24 +26,14 @@ VENVS_DIR = ROOT / ".test_venvs"
 
 
 # Mirror of each GitHub Actions workflow
-def _omit(*rel_paths: str) -> list[str]:
-    """Return absolute omit glob patterns for coverage."""
-    return [str(ROOT / p) for p in rel_paths]
-
-
 SUITES = {
     "core": {
         "extras": "dev",
-        # Use module name so coverage resolves via the editable install,
-        # consistent with pyproject.toml [tool.coverage.run] source setting.
-        "source": "aind_metadata_extractor",
-        # Omit subdirectory modules and utils; keep only core.py / __init__.py
-        "omit": _omit(
-            "src/aind_metadata_extractor/*/",
-            "src/aind_metadata_extractor/utils/*",
-        ),
+        "source": "aind_metadata_extractor.core",
+        "omit": None,
         "test_dir": "tests/core",
     },
+
     "bergamo": {
         "extras": "dev,bergamo",
         "source": "aind_metadata_extractor.bergamo",
