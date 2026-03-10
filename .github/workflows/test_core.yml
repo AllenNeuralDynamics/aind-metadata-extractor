@@ -1,0 +1,29 @@
+name: Test - core
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/aind_metadata_extractor/core.py'
+      - 'src/aind_metadata_extractor/__init__.py'
+      - 'tests/core/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+    - uses: actions/checkout@v5
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: python -m pip install -e .[dev]
+    - name: Run tests and coverage
+      run: |
+        coverage run --source=aind_metadata_extractor.core -m unittest discover -s tests/core -p 'test_*.py'
+        coverage report

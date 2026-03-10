@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "aind-metadata-extractor"
 description = "Generated from aind-library-template"
-license = {text = "MIT"}
+license = "MIT"
 requires-python = ">=3.10"
 authors = [
     {name = "Allen Institute for Neural Dynamics"}
@@ -90,8 +90,7 @@ exclude = '''
 
 [tool.coverage.run]
 omit = ["*__init__*", "*/_generate_schema.py"]
-# Use command-line --source flag for better control over what gets measured
-source = ["aind_metadata_extractor", "tests"]
+# Source is controlled per-suite via the --source CLI flag
 
 [tool.coverage.report]
 exclude_lines = [

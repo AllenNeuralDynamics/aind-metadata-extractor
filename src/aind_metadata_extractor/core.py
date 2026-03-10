@@ -130,16 +130,14 @@ class BaseJobSettings(BaseSettings):
             "--job-settings",
             required=True,
             type=str,
-            help=(
-                r"""
+            help=(r"""
                 Custom settings defined by the user defined as a json
                  string. For example: -j
                  '{
                  "input_source":"/directory/to/read/from",
                  "output_directory":"/directory/to/write/to",
                  "job_settings_name": "Bergamo"}'
-                """
-            ),
+                """),
         )
         job_args = parser.parse_args(args)
         job_settings_from_args = cls.model_validate_json(job_args.job_settings)

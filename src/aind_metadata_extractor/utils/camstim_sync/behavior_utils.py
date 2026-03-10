@@ -506,8 +506,9 @@ def is_change_event(stimulus_presentations: pd.DataFrame) -> pd.Series:
     # reset back to original index
     is_change = is_change.reindex(stimulus_presentations.index).rename("is_change")
 
-    # Excluded stimuli are not change events
-    is_change = is_change.fillna(False)
+    # Excluded stimuli are not change events; reindex may have introduced NaN
+    # which upcasts the bool series to object — cast back explicitly.
+    is_change = is_change.fillna(False).astype(bool)
 
     return is_change
 
