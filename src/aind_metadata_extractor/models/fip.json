@@ -25,10 +25,18 @@
           "type": "string"
         },
         "data_directory": {
+          "default": null,
           "description": "Directory where data will be saved to",
-          "format": "path",
-          "title": "Data Directory",
-          "type": "string"
+          "oneOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Data Directory"
         },
         "camera_green_iso": {
           "$ref": "#/$defs/FipCamera",
@@ -91,7 +99,6 @@
       "required": [
         "computer_name",
         "rig_name",
-        "data_directory",
         "camera_green_iso",
         "camera_red",
         "light_source_uv",
