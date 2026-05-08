@@ -52,7 +52,7 @@ mesoscope = [
     "aind-metadata-extractor[bergamo]",
     "aind-metadata-extractor[utils]",
     "pillow >= 10.4.0",
-    "tifffile==2024.2.12",
+    "tifffile==2025.5.10",
 ]
 
 fip = ["aind-physiology-fip[data]"]
