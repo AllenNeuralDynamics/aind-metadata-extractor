@@ -806,49 +806,57 @@ class TestStimUtils(unittest.TestCase):
             # Function can return None if conditions aren't met
             self.assertIsNone(result)
 
-    @patch("aind_metadata_extractor.utils.camstim_sync.sync_utils.get_edges")
+    @patch("aind_metadata_extractor.utils.camstim_sync.sync_utils.get_falling_edges")
     @patch("aind_metadata_extractor.utils.camstim_sync.sync_utils.get_rising_edges")
-    def test_extract_frame_times_with_delay(self, mock_get_rising_edges, mock_get_edges):
-        """
-        Test the extract_frame_times_with_delay function.
-        """
-        # Mock vsync falling edges
-        mock_vsync_edges = np.array([100000, 200000, 300000, 400000, 500000]) / 100000.0
-        mock_get_edges.return_value = mock_vsync_edges
+    @patch("aind_metadata_extractor.utils.camstim_sync.sync_utils.get_edges")
+    def test_extract_frame_times_with_delay_uses_rising_phase(
+        self,
+        mock_get_edges,
+        mock_get_rising_edges,
+        mock_get_falling_edges,
+    ):
+        """A low photodiode state at frame zero selects rising edges."""
+        vsync_times = np.arange(0, 6, 1 / 60)
+        mock_get_edges.return_value = vsync_times
+        mock_get_rising_edges.return_value = np.array([0.024, 2.024, 4.024]) * 100000
+        mock_get_falling_edges.return_value = np.array([1.024, 3.024, 5.024]) * 100000
 
-        # Mock photodiode rising edges that align reasonably with vsync
-        mock_photodiode_edges = np.array(
-            [
-                105000,  # Slightly after first vsync
-                205000,  # Slightly after second vsync
-                305000,  # Slightly after third vsync
-                405000,  # Slightly after fourth vsync
-            ]
-        )
-        mock_get_rising_edges.return_value = mock_photodiode_edges
+        delay = stim.extract_frame_times_with_delay("mock_sync_file")
 
-        # Mock sync file
-        mock_sync_file = "mock_sync_file"
+        self.assertAlmostEqual(delay, 0.024)
 
-        # Call the function
-        result = stim.extract_frame_times_with_delay(mock_sync_file)
+    @patch("aind_metadata_extractor.utils.camstim_sync.sync_utils.get_falling_edges")
+    @patch("aind_metadata_extractor.utils.camstim_sync.sync_utils.get_rising_edges")
+    @patch("aind_metadata_extractor.utils.camstim_sync.sync_utils.get_edges")
+    def test_extract_frame_times_with_delay_uses_falling_phase(
+        self,
+        mock_get_edges,
+        mock_get_rising_edges,
+        mock_get_falling_edges,
+    ):
+        """A high photodiode state at frame zero selects falling edges."""
+        vsync_times = np.arange(0, 6, 1 / 60)
+        mock_get_edges.return_value = vsync_times
+        mock_get_rising_edges.return_value = np.array([-1, 1.02, 3.02, 5.02]) * 100000
+        mock_get_falling_edges.return_value = np.array([0.02, 2.02, 4.02]) * 100000
 
-        # Verify sync utilities were called correctly
-        mock_get_edges.assert_called_once_with(mock_sync_file, "falling", stim.FRAME_KEYS)
-        mock_get_rising_edges.assert_called_with(mock_sync_file, "stim_photodiode")
-        # Note: get_rising_edges is called multiple times in this function
+        delay = stim.extract_frame_times_with_delay("mock_sync_file")
 
-        # Function can return either a delay value (float) or array of times
-        if isinstance(result, (float, int)):
-            # Error case - returns ASSUMED_DELAY
-            self.assertIsInstance(result, (float, int))
-        else:
-            # Success case - returns array of frame times
-            self.assertIsInstance(result, np.ndarray)
-            self.assertEqual(len(result), len(mock_vsync_edges))
+        self.assertAlmostEqual(delay, 0.02)
 
-            # Results should be close to original vsync times (possibly with delay adjustment)
-            self.assertTrue(np.allclose(result, mock_vsync_edges, atol=0.1))
+    def test_select_photodiode_delay_rejects_missing_frame_zero_edge(self):
+        """Regular later edges cannot compensate for a missing frame-zero edge."""
+        vsync_times = np.arange(0, 6, 1 / 60)
+        rising_times = np.array([2.024, 4.024])
+        falling_times = np.array([1.024, 3.024, 5.024])
+
+        delay = stim._select_photodiode_delay(vsync_times, rising_times, falling_times)
+
+        self.assertIsNone(delay)
+
+        delay = stim._select_photodiode_delay(vsync_times, np.array([]), np.array([]))
+
+        self.assertIsNone(delay)
 
     def test_enforce_df_int_typing_fillna_path(self):
         """
