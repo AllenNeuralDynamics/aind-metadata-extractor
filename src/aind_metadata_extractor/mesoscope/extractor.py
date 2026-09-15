@@ -12,9 +12,8 @@ import tifffile
 
 from aind_metadata_extractor.core import BaseExtractor
 from aind_metadata_extractor.mesoscope.job_settings import JobSettings
-from aind_metadata_extractor.utils.camstim_sync.camstim import Camstim, CamstimSettings
-
 from aind_metadata_extractor.models.mesoscope import MesoscopeExtractModel
+from aind_metadata_extractor.utils.camstim_sync.camstim import Camstim, CamstimSettings
 
 
 class MesoscopeExtract(BaseExtractor):
@@ -32,7 +31,7 @@ class MesoscopeExtract(BaseExtractor):
     }
 
     # TODO: Deprecate this constructor. Use GenericEtl constructor instead
-    def __init__(self, job_settings: Union[JobSettings, str]):
+    def __init__(self, job_settings: Union[JobSettings, str]) -> None:
         """
         Class constructor for MesoscopeExtract.
         Parameters
@@ -51,7 +50,7 @@ class MesoscopeExtract(BaseExtractor):
             camstim_output = job_settings_model.output_directory / f"{job_settings_model.session_id}_behavior"
         self.job_settings = job_settings_model
         camstim_settings = CamstimSettings(
-            input_source=self.job_settings.behavior_source,
+            input_source=self.job_settings.input_source,
             output_directory=camstim_output,
             session_id=self.job_settings.session_id,
             subject_id=self.job_settings.subject_id,
@@ -153,37 +152,19 @@ class MesoscopeExtract(BaseExtractor):
         return meta
 
     def _extract(self) -> MesoscopeExtractModel:
-        """extract data from the platform json file and tiff file (in the
-        future).
-        If input source is a file, will extract the data from the file.
-        The input source is a directory, will extract the data from the
-        directory.
-
-        Returns
-        -------
-        (dict, dict)
-            The extracted data from the platform json file and the time series
-        """
+        """Extract raw metadata for the mesoscope mapper."""
         # The pydantic models will validate that the user inputs a Path.
         # We can add validators there if we want to coerce strings to Paths.
         session_metadata = self._extract_behavior_metdata()
         session_metadata = self._extract_platform_metadata(session_metadata)
         meta = self._extract_time_series_metadata()
         epochs, session_type = self._camstim_epoch_and_session()
-        user_settings = self.job_settings.model_dump()
-        data = {
-            "session_metadata": session_metadata,
-            "camstim_epochs": epochs,
-            "camstim_session_type": session_type,
-            "time_series_header": meta,
-            "job_settings": user_settings,
-        }
         return MesoscopeExtractModel(
-            tiff_header=data["time_series_header"],
-            session_metadata=data["session_metadata"],
-            camstim_epchs=data["camstim_epochs"],
-            camstim_session_type=data["camstim_session_type"],
-            job_settings=data["job_settings"],
+            tiff_header=meta,
+            session_metadata=session_metadata,
+            camstim_epchs=epochs,
+            camstim_session_type=session_type,
+            job_settings=self.job_settings.model_dump(mode="json"),
         )
 
     def _camstim_epoch_and_session(self) -> Tuple[list, str]:
@@ -205,7 +186,7 @@ class MesoscopeExtract(BaseExtractor):
         Run the extraction job.
         """
         self.metadata = self._extract()
-        return self.metadata.model_dump()
+        return self.metadata.model_dump(mode="json")
 
     @classmethod
     def from_args(cls, args: list):
