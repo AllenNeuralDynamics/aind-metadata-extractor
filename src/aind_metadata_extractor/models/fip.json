@@ -4,13 +4,13 @@
       "description": "Complete rig configuration model for AIND FIP photometry system.",
       "properties": {
         "aind_behavior_services_pkg_version": {
-          "default": "0.13.0",
+          "default": "0.13.8",
           "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
           "title": "aind_behavior_services package version",
           "type": "string"
         },
         "version": {
-          "default": "0.3.0",
+          "default": "0.3.5",
           "title": "Version",
           "type": "string"
         },
@@ -25,18 +25,10 @@
           "type": "string"
         },
         "data_directory": {
-          "default": null,
           "description": "Directory where data will be saved to",
-          "oneOf": [
-            {
-              "format": "path",
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "title": "Data Directory"
+          "format": "path",
+          "title": "Data Directory",
+          "type": "string"
         },
         "camera_green_iso": {
           "$ref": "#/$defs/FipCamera",
@@ -99,6 +91,7 @@
       "required": [
         "computer_name",
         "rig_name",
+        "data_directory",
         "camera_green_iso",
         "camera_red",
         "light_source_uv",
@@ -325,7 +318,7 @@
         },
         "power": {
           "default": 0,
-          "description": "Power (mW)",
+          "description": "Power (uW)",
           "minimum": 0,
           "title": "Power",
           "type": "number"
@@ -347,7 +340,7 @@
       "properties": {
         "power_lut": {
           "additionalProperties": {
-            "description": "Power (mW)",
+            "description": "Power (uW)",
             "minimum": 0,
             "type": "number"
           },
@@ -479,13 +472,13 @@
     "SessionUnsafeVersion": {
       "properties": {
         "aind_behavior_services_pkg_version": {
-          "default": "0.13.0",
+          "default": "0.13.8",
           "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
           "title": "aind_behavior_services package version",
           "type": "string"
         },
         "version": {
-          "default": "0.13.0",
+          "default": "0.13.8",
           "title": "Version",
           "type": "string"
         },
@@ -599,7 +592,7 @@
       "type": "object"
     },
     "_FipDataStreamMetadata": {
-      "description": "Internal metadata model for individual FIP data streams.\n\nCaptures timing information for a single data stream within a FIP\nacquisition epoch, including the stream identifier and temporal\nboundaries.\n\nAttributes:\n    id (str): Unique identifier for the data stream (typically the\n        epoch name).\n    start_time (pydantic.AwareDatetime): Timezone-aware timestamp\n        marking the beginning of data collection for this stream.\n    end_time (pydantic.AwareDatetime): Timezone-aware timestamp\n        marking the end of data collection for this stream.",
+      "description": "Internal metadata model for individual FIP data streams.\n\nCaptures timing information for a single data stream within a FIP\nacquisition epoch, including the stream identifier and temporal\nboundaries.\n\nAttributes:\n    id (str): Unique identifier for the data stream (typically the\n        epoch name).\n    start_time (pydantic.AwareDatetime): Timezone-aware timestamp\n        marking the beginning of data collection for this stream.\n    end_time (pydantic.AwareDatetime): Timezone-aware timestamp\n        marking the end of data collection for this stream.\n    regions (RoiSettings): The region of interest settings associated with this data stream.",
       "properties": {
         "id": {
           "title": "Id",
@@ -614,12 +607,16 @@
           "format": "date-time",
           "title": "End Time",
           "type": "string"
+        },
+        "regions": {
+          "$ref": "#/$defs/RoiSettings"
         }
       },
       "required": [
         "id",
         "start_time",
-        "end_time"
+        "end_time",
+        "regions"
       ],
       "title": "_FipDataStreamMetadata",
       "type": "object"
