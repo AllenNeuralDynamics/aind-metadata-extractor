@@ -162,7 +162,7 @@ class MesoscopeExtract(BaseExtractor):
         return MesoscopeExtractModel(
             tiff_header=meta,
             session_metadata=session_metadata,
-            camstim_epchs=epochs,
+            camstim_epochs=epochs,
             camstim_session_type=session_type,
             job_settings=self.job_settings.model_dump(mode="json"),
         )

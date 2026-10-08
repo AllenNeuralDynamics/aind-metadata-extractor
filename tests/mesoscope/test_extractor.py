@@ -170,7 +170,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         self.assertTrue(hasattr(result, "model_dump"))
         # Test the model has expected attributes
         self.assertTrue(hasattr(result, "session_metadata"))
-        self.assertTrue(hasattr(result, "camstim_epchs"))
+        self.assertTrue(hasattr(result, "camstim_epochs"))
         self.assertTrue(hasattr(result, "camstim_session_type"))
         self.assertTrue(hasattr(result, "tiff_header"))
 
@@ -205,7 +205,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         mock_model_instance.model_dump.return_value = {
             "tiff_header": [{"SI.hRoiManager.pixelsPerLine": 512}],
             "session_metadata": {"platform": "mesoscope"},
-            "camstim_epchs": ["epoch1", "epoch2"],
+            "camstim_epochs": ["epoch1", "epoch2"],
             "camstim_session_type": "behavior",
             "job_settings": {"input_source": "test_path"},
         }
@@ -345,7 +345,7 @@ class TestMesoscopeExtract(unittest.TestCase):
                         "payload_path": temp_path / "platform.json",
                     }
                 },
-                camstim_epchs=[
+                camstim_epochs=[
                     {
                         "stimulus_start_time": datetime.datetime(2024, 1, 2, 3, 4, 5),
                         "stimulus_end_time": datetime.datetime(2024, 1, 2, 3, 5, 5),
