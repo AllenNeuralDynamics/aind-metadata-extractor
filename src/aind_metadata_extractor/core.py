@@ -3,6 +3,10 @@
 import argparse
 import json
 import logging
+from pathlib import Path
+from typing import List, Optional, Tuple, Type, Union
+
+from pydantic import Field
 from pydantic_settings import (
     BaseSettings,
     EnvSettingsSource,
@@ -10,9 +14,6 @@ from pydantic_settings import (
     JsonConfigSettingsSource,
     PydanticBaseSettingsSource,
 )
-from pydantic import Field
-from typing import Optional, Union, List, Type, Tuple
-from pathlib import Path
 
 
 class BaseExtractor:
@@ -37,12 +38,9 @@ class BaseExtractor:
 
         job_settings.output_directory.mkdir(parents=True, exist_ok=True)
 
-        # Generate filename from the module's parent directory name
-        # e.g., aind_metadata_extractor.mesoscope.extractor -> "mesoscope"
-        module_path = self.__class__.__module__
-        module_parts = module_path.split(".")
+        module_parts = self.__class__.__module__.split(".")
         if len(module_parts) >= 2:
-            folder_name = module_parts[-2]  # Get the parent folder name
+            folder_name = module_parts[-2]
         else:
             raise ValueError("Cannot determine folder name from module path.")
 
@@ -50,9 +48,8 @@ class BaseExtractor:
 
         metadata = getattr(self, "metadata")
         with open(output_path, "w") as f:
-            # Handle both pydantic models and plain dicts
             if hasattr(metadata, "model_dump"):
-                json.dump(metadata.model_dump(), f, indent=4)
+                json.dump(metadata.model_dump(mode="json"), f, indent=4)
             else:
                 json.dump(metadata, f, default=str, indent=4)
 

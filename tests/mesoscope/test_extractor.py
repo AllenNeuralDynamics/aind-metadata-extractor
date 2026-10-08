@@ -1,19 +1,22 @@
 """Test extractor for mesoscope"""
 
+import datetime
 import json
+import tempfile
 import unittest
 import unittest.mock
-from unittest.mock import patch, MagicMock
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
 from aind_metadata_extractor.mesoscope.extractor import MesoscopeExtract
 from aind_metadata_extractor.mesoscope.job_settings import JobSettings
-import datetime
+from aind_metadata_extractor.models.mesoscope import MesoscopeExtractModel
 
 
 class TestMesoscopeExtract(unittest.TestCase):
     """Mesoscope extractor test"""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """setup"""
         self.patcher = patch("aind_metadata_extractor.mesoscope.extractor.Camstim", autospec=True)
         self.mock_camstim = self.patcher.start()
@@ -31,11 +34,11 @@ class TestMesoscopeExtract(unittest.TestCase):
             make_camsitm_dir=False,
         )
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """teardown"""
         self.patcher.stop()
 
-    def test_extract_behavior_metadata_with_resource(self):
+    def test_extract_behavior_metadata_with_resource(self) -> None:
         """test extract behavior metadata with resource"""
         behavior_file = self.resource_dir / "0123456789_Behavior_20240212T091443.json"
         extractor = MesoscopeExtract(self.job_settings)
@@ -46,7 +49,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         self.assertIn("0123456789_Behavior_20240212T091443", result)
         self.assertIsInstance(result["0123456789_Behavior_20240212T091443"], dict)
 
-    def test_extract_platform_metadata_with_resource(self):
+    def test_extract_platform_metadata_with_resource(self) -> None:
         """test extract platform metadata with resource"""
         platform_file = self.resource_dir / "example_platform.json"
         extractor = MesoscopeExtract(self.job_settings)
@@ -59,7 +62,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         self.assertIn("platform", result)
         self.assertIsInstance(result["platform"], dict)
 
-    def test_extract_time_series_metadata_with_resource(self):
+    def test_extract_time_series_metadata_with_resource(self) -> None:
         """test extract time series metadata with resource"""
         extractor = MesoscopeExtract(self.job_settings)
         # Patch Path.glob at the class level to return an iterator
@@ -70,7 +73,7 @@ class TestMesoscopeExtract(unittest.TestCase):
 
     @patch("aind_metadata_extractor.mesoscope.extractor.tifffile.read_scanimage_metadata")
     @patch("aind_metadata_extractor.mesoscope.extractor.tifffile.FileHandle")
-    def test_read_metadata(self, mock_filehandle, mock_read_scanimage_metadata):
+    def test_read_metadata(self, mock_filehandle: MagicMock, mock_read_scanimage_metadata: MagicMock) -> None:
         """test read metadata"""
         mock_read_scanimage_metadata.return_value = {"meta": "data"}
         tiff_path = Path("dummy.tiff")
@@ -79,7 +82,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         self.assertEqual(result, {"meta": "data"})
 
     @patch("aind_metadata_extractor.mesoscope.extractor.h5.File")
-    def test_read_h5_metadata(self, mock_h5file):
+    def test_read_h5_metadata(self, mock_h5file: MagicMock) -> None:
         """test read h5 metadata"""
         mock_file = MagicMock()
 
@@ -99,7 +102,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         self.assertEqual(result, {"key": "value"})
 
     @patch("aind_metadata_extractor.mesoscope.extractor.Path.glob")
-    def test_extract_platform_metadata_mock(self, mock_glob):
+    def test_extract_platform_metadata_mock(self, mock_glob: MagicMock) -> None:
         """test extract platform metadata mock"""
         mock_path = MagicMock()
         mock_path.exists.return_value = True
@@ -111,7 +114,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         self.assertIn("platform", result)
 
     @patch("aind_metadata_extractor.mesoscope.extractor.Path.glob")
-    def test_extract_time_series_metadata_tiff_mock(self, mock_glob):
+    def test_extract_time_series_metadata_tiff_mock(self, mock_glob: MagicMock) -> None:
         """test extract time series metadata tiff mock"""
         mock_path = MagicMock()
         mock_glob.return_value = iter([mock_path])
@@ -121,7 +124,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         self.assertEqual(result, {"meta": "data"})
 
     @patch("aind_metadata_extractor.mesoscope.extractor.Path.glob")
-    def test_extract_time_series_metadata_h5_mock(self, mock_glob):
+    def test_extract_time_series_metadata_h5_mock(self, mock_glob: MagicMock) -> None:
         """test extract time series metadata h5 mock"""
         mock_glob.side_effect = [iter([]), iter([MagicMock(name="ophys_experiment_1")])]
         extractor = MesoscopeExtract(self.job_settings)
@@ -130,7 +133,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         self.assertEqual(result, {"meta": "h5data"})
 
     @patch("aind_metadata_extractor.mesoscope.extractor.Path.glob")
-    def test_extract_behavior_metadata_mock(self, mock_glob):
+    def test_extract_behavior_metadata_mock(self, mock_glob: MagicMock) -> None:
         """test extract behavior metadata mock"""
         mock_json_path = Path("Behavior_test_session.json")
         mock_glob.return_value = [mock_json_path]
@@ -152,7 +155,13 @@ class TestMesoscopeExtract(unittest.TestCase):
         MesoscopeExtract, "_extract_time_series_metadata", return_value=[{"SI.hRoiManager.pixelsPerLine": 512}]
     )
     @patch.object(MesoscopeExtract, "_camstim_epoch_and_session", return_value=(["epoch1"], "session_type"))
-    def test_extract(self, mock_epochs, mock_time_series, mock_platform, mock_behavior):
+    def test_extract(
+        self,
+        mock_epochs: MagicMock,
+        mock_time_series: MagicMock,
+        mock_platform: MagicMock,
+        mock_behavior: MagicMock,
+    ) -> None:
         """test extract"""
         extractor = MesoscopeExtract(self.job_settings)
         result = extractor._extract()
@@ -161,12 +170,12 @@ class TestMesoscopeExtract(unittest.TestCase):
         self.assertTrue(hasattr(result, "model_dump"))
         # Test the model has expected attributes
         self.assertTrue(hasattr(result, "session_metadata"))
-        self.assertTrue(hasattr(result, "camstim_epchs"))
+        self.assertTrue(hasattr(result, "camstim_epochs"))
         self.assertTrue(hasattr(result, "camstim_session_type"))
         self.assertTrue(hasattr(result, "tiff_header"))
 
     @patch.object(MesoscopeExtract, "_extract")
-    def test_run_job(self, mock_extract):
+    def test_run_job(self, mock_extract: MagicMock) -> None:
         """test run job calls _extract and returns model_dump result"""
         # Setup mock model instance with model_dump method
         mock_model_instance = MagicMock()
@@ -189,14 +198,14 @@ class TestMesoscopeExtract(unittest.TestCase):
         self.assertEqual(extractor.metadata, mock_model_instance)
 
     @patch.object(MesoscopeExtract, "_extract")
-    def test_run_job_model_validation(self, mock_extract):
+    def test_run_job_model_validation(self, mock_extract: MagicMock) -> None:
         """test run job validates model fields correctly"""
         # Setup mock model instance that represents a valid MesoscopeExtractModel
         mock_model_instance = MagicMock()
         mock_model_instance.model_dump.return_value = {
             "tiff_header": [{"SI.hRoiManager.pixelsPerLine": 512}],
             "session_metadata": {"platform": "mesoscope"},
-            "camstim_epchs": ["epoch1", "epoch2"],
+            "camstim_epochs": ["epoch1", "epoch2"],
             "camstim_session_type": "behavior",
             "job_settings": {"input_source": "test_path"},
         }
@@ -216,7 +225,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         self.assertTrue(mock_extract.called)
         self.assertEqual(mock_extract.call_count, 1)
 
-    def test_constructor_with_json_string(self):
+    def test_constructor_with_json_string(self) -> None:
         """test constructor with json string"""
         job_settings_json = json.dumps(
             {
@@ -235,7 +244,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         extractor = MesoscopeExtract(job_settings_json)
         self.assertEqual(extractor.job_settings.session_id, "0123456789")
 
-    def test_constructor_with_make_camstim_dir_true(self):
+    def test_constructor_with_make_camstim_dir_true(self) -> None:
         """test constructor with make_camstim_dir=True"""
         job_settings = JobSettings(
             input_source=self.resource_dir,
@@ -252,7 +261,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         extractor = MesoscopeExtract(job_settings)
         self.assertEqual(extractor.job_settings.make_camsitm_dir, True)
 
-    def test_constructor_with_string_behavior_source(self):
+    def test_constructor_with_string_behavior_source(self) -> None:
         """test constructor with string behavior_source"""
         job_settings = JobSettings(
             input_source=self.resource_dir,
@@ -269,7 +278,114 @@ class TestMesoscopeExtract(unittest.TestCase):
         extractor = MesoscopeExtract(job_settings)
         self.assertIsInstance(extractor.job_settings.behavior_source, Path)
 
-    def test_extract_platform_metadata_file_not_found(self):
+    def test_constructor_uses_input_source_for_camstim(self) -> None:
+        """test constructor passes acquisition input source to Camstim."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            input_source = temp_path / "input"
+            behavior_source = temp_path / "behavior"
+            output_directory = temp_path / "output"
+            input_source.mkdir()
+            behavior_source.mkdir()
+            output_directory.mkdir()
+
+            job_settings = JobSettings(
+                input_source=input_source,
+                output_directory=output_directory,
+                session_id="0123456789",
+                behavior_source=behavior_source,
+                session_start_time=datetime.datetime.now(),
+                session_end_time=datetime.datetime.now(),
+                subject_id="subject1",
+                project="test_project",
+                experimenter_full_name=["John Doe"],
+                make_camsitm_dir=False,
+            )
+
+            MesoscopeExtract(job_settings)
+
+        camstim_settings = self.mock_camstim.call_args.args[0]
+        self.assertEqual(camstim_settings.input_source, input_source)
+        self.assertEqual(camstim_settings.output_directory, output_directory)
+
+    def test_run_job_and_write_emit_json_serializable_output(self) -> None:
+        """test run_job and write produce JSON-safe output."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            input_source = temp_path / "input"
+            behavior_source = temp_path / "behavior"
+            output_directory = temp_path / "output"
+            input_source.mkdir()
+            behavior_source.mkdir()
+            output_directory.mkdir()
+
+            job_settings = JobSettings(
+                input_source=input_source,
+                output_directory=output_directory,
+                session_id="0123456789",
+                behavior_source=behavior_source,
+                session_start_time=datetime.datetime.now(),
+                session_end_time=datetime.datetime.now(),
+                subject_id="subject1",
+                project="test_project",
+                experimenter_full_name=["John Doe"],
+                make_camsitm_dir=False,
+            )
+
+            model = MesoscopeExtractModel(
+                tiff_header=[
+                    {
+                        "captured_at": datetime.datetime(2024, 1, 2, 3, 4, 5),
+                        "payload_path": temp_path / "timeseries.tiff",
+                    }
+                ],
+                session_metadata={
+                    "platform": {
+                        "captured_at": datetime.datetime(2024, 1, 2, 3, 4, 5),
+                        "payload_path": temp_path / "platform.json",
+                    }
+                },
+                camstim_epochs=[
+                    {
+                        "stimulus_start_time": datetime.datetime(2024, 1, 2, 3, 4, 5),
+                        "stimulus_end_time": datetime.datetime(2024, 1, 2, 3, 5, 5),
+                        "stimulus_name": "test",
+                        "software": [{"name": "camstim"}],
+                        "script": {"name": "stage"},
+                        "stimulus_parameters": [
+                            {
+                                "stimulus_name": "test",
+                                "stimulus_parameters": {"payload_path": temp_path / "stimulus.pkl"},
+                                "stimulus_template_name": {"template": "test"},
+                            }
+                        ],
+                    }
+                ],
+                camstim_session_type="behavior",
+                job_settings={
+                    "input_source": input_source,
+                    "output_directory": output_directory,
+                },
+            )
+
+            with patch.object(MesoscopeExtract, "_extract", return_value=model):
+                extractor = MesoscopeExtract(job_settings)
+                result = extractor.run_job()
+                extractor.write()
+
+            expected = model.model_dump(mode="json")
+            self.assertEqual(result, expected)
+            self.assertEqual(result["job_settings"]["output_directory"], str(output_directory))
+            self.assertEqual(result["tiff_header"][0]["payload_path"], str(temp_path / "timeseries.tiff"))
+            self.assertEqual(result["session_metadata"]["platform"]["payload_path"], str(temp_path / "platform.json"))
+
+            output_file = output_directory / "mesoscope.json"
+            with open(output_file, "r") as f:
+                written = json.load(f)
+
+            self.assertEqual(written, expected)
+
+    def test_extract_platform_metadata_file_not_found(self) -> None:
         """test extract platform metadata when platform.json not found"""
         extractor = MesoscopeExtract(self.job_settings)
         with patch("pathlib.Path.glob", return_value=iter([])):
@@ -277,7 +393,7 @@ class TestMesoscopeExtract(unittest.TestCase):
                 extractor._extract_platform_metadata({})
             self.assertIn("No platform json file found", str(context.exception))
 
-    def test_extract_platform_metadata_file_not_exists(self):
+    def test_extract_platform_metadata_file_not_exists(self) -> None:
         """test extract platform metadata when platform.json file doesn't exist"""
         extractor = MesoscopeExtract(self.job_settings)
         mock_path = MagicMock()
@@ -288,7 +404,7 @@ class TestMesoscopeExtract(unittest.TestCase):
             self.assertIn("No platform json file found", str(context.exception))
 
     @patch("aind_metadata_extractor.mesoscope.extractor.h5.File")
-    def test_read_h5_metadata_key_error(self, mock_h5file):
+    def test_read_h5_metadata_key_error(self, mock_h5file: MagicMock) -> None:
         """test read h5 metadata when scanimage_metadata key is missing"""
         mock_file = MagicMock()
         mock_file.__getitem__.side_effect = KeyError("scanimage_metadata")
@@ -304,7 +420,7 @@ class TestMesoscopeExtract(unittest.TestCase):
             self.assertIsInstance(result, list)
             self.assertEqual(result[0]["SI.hRoiManager.pixelsPerLine"], 512)
 
-    def test_camstim_epoch_and_session_behavior_true(self):
+    def test_camstim_epoch_and_session_behavior_true(self) -> None:
         """test camstim epoch and session when behavior is True"""
         extractor = MesoscopeExtract(self.job_settings)
         mock_camstim = MagicMock()
@@ -320,7 +436,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         self.assertEqual(epochs, ["epoch1", "epoch2"])
         self.assertEqual(session_type, "behavior_session")
 
-    def test_camstim_epoch_and_session_behavior_false(self):
+    def test_camstim_epoch_and_session_behavior_false(self) -> None:
         """test camstim epoch and session when behavior is False"""
         extractor = MesoscopeExtract(self.job_settings)
         mock_camstim = MagicMock()
@@ -338,7 +454,7 @@ class TestMesoscopeExtract(unittest.TestCase):
 
     @patch("argparse.ArgumentParser.parse_args")
     @patch("logging.warning")
-    def test_from_args(self, mock_warning, mock_parse_args):
+    def test_from_args(self, mock_warning: MagicMock, mock_parse_args: MagicMock) -> None:
         """test from_args class method"""
         # Mock the parsed arguments
         mock_args = MagicMock()
@@ -367,7 +483,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         self.assertIsInstance(result, MesoscopeExtract)
         self.assertEqual(result.job_settings.session_id, "0123456789")
 
-    def test_constructor_with_string_behavior_source_manual_assignment(self):
+    def test_constructor_with_string_behavior_source_manual_assignment(self) -> None:
         """test constructor with behavior_source as string via JSON"""
         # Test the behavior_source string conversion in the constructor by using JSON
         job_settings_json = json.dumps(
@@ -387,7 +503,7 @@ class TestMesoscopeExtract(unittest.TestCase):
         extractor = MesoscopeExtract(job_settings_json)
         self.assertIsInstance(extractor.job_settings.behavior_source, Path)
 
-    def test_constructor_with_string_behavior_source_direct_modification(self):
+    def test_constructor_with_string_behavior_source_direct_modification(self) -> None:
         """test constructor with behavior_source manually converted from string in constructor"""
         # Create a JobSettings object normally
         job_settings = JobSettings(
