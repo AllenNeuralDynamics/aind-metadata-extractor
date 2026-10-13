@@ -284,6 +284,23 @@ class TestStimUtils(unittest.TestCase):
 
         self.assertEqual(result["stim_name"].tolist(), ["A", "A", "B", "B"])
 
+    def test_create_stim_table_keeps_input_order_for_ties(self):
+        """
+        Test create_stim_table orders simultaneous stimuli by input order, independent of sort implementation.
+        """
+        start_times = [1.0, 10.0, 14.0, 15.0, 7.0, 12.0, 3.0, 4.0, 5.0, 8.0, 0.0, 9.0, 2.0, 16.0, 13.0, 11.0, 6.0]
+        stim_a = pd.DataFrame({"start_time": start_times, "stop_time": [t + 1 for t in start_times], "stim_name": "A"})
+        stim_b = stim_a.assign(stim_name="B")
+
+        result = stim.create_stim_table(
+            "test.pkl",
+            [{"stimulus": "A"}, {"stimulus": "B"}],
+            lambda pkl, stimulus: [stim_a.copy()] if stimulus["stimulus"] == "A" else [stim_b.copy()],
+            lambda tables: [],
+        )
+
+        self.assertEqual(result["stim_name"].tolist(), ["A"] * 17 + ["B"] * 17)
+
     def test_reorder_by_stim_in_temporal_blocks(self):
         """
         Test simultaneous presentations are grouped into one contiguous run per stimulus.

@@ -281,7 +281,7 @@ def create_stim_table(
         stim_table[block_key] = ii
 
     stim_table_full = pd.concat(stimulus_tables, ignore_index=True, sort=False)
-    stim_table_full.sort_values(by=[sort_key], inplace=True)
+    stim_table_full.sort_values(by=[sort_key], inplace=True, kind="stable")
     stim_table_full.reset_index(drop=True, inplace=True)
     stim_table_full = reorder_by_stim_in_temporal_blocks(stim_table_full)
 

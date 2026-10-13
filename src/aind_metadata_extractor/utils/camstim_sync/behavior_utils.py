@@ -80,7 +80,7 @@ def remove_short_sandwiched_spontaneous(df, duration_thresh=(0.3, 0.5)):
             sandwiched spontaneous intervals removed.
     """
     # Sort by start_time to ensure order
-    df = df.sort_values(by="start_time").reset_index(drop=True)
+    df = df.sort_values(by="start_time", kind="stable").reset_index(drop=True)
 
     # Find spontaneous rows
     is_spont = df["image_name"] == "spontaneous"
@@ -459,7 +459,7 @@ def get_visual_stimuli_df(data, time) -> pd.DataFrame:
         }
     )
 
-    df = pd.concat((visual_stimuli_df, omitted_df), sort=False).sort_values("frame").reset_index()
+    df = pd.concat((visual_stimuli_df, omitted_df), sort=False).sort_values("frame", kind="stable").reset_index()
     return df
 
 
@@ -1327,7 +1327,7 @@ def get_spontaneous_stimulus(
 
     res = pd.DataFrame(res)
 
-    return pd.concat([stimulus_presentations_table, res]).sort_values("start_frame")
+    return pd.concat([stimulus_presentations_table, res]).sort_values("start_frame", kind="stable")
 
 
 def make_spontaneous_stimulus(
@@ -1350,7 +1350,9 @@ def make_spontaneous_stimulus(
     """
 
     # Ensure the table is sorted by start time
-    stimulus_presentations_table = stimulus_presentations_table.sort_values("start_time").reset_index(drop=True)
+    stimulus_presentations_table = stimulus_presentations_table.sort_values("start_time", kind="stable").reset_index(
+        drop=True
+    )
 
     # Identify gaps between consecutive stimulus presentations
     gaps = (
@@ -1391,7 +1393,11 @@ def make_spontaneous_stimulus(
     ).astype(int)
 
     # Merge and return sorted table
-    return pd.concat([stimulus_presentations_table, spontaneous_df]).sort_values("start_frame").reset_index(drop=True)
+    return (
+        pd.concat([stimulus_presentations_table, spontaneous_df])
+        .sort_values("start_frame", kind="stable")
+        .reset_index(drop=True)
+    )
 
 
 def add_fingerprint_stimulus(
