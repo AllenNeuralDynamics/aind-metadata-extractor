@@ -70,6 +70,7 @@ class TestCamstim(unittest.TestCase):
             subject_id="123456",
         )
 
+    @patch("aind_metadata_extractor.utils.camstim_sync.stim_utils.extract_frame_times_with_delay")  # noqa
     @patch("aind_metadata_extractor.utils.camstim_sync.sync_utils.get_ophys_stimulus_timestamps")  # noqa
     @patch("aind_metadata_extractor.utils.camstim_sync.behavior_utils.from_stimulus_file")  # noqa
     @patch("pandas.DataFrame.to_csv")
@@ -78,10 +79,12 @@ class TestCamstim(unittest.TestCase):
         mock_to_csv: MagicMock,
         mock_from_stimulus_file: MagicMock,
         mock_get_ophys_stimulus_timestamps: MagicMock,
+        mock_extract_frame_times_with_delay: MagicMock,
     ):
-        """Test the build_behavior_table method"""
+        """Test the build_behavior_table method adds the monitor delay to stimulus timestamps"""
         # Mock the return values
         mock_get_ophys_stimulus_timestamps.return_value = [1, 2, 3]
+        mock_extract_frame_times_with_delay.return_value = 0.5
         mock_from_stimulus_file.return_value = [pd.DataFrame({"a": [1, 2, 3]})]
 
         # Call the method
@@ -89,7 +92,8 @@ class TestCamstim(unittest.TestCase):
 
         # Assert the calls
         mock_get_ophys_stimulus_timestamps.assert_called_once_with(self.camstim.sync_data, self.camstim.pkl_path)
-        mock_from_stimulus_file.assert_called_once_with(self.camstim.pkl_path, [1, 2, 3])
+        mock_extract_frame_times_with_delay.assert_called_once_with(self.camstim.sync_data)
+        mock_from_stimulus_file.assert_called_once_with(self.camstim.pkl_path, [1.5, 2.5, 3.5])
         mock_to_csv.assert_called_once_with(self.camstim.stim_table_path, index=False)
 
     @patch("aind_metadata_extractor.utils.camstim_sync.stim_utils.extract_frame_times_from_vsync")  # noqa
@@ -141,13 +145,13 @@ class TestCamstim(unittest.TestCase):
         """Test the extract_stim_epochs method"""
         # Create a mock stimulus table
         data = {
-            "start_time": [0, 1, 2, 3, 4],
-            "stop_time": [1, 2, 3, 4, 5],
-            "stim_name": ["stim1", "stim1", "stim2", "stim2", "stim3"],
-            "stim_type": ["type1", "type1", "type2", "type2", "type3"],
-            "frame": [0, 1, 2, 3, 4],
-            "param1": ["a", "a", "b", "b", "c"],
-            "param2": [1, 1, 2, 2, 3],
+            "start_time": [0, 1, 2, 3, 4, 5],
+            "stop_time": [1, 2, 3, 4, 5, 6],
+            "stim_name": ["stim1", "stim1", "stim2", "stim2", "stim3", "stim3"],
+            "stim_type": ["type1", "type1", "type2", "type2", "type3", "type3"],
+            "frame": [0, 1, 2, 3, 4, 5],
+            "param1": ["a", "a", "b", "b", "c", "c"],
+            "param2": [1, 1, 2, 2, 3, 3],
         }
         stim_table = pd.DataFrame(data)
 
@@ -155,7 +159,7 @@ class TestCamstim(unittest.TestCase):
         expected_epochs = [
             ["stim1", 0, 2, {"param1": {"a"}, "param2": {1}}, set()],
             ["stim2", 2, 4, {"param1": {"b"}, "param2": {2}}, set()],
-            ["stim3", 4, 5, {"param1": {"c"}, "param2": {3}}, set()],
+            ["stim3", 4, 6, {"param1": {"c"}, "param2": {3}}, set()],
         ]
 
         # Call the method
@@ -168,13 +172,13 @@ class TestCamstim(unittest.TestCase):
         """Test the extract_stim_epochs method with images and movies"""
         # Create a mock stimulus table with images and movies
         data = {
-            "start_time": [0, 1, 2, 3, 4],
-            "stop_time": [1, 2, 3, 4, 5],
-            "stim_name": ["image1", "image1", "movie1", "movie1", "stim3"],
-            "stim_type": ["type1", "type1", "type2", "type2", "type3"],
-            "frame": [0, 1, 2, 3, 4],
-            "param1": ["a", "a", "b", "b", "c"],
-            "param2": [1, 1, 2, 2, 3],
+            "start_time": [0, 1, 2, 3, 4, 5],
+            "stop_time": [1, 2, 3, 4, 5, 6],
+            "stim_name": ["image1", "image1", "movie1", "movie1", "stim3", "stim3"],
+            "stim_type": ["type1", "type1", "type2", "type2", "type3", "type3"],
+            "frame": [0, 1, 2, 3, 4, 5],
+            "param1": ["a", "a", "b", "b", "c", "c"],
+            "param2": [1, 1, 2, 2, 3, 3],
         }
         stim_table = pd.DataFrame(data)
 
@@ -182,7 +186,7 @@ class TestCamstim(unittest.TestCase):
         expected_epochs = [
             ["image1", 0, 2, {"param1": {"a"}, "param2": {1}}, {"image1"}],
             ["movie1", 2, 4, {"param1": {"b"}, "param2": {2}}, {"movie1"}],
-            ["stim3", 4, 5, {"param1": {"c"}, "param2": {3}}, set()],
+            ["stim3", 4, 6, {"param1": {"c"}, "param2": {3}}, set()],
         ]
         # Call the method
         epochs = self.camstim.extract_stim_epochs(stim_table)
@@ -263,23 +267,64 @@ class TestCamstim(unittest.TestCase):
         pd.testing.assert_frame_equal(result, expected_result)
 
     def test_extract_whole_session_epoch(self):
-        """
-        Test that extract_whole_session_epoch returns the correct start and
-        stop times for a mock stim_table DataFrame.
-        """
-        # Create a mock stim_table DataFrame
+        """Test extract_whole_session_epoch summarizes every row as one epoch"""
         stim_table = pd.DataFrame(
             {
                 "start_time": [0.0, 10.0, 20.0],
                 "stop_time": [5.0, 15.0, 25.0],
+                "stim_name": ["im_a", "im_b", "im_c"],
+                "image_set": ["natural_images", "natural_images", "natural_images"],
+                "param1": ["a", "b", "c"],
             }
         )
-        camstim = self.camstim
-        # Call the method
-        result = camstim.extract_whole_session_epoch(stim_table)
-        # Check that the result is as expected (tuple of (start, stop))
-        self.assertEqual(result[0], stim_table.start_time.iloc[0])
-        self.assertEqual(result[1], stim_table.stop_time.iloc[-1])
+
+        result = self.camstim.extract_whole_session_epoch(stim_table)
+
+        self.assertEqual(result, [["im_a", 0.0, 25.0, {"param1": {"a", "b", "c"}}, {"im_a"}]])
+
+    def test_extract_whole_session_epoch_without_template(self):
+        """Test extract_whole_session_epoch adds no template for a non-image stimulus block"""
+        stim_table = pd.DataFrame(
+            {
+                "start_time": [0.0, 10.0],
+                "stop_time": [5.0, 15.0],
+                "stim_name": ["gratings", "gratings"],
+                "stim_block": [3, 3],
+            }
+        )
+
+        result = self.camstim.extract_whole_session_epoch(stim_table)
+
+        self.assertEqual(result, [["gratings", 0.0, 15.0, {}, set()]])
+
+    def test_extract_stim_epochs_whole_session(self):
+        """Test extract_stim_epochs returns one epoch when the stimulus changes on most rows"""
+        stim_table = pd.DataFrame(
+            {
+                "start_time": [0, 1, 2, 3],
+                "stop_time": [1, 2, 3, 4],
+                "stim_name": ["im_a", "im_b", "im_a", "im_b"],
+                "image_name": ["im_a", "im_b", "im_a", "im_b"],
+            }
+        )
+
+        epochs = self.camstim.extract_stim_epochs(stim_table)
+
+        self.assertEqual(epochs, [["im_a", 0, 4, {"image_name": {"im_a", "im_b"}}, set()]])
+
+    def test_extract_stim_epochs_skips_simultaneous_start(self):
+        """Test extract_stim_epochs drops rows starting with the current epoch"""
+        stim_table = pd.DataFrame(
+            {
+                "start_time": [0, 0, 1, 2, 3, 4, 5],
+                "stop_time": [1, 1, 2, 3, 4, 5, 6],
+                "stim_name": ["stim1", "stim2", "stim1", "stim1", "stim1", "stim1", "stim1"],
+            }
+        )
+
+        epochs = self.camstim.extract_stim_epochs(stim_table)
+
+        self.assertEqual(epochs, [["stim1", 0, 6, {}, set()]])
 
     def test_get_session_uuid(self):
         """Test the get_session_uuid method"""
@@ -373,10 +418,10 @@ class TestCamstim(unittest.TestCase):
         """Test that extract_stim_epochs skips spontaneous stimuli"""
         # Create test data with spontaneous stimulus
         data = {
-            "start_time": [0, 1, 2],
-            "stop_time": [1, 2, 3],
-            "stim_name": ["stim1", "spontaneous", "stim2"],
-            "param1": ["a", "b", "c"],
+            "start_time": [0, 1, 2, 3, 4, 5],
+            "stop_time": [1, 2, 3, 4, 5, 6],
+            "stim_name": ["stim1", "stim1", "spontaneous", "spontaneous", "stim2", "stim2"],
+            "param1": ["a", "a", "b", "b", "c", "c"],
         }
         stim_table = pd.DataFrame(data)
 
@@ -485,11 +530,11 @@ class TestCamstim(unittest.TestCase):
         """Test extract_stim_epochs with non-empty image_set to cover line 323"""
         # Create test data with image_set column
         data = {
-            "start_time": [0, 1],
-            "stop_time": [1, 2],
-            "stim_name": ["test1", "test2"],
-            "image_set": ["images_set", ""],  # One with image_set, one without
-            "param1": ["a", "b"],
+            "start_time": [0, 1, 2, 3],
+            "stop_time": [1, 2, 3, 4],
+            "stim_name": ["test1", "test1", "test2", "test2"],
+            "image_set": ["images_set", "images_set", "", ""],  # One with image_set, one without
+            "param1": ["a", "a", "b", "b"],
         }
         stim_table = pd.DataFrame(data)
 
