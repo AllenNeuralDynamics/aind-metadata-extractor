@@ -4,11 +4,14 @@ import json
 import os
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import MagicMock, mock_open, patch
 
-from aind_metadata_extractor.core import BaseJobSettings, BaseExtractor
+from pydantic import BaseModel
+
+from aind_metadata_extractor.core import BaseExtractor, BaseJobSettings
 
 RESOURCES_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / ".." / "resources"
 CONFIG_FILE_PATH = RESOURCES_DIR / "job_settings.json"
@@ -25,7 +28,7 @@ class TestJobSettings(unittest.TestCase):
         name: str
         id: int
 
-    def test_load_from_config_file(self):
+    def test_load_from_config_file(self) -> None:
         """Test job settings can be loaded from config file."""
 
         job_settings = self.MockJobSettings(
@@ -44,14 +47,14 @@ class TestJobSettings(unittest.TestCase):
         self.assertEqual(round_trip.model_dump_json(), job_settings.model_dump_json())
 
     @patch("logging.warning")
-    def test_load_from_config_file_json_error(self, mock_log_warn: MagicMock):
+    def test_load_from_config_file_json_error(self, mock_log_warn: MagicMock) -> None:
         """Test job settings raises an error when config file is corrupt"""
 
         with self.assertRaises(Exception):
             self.MockJobSettings(user_settings_config_file=CONFIG_FILE_PATH_CORRUPT)
         mock_log_warn.assert_called_once()
 
-    def test_from_args(self):
+    def test_from_args(self) -> None:
         """Test job settings can be created from command line arguments."""
         args = ["-j", '{"job_settings_name": "mock_job", "name": "Test User", "id": 42}']
 
@@ -61,14 +64,14 @@ class TestJobSettings(unittest.TestCase):
         self.assertEqual(job_settings.name, "Test User")
         self.assertEqual(job_settings.id, 42)
 
-    def test_from_args_missing_required_arg(self):
+    def test_from_args_missing_required_arg(self) -> None:
         """Test that from_args raises error when required argument is missing."""
         args = []  # Missing required -j argument
 
         with self.assertRaises(SystemExit):
             self.MockJobSettings.from_args(args)
 
-    def test_from_args_invalid_json(self):
+    def test_from_args_invalid_json(self) -> None:
         """Test that from_args raises error when JSON is invalid."""
         args = ["-j", "invalid json"]
 
@@ -82,38 +85,54 @@ class TestBaseExtractor(unittest.TestCase):
     class MockExtractor(BaseExtractor):
         """Mock extractor for testing purposes"""
 
-        def __init__(self, job_settings=None, metadata=None):
+        def __init__(
+            self,
+            job_settings: BaseJobSettings | None = None,
+            metadata: object | None = None,
+        ) -> None:
             """Create mock extractor"""
             self.job_settings = job_settings
             self.metadata = metadata
 
-        def _extract(self):
+        def _extract(self) -> None:
             """Mock implementation"""
             pass
 
-        def run_job(self):
+        def run_job(self) -> None:
             """Mock implementation"""
             pass
 
     class MockJobSettings:
         """Mock job settings for testing"""
 
-        def __init__(self, output_directory=None):
+        def __init__(self, output_directory: str | Path | None = None) -> None:
             """Create mock job settings"""
             self.output_directory = Path(output_directory) if output_directory else None
 
-    def setUp(self):
+    class NamedJobSettings(MockJobSettings):
+        """Mock job settings with a declared output name."""
+
+        job_settings_name: str = "Mesoscope"
+
+    class SerializableMetadata(BaseModel):
+        """Metadata model containing JSON-only types."""
+
+        captured_at: datetime
+        payload_path: Path
+        labels: set[str]
+
+    def setUp(self) -> None:
         """Set up test fixtures"""
         self.temp_dir = tempfile.mkdtemp()
         self.temp_path = Path(self.temp_dir)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Clean up test fixtures"""
         import shutil
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def test_write_success_with_pydantic_model(self):
+    def test_write_success_with_pydantic_model(self) -> None:
         """Test successful write with pydantic model metadata"""
         # Create mock metadata with model_dump method (pydantic model)
         mock_metadata = MagicMock()
@@ -137,12 +156,48 @@ class TestBaseExtractor(unittest.TestCase):
             # Verify file operations
             expected_path = self.temp_path / "mesoscope.json"
             mock_file.assert_called_once_with(expected_path, "w")
+            mock_metadata.model_dump.assert_called_once_with(mode="json")
             mock_json_dump.assert_called_once_with(
                 {"key": "value", "number": 42}, mock_file.return_value.__enter__.return_value, indent=4
             )
             mock_log.assert_called_once_with(f"Metadata written to {expected_path}")
 
-    def test_write_success_with_dict_metadata(self):
+    def test_write_keeps_module_filename_with_named_settings(self) -> None:
+        """Keep the existing filename contract when settings declare a name."""
+        extractor = self.MockExtractor()
+        extractor.__class__.__module__ = "aind_metadata_extractor.bergamo.extractor"
+        extractor.job_settings = self.NamedJobSettings(self.temp_dir)
+        extractor.metadata = {"test": "data"}
+
+        with patch("builtins.open", mock_open()) as mock_file, patch("json.dump"), patch("logging.info"):
+
+            extractor.write()
+
+            expected_path = self.temp_path / "bergamo.json"
+            mock_file.assert_called_once_with(expected_path, "w")
+
+    def test_write_serializes_json_safe_model(self) -> None:
+        """Test that write emits JSON-safe content for pydantic metadata."""
+        extractor = self.MockExtractor()
+        extractor.__class__.__module__ = "aind_metadata_extractor.mesoscope.extractor"
+        extractor.job_settings = self.NamedJobSettings(self.temp_dir)
+        extractor.metadata = self.SerializableMetadata(
+            captured_at=datetime(2024, 1, 2, 3, 4, 5),
+            payload_path=self.temp_path / "nested" / "payload.txt",
+            labels={"alpha", "beta"},
+        )
+
+        extractor.write()
+
+        output_path = self.temp_path / "mesoscope.json"
+        with open(output_path, "r") as f:
+            payload = json.load(f)
+
+        self.assertEqual(payload["captured_at"], "2024-01-02T03:04:05")
+        self.assertEqual(payload["payload_path"], str(self.temp_path / "nested" / "payload.txt"))
+        self.assertCountEqual(payload["labels"], ["alpha", "beta"])
+
+    def test_write_success_with_dict_metadata(self) -> None:
         """Test successful write with dictionary metadata"""
         # Create dictionary metadata (no model_dump method)
         dict_metadata = {"key": "value", "list": [1, 2, 3]}
@@ -170,7 +225,7 @@ class TestBaseExtractor(unittest.TestCase):
             )
             mock_log.assert_called_once_with(f"Metadata written to {expected_path}")
 
-    def test_write_creates_output_directory(self):
+    def test_write_creates_output_directory(self) -> None:
         """Test that write creates output directory if it doesn't exist"""
         nested_dir = self.temp_path / "nested" / "directory"
 
@@ -187,7 +242,7 @@ class TestBaseExtractor(unittest.TestCase):
             self.assertTrue(nested_dir.exists())
             self.assertTrue(nested_dir.is_dir())
 
-    def test_write_no_metadata_raises_error(self):
+    def test_write_no_metadata_raises_error(self) -> None:
         """Test that write raises ValueError if no metadata exists"""
         extractor = self.MockExtractor()
         extractor.__class__.__module__ = "aind_metadata_extractor.test.extractor"  # Valid module path
@@ -201,7 +256,7 @@ class TestBaseExtractor(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "No metadata found. Please run the job first.")
 
-    def test_write_no_job_settings_raises_error(self):
+    def test_write_no_job_settings_raises_error(self) -> None:
         """Test that write raises ValueError if no job_settings exists"""
         extractor = self.MockExtractor()
         extractor.metadata = {"test": "data"}
@@ -212,7 +267,7 @@ class TestBaseExtractor(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "No output directory specified in job settings.")
 
-    def test_write_no_output_directory_raises_error(self):
+    def test_write_no_output_directory_raises_error(self) -> None:
         """Test that write raises ValueError if no output_directory in job_settings"""
         extractor = self.MockExtractor()
         extractor.job_settings = self.MockJobSettings(None)  # output_directory is None
@@ -223,7 +278,7 @@ class TestBaseExtractor(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "No output directory specified in job settings.")
 
-    def test_write_invalid_module_path_raises_error(self):
+    def test_write_invalid_module_path_raises_error(self) -> None:
         """Test that write raises ValueError for invalid module path"""
         extractor = self.MockExtractor()
         extractor.__class__.__module__ = "invalid_module"  # Not enough parts
@@ -235,7 +290,7 @@ class TestBaseExtractor(unittest.TestCase):
 
         self.assertEqual(str(context.exception), "Cannot determine folder name from module path.")
 
-    def test_write_filename_generation(self):
+    def test_write_filename_generation(self) -> None:
         """Test that filename is correctly generated from module path"""
         test_cases = [
             ("aind_metadata_extractor.mesoscope.extractor", "mesoscope.json"),
@@ -258,7 +313,7 @@ class TestBaseExtractor(unittest.TestCase):
                     expected_path = self.temp_path / expected_filename
                     mock_file.assert_called_with(expected_path, "w")
 
-    def test_abstract_methods_not_implemented(self):
+    def test_abstract_methods_not_implemented(self) -> None:
         """Test that abstract methods raise NotImplementedError"""
         extractor = BaseExtractor()
 
