@@ -19,6 +19,8 @@ from aind_metadata_extractor.utils.camstim_sync import (
     naming_utils,
 )
 
+WHOLE_SESSION_CHANGE_RATIO = 0.50
+
 
 class CamstimSettings(BaseModel):
     """Camstim settings for extracting stimulus epochs"""
@@ -108,6 +110,8 @@ class Camstim:
         None
         """
         timestamps = sync_utils.get_ophys_stimulus_timestamps(self.sync_data, self.pkl_path)
+        timestamps_delay = stim_utils.extract_frame_times_with_delay(self.sync_data)
+        timestamps = [ts + timestamps_delay for ts in timestamps]
         behavior_table = behavior_utils.from_stimulus_file(self.pkl_path, timestamps)
         behavior_table[0].to_csv(self.stim_table_path, index=False)
 
@@ -254,13 +258,22 @@ class Camstim:
         For each epoch, every unknown column (not start_time, stop_time,
         stim_name, stim_type, or frame) are listed as parameters, and the set
         of values for that column are listed as parameter values.
+
+        A table whose stimulus changes on more than half of its rows is
+        summarized as a single whole-session epoch.
         """
+        change_column = "image_name" if "image_name" in stim_table else "stim_name"
+        change_ratio = (stim_table[change_column] != stim_table[change_column].shift()).sum() / len(stim_table)
+        if change_ratio > WHOLE_SESSION_CHANGE_RATIO:
+            return self.extract_whole_session_epoch(stim_table)
+
         epochs = []
 
         current_epoch = [None, 0.0, 0.0, {}, set()]
         epoch_start_idx = 0
         for current_idx, row in stim_table.iterrows():
-            if row["stim_name"] == "spontaneous":
+            simultaneous = current_epoch[0] is not None and row["start_time"] == current_epoch[1]
+            if row["stim_name"] == "spontaneous" or simultaneous:
                 continue
             if row["stim_name"] != current_epoch[0]:
                 self._summarize_epoch_params(stim_table, current_epoch, epoch_start_idx, current_idx)
@@ -333,18 +346,34 @@ class Camstim:
 
         return schema_epochs
 
-    def extract_whole_session_epoch(self, stim_table: pd.DataFrame) -> tuple[float, float]:
+    def extract_whole_session_epoch(self, stim_table: pd.DataFrame) -> list[list[str, int, int, dict, set]]:
         """
-        Extract the overall start and end times for the entire session.
+        Summarize the entire stimulus table as one epoch.
 
         Parameters
         ----------
         stim_table : pd.DataFrame
-            The stimulus table containing start_time and stop_time columns
+            The stimulus table containing stim_name, start_time and stop_time columns
 
         Returns
         -------
-        tuple[float, float]
-            A tuple of (session_start_time, session_end_time)
+        list[list[str, int, int, dict, set]]
+            One epoch named after the first stimulus, spanning the first start
+            time to the last stop time.
         """
-        return (stim_table["start_time"].iloc[0], stim_table["stop_time"].iloc[-1])
+        row = stim_table.iloc[0]
+        epoch = [
+            row["stim_name"],
+            row["start_time"],
+            stim_table["stop_time"].iloc[-1],
+            {},
+            set(),
+        ]
+        self._summarize_epoch_params(stim_table, epoch, 0, len(stim_table))
+        stim_name = row.get("stim_block", "") or ""
+        image_set = row.get("image_set", "")
+        if pd.notnull(image_set) and image_set:
+            stim_name = image_set
+        if "image" in str(stim_name).lower() or "movie" in str(stim_name).lower():
+            epoch[4].add(row["stim_name"])
+        return [epoch]

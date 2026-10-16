@@ -8,6 +8,11 @@ import numpy as np
 from unittest.mock import MagicMock, patch
 from aind_metadata_extractor.utils.camstim_sync import behavior_utils as behavior
 
+# from_stimulus_file tests below mock tables without timing columns; ordering is tested in test_stim_utils.
+SKIP_REORDER = patch(
+    "aind_metadata_extractor.utils.camstim_sync.stim_utils.reorder_by_stim_in_temporal_blocks", new=lambda df: df
+)
+
 
 class TestBehaviorUtils(unittest.TestCase):
     """
@@ -828,6 +833,75 @@ class TestBehaviorUtils(unittest.TestCase):
 
         pd.testing.assert_frame_equal(result, expected_stim_df)
 
+    def test_fingerprint_from_stimulus_file_repeats(self):
+        """Tests fingerprint_from_stimulus_file for pickles without a saved sweep table"""
+        stimulus_presentations = pd.DataFrame({"stim_block": [1, 2]})
+        stimulus_file = {
+            "items": {
+                "behavior": {
+                    "items": {
+                        "fingerprint": {
+                            "static_stimulus": {
+                                "runs": 2,
+                                "frame_list": [0, 1, 1, 0],
+                                "sweep_frames": [[0, 1], [2, 3]],
+                            },
+                            "frame_indices": [0, 1, 2, 3, 4, 5],
+                        }
+                    }
+                }
+            }
+        }
+
+        result = behavior.fingerprint_from_stimulus_file(
+            stimulus_presentations, stimulus_file, [0, 1, 2, 3, 4, 5], "fingerprint"
+        )
+
+        expected = pd.DataFrame(
+            {
+                "movie_frame_index": [0, 0],
+                "movie_repeat": [0, 1],
+                "start_time": [0, 2],
+                "stop_time": [2, 4],
+                "start_frame": [0, 2],
+                "end_frame": [1, 3],
+                "duration": [2, 2],
+                "stim_block": [4, 4],
+                "stim_name": ["fingerprint", "fingerprint"],
+            }
+        )
+        pd.testing.assert_frame_equal(result, expected)
+
+    def test_fingerprint_from_stimulus_file_skips_out_of_range_sweep(self):
+        """Tests fingerprint_from_stimulus_file drops saved sweeps outside the fingerprint block"""
+        stimulus_presentations = pd.DataFrame({"stim_block": [1]})
+        stimulus_file = {
+            "items": {
+                "behavior": {
+                    "items": {
+                        "fingerprint": {
+                            "static_stimulus": {
+                                "frame_list": [0, 1],
+                                "sweep_frames": [[0, 1], [10, 11]],
+                                "sweep_table": [[0.0], [45.0]],
+                                "sweep_order": [0, 1],
+                                "dimnames": ["orientation"],
+                                "save_sweep_table": True,
+                            },
+                            "frame_indices": [0, 1, 2, 3],
+                        }
+                    }
+                }
+            }
+        }
+
+        result = behavior.fingerprint_from_stimulus_file(
+            stimulus_presentations, stimulus_file, [0, 1, 2, 3], "fingerprint"
+        )
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result["orientation"].tolist(), [0.0])
+
     def test_fingerprint_from_stimulus_file(self):
         """
         Creates a fake stim file and
@@ -851,6 +925,7 @@ class TestBehaviorUtils(unittest.TestCase):
                                 "sweep_table": [[0.0], [45.0], [90.0]],
                                 "sweep_order": [0, 1, 2],
                                 "dimnames": ["orientation"],
+                                "save_sweep_table": True,
                             },
                             "frame_indices": [0, 1, 2, 3, 4, 5],
                         }
@@ -1085,6 +1160,7 @@ class TestBehaviorUtils(unittest.TestCase):
             with self.assertRaises(ValueError):
                 behavior.from_stimulus_file(stimulus_file, stimulus_timestamps)
 
+    @SKIP_REORDER
     @patch("aind_metadata_extractor.utils.camstim_sync.pkl_utils.load_pkl")
     def test_from_stimulus_file_with_grating_orientations(self, mock_load_pkl):
         """
@@ -1687,6 +1763,7 @@ class TestBehaviorUtils(unittest.TestCase):
         self.assertIn("is_sham_change", result.columns)
         self.assertEqual(result["is_sham_change"].sum(), 1)  # Only one sham change
 
+    @SKIP_REORDER
     def test_from_stimulus_file_with_limit_to_images(self):
         """
         Tests from_stimulus_file with limit_to_images parameter
@@ -1814,6 +1891,7 @@ class TestBehaviorUtils(unittest.TestCase):
         passive_sham = result[~result["active"]]["is_sham_change"].values
         np.testing.assert_array_equal(active_sham, passive_sham)
 
+    @SKIP_REORDER
     def test_from_stimulus_file_with_fingerprint_items(self):
         """
         Tests from_stimulus_file with fingerprint items in stimulus file
@@ -1897,6 +1975,7 @@ class TestBehaviorUtils(unittest.TestCase):
                                     mock_add_fingerprint.assert_called_once()
                                     self.assertIsInstance(result, tuple)
 
+    @SKIP_REORDER
     def test_from_stimulus_file_with_duplicate_handling(self):
         """
         Tests from_stimulus_file duplicate image handling and column merging

@@ -215,87 +215,108 @@ class TestStimUtils(unittest.TestCase):
 
     def test_create_stim_table(self):
         """
-        Test the create_stim_table function.
+        Test create_stim_table orders stimulus rows and inserts spontaneous rows by start time.
         """
-
-        # Sample input data
         pkl_file = "test.pkl"
         stimuli = [{"stimulus": "stim1"}, {"stimulus": "stim2"}]
 
-        # Mock stimulus tables
         stim_table_1 = pd.DataFrame(
-            {
-                "start_time": [10, 20],
-                "end_time": [15, 25],
-                "stim_param": ["a", "b"],
-            }
+            {"start_time": [10, 20], "stop_time": [15, 25], "stim_name": ["stim1", "stim1"], "stim_param": ["a", "b"]}
         )
         stim_table_2 = pd.DataFrame(
-            {
-                "start_time": [30, 40],
-                "end_time": [35, 45],
-                "stim_param": ["c", "d"],
-            }
+            {"start_time": [30, 40], "stop_time": [35, 45], "stim_name": ["stim2", "stim2"], "stim_param": ["c", "d"]}
         )
-        stim_table_3 = pd.DataFrame(
+        spontaneous_table = pd.DataFrame(
             {
                 "start_time": [5, 50],
-                "end_time": [10, 55],
+                "stop_time": [10, 55],
+                "stim_name": ["spontaneous", "spontaneous"],
                 "stim_param": ["e", "f"],
             }
         )
 
-        # Expected full stimulus table
-        expected_stim_table_full = pd.DataFrame(
-            {
-                "start_time": [5, 10, 20, 30, 40, 50],
-                "end_time": [10, 15, 25, 35, 45, 55],
-                "stim_param": ["e", "a", "b", "c", "d", "f"],
-                "stim_index": [pd.NA, 0.0, 0.0, 1.0, 1.0, pd.NA],
-                "stim_block": [0, 0, 0, 1, 1, 2],
-            }
-        )
-
-        # Mock stimulus_tabler function
         def mock_stimulus_tabler(pkl_file, stimulus):
             """
             Mock function for stim intermediary func
             """
-            if stimulus["stimulus"] == "stim1":
-                return [stim_table_1]
-            elif stimulus["stimulus"] == "stim2":
-                return [stim_table_2]
-            return []
+            return [stim_table_1] if stimulus["stimulus"] == "stim1" else [stim_table_2]
 
-        # Mock spontaneous_activity_tabler function
         def mock_spontaneous_activity_tabler(stimulus_tables):
             """
             Mock of the spontaneous activity tabler
             """
-            return [stim_table_3]
+            return [spontaneous_table]
 
-        result_stim_table_full = stim.create_stim_table(
+        result = stim.create_stim_table(
             pkl_file,
             stimuli,
             mock_stimulus_tabler,
             mock_spontaneous_activity_tabler,
         )
-        self.assertEqual(
-            result_stim_table_full["start_time"].all(),
-            expected_stim_table_full["start_time"].all(),
+
+        self.assertEqual(result["start_time"].tolist(), [5, 10, 20, 30, 40, 50])
+        self.assertEqual(result["stim_param"].tolist(), ["e", "a", "b", "c", "d", "f"])
+        self.assertEqual(result["stim_block"].tolist()[1:5], [0, 0, 1, 1])
+
+    def test_create_stim_table_without_spontaneous(self):
+        """
+        Test create_stim_table when there are no spontaneous tables.
+        """
+        stim_table = pd.DataFrame({"start_time": [1, 0], "stop_time": [2, 1], "stim_name": ["a", "a"]})
+
+        result = stim.create_stim_table("test.pkl", [{}], lambda pkl, stimulus: [stim_table], lambda tables: [])
+
+        self.assertEqual(result["start_time"].tolist(), [0, 1])
+
+    def test_create_stim_table_groups_simultaneous_stimuli(self):
+        """
+        Test create_stim_table keeps each simultaneously presented stimulus contiguous.
+        """
+        stim_a = pd.DataFrame({"start_time": [0, 1], "stop_time": [1, 2], "stim_name": ["A", "A"]})
+        stim_b = pd.DataFrame({"start_time": [0, 1], "stop_time": [1, 2], "stim_name": ["B", "B"]})
+
+        result = stim.create_stim_table(
+            "test.pkl",
+            [{"stimulus": "A"}, {"stimulus": "B"}],
+            lambda pkl, stimulus: [stim_a] if stimulus["stimulus"] == "A" else [stim_b],
+            lambda tables: [],
         )
-        self.assertEqual(
-            result_stim_table_full["end_time"].all(),
-            expected_stim_table_full["end_time"].all(),
+
+        self.assertEqual(result["stim_name"].tolist(), ["A", "A", "B", "B"])
+
+    def test_create_stim_table_keeps_input_order_for_ties(self):
+        """
+        Test create_stim_table orders simultaneous stimuli by input order, independent of sort implementation.
+        """
+        start_times = [1.0, 10.0, 14.0, 15.0, 7.0, 12.0, 3.0, 4.0, 5.0, 8.0, 0.0, 9.0, 2.0, 16.0, 13.0, 11.0, 6.0]
+        stim_a = pd.DataFrame({"start_time": start_times, "stop_time": [t + 1 for t in start_times], "stim_name": "A"})
+        stim_b = stim_a.assign(stim_name="B")
+
+        result = stim.create_stim_table(
+            "test.pkl",
+            [{"stimulus": "A"}, {"stimulus": "B"}],
+            lambda pkl, stimulus: [stim_a.copy()] if stimulus["stimulus"] == "A" else [stim_b.copy()],
+            lambda tables: [],
         )
-        self.assertEqual(
-            result_stim_table_full["stim_param"].all(),
-            expected_stim_table_full["stim_param"].all(),
+
+        self.assertEqual(result["stim_name"].tolist(), ["A"] * 17 + ["B"] * 17)
+
+    def test_reorder_by_stim_in_temporal_blocks(self):
+        """
+        Test simultaneous presentations are grouped into one contiguous run per stimulus.
+        """
+        df = pd.DataFrame(
+            {
+                "start_time": [0, 0, 1, 1, 2],
+                "stop_time": [1, 1, 2, 2, 3],
+                "stim_name": ["B", "A", "B", "A", "C"],
+            }
         )
-        self.assertEqual(
-            result_stim_table_full["stim_block"].all(),
-            expected_stim_table_full["stim_block"].all(),
-        )
+
+        result = stim.reorder_by_stim_in_temporal_blocks(df)
+
+        self.assertEqual(result["stim_name"].tolist(), ["B", "B", "A", "A", "C"])
+        self.assertEqual(result["start_time"].tolist(), [0, 1, 0, 1, 2])
 
     def test_make_spontaneous_activity_tables(self):
         """
@@ -856,9 +877,7 @@ class TestStimUtils(unittest.TestCase):
         NaN values should be filled with INT_NULL (-1) and the column cast to int.
         """
         # DataFrame with NaN values that need filling
-        df = pd.DataFrame(
-            {"int_col": [1.0, float("nan"), 3.0, float("nan")], "other_col": ["a", "b", "c", "d"]}
-        )
+        df = pd.DataFrame({"int_col": [1.0, float("nan"), 3.0, float("nan")], "other_col": ["a", "b", "c", "d"]})
 
         result = stim.enforce_df_int_typing(df, ["int_col"], use_pandas_type=False)
 

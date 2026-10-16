@@ -80,7 +80,7 @@ def remove_short_sandwiched_spontaneous(df, duration_thresh=(0.3, 0.5)):
             sandwiched spontaneous intervals removed.
     """
     # Sort by start_time to ensure order
-    df = df.sort_values(by="start_time").reset_index(drop=True)
+    df = df.sort_values(by="start_time", kind="stable").reset_index(drop=True)
 
     # Find spontaneous rows
     is_spont = df["image_name"] == "spontaneous"
@@ -459,7 +459,7 @@ def get_visual_stimuli_df(data, time) -> pd.DataFrame:
         }
     )
 
-    df = pd.concat((visual_stimuli_df, omitted_df), sort=False).sort_values("frame").reset_index()
+    df = pd.concat((visual_stimuli_df, omitted_df), sort=False).sort_values("frame", kind="stable").reset_index()
     return df
 
 
@@ -766,53 +766,22 @@ def fingerprint_from_stimulus_file(
     """
     fingerprint_stim = stimulus_file["items"]["behavior"]["items"][fingerprint_name]["static_stimulus"]
 
-    # not sure why this was here
-    # n_repeats = fingerprint_stim["runs"]
-
     # spontaneous + fingerprint indices relative to start of session
     stimulus_session_frame_indices = np.array(
         stimulus_file["items"]["behavior"]["items"][fingerprint_name]["frame_indices"]
     )
 
-    # not sure why this was here
-    # movie_length = int(len(fingerprint_stim["sweep_frames"]) / n_repeats)
-
     # Start index within the spontaneous + fingerprint block
     movie_start_index = sum(1 for frame in fingerprint_stim["frame_list"] if frame == -1)
-    res = []
-
     sweep_frames = fingerprint_stim["sweep_frames"]
-    sweep_table = [fingerprint_stim["sweep_table"][i] for i in fingerprint_stim["sweep_order"]]
-    dimnames = fingerprint_stim["dimnames"]
 
-    res = []
-
-    for i, stimulus_frame_indices in enumerate(sweep_frames):
-        stimulus_frame_indices = np.array(stimulus_frame_indices).astype(int)
-
-        # Adjust for spontaneous block offset
-        valid_indices = np.clip(
-            stimulus_frame_indices + movie_start_index,
-            0,
-            len(stimulus_session_frame_indices) - 1,
+    if fingerprint_stim.get("save_sweep_table", False):
+        res = _fingerprint_sweeps_from_table(
+            fingerprint_stim, sweep_frames, movie_start_index, stimulus_session_frame_indices, stimulus_timestamps
         )
-
-        start_frame, end_frame = stimulus_session_frame_indices[valid_indices]
-        start_time = stimulus_timestamps[start_frame]
-        stop_time = stimulus_timestamps[min(end_frame + 1, len(stimulus_timestamps) - 1)]
-
-        stim_row = sweep_table[i]
-        stim_info = dict(zip(dimnames, stim_row))
-
-        res.append(
-            {
-                "start_time": start_time,
-                "stop_time": stop_time,
-                "start_frame": start_frame,
-                "end_frame": end_frame,
-                "duration": stop_time - start_time,
-                **stim_info,  # unpack stimulus parameters
-            }
+    else:
+        res = _fingerprint_sweeps_from_repeats(
+            fingerprint_stim, sweep_frames, movie_start_index, stimulus_session_frame_indices, stimulus_timestamps
         )
 
     table = pd.DataFrame(res)
@@ -825,6 +794,72 @@ def fingerprint_from_stimulus_file(
     table = table.astype({c: "int64" for c in table.select_dtypes(include="int")})
 
     return table
+
+
+def _fingerprint_sweeps_from_table(
+    fingerprint_stim, sweep_frames, movie_start_index, stimulus_session_frame_indices, stimulus_timestamps
+) -> list[dict]:
+    """
+    Build fingerprint sweeps with parameters from a saved sweep table.
+
+    Sweeps whose frames fall outside the fingerprint block are skipped.
+    """
+    sweep_table = [fingerprint_stim["sweep_table"][i] for i in fingerprint_stim["sweep_order"]]
+    dimnames = fingerprint_stim["dimnames"]
+    res = []
+    for i, stimulus_frame_indices in enumerate(sweep_frames):
+        stimulus_frame_indices = np.array(stimulus_frame_indices).astype(int) + movie_start_index
+        valid_mask = (stimulus_frame_indices >= 0) & (stimulus_frame_indices < len(stimulus_session_frame_indices))
+        valid_indices = stimulus_frame_indices[valid_mask]
+        if len(valid_indices) == 0:
+            logger.info("Skipping sweep %d: no valid frames", i)
+            continue
+        start_frame, end_frame = stimulus_session_frame_indices[valid_indices]
+        start_time = stimulus_timestamps[start_frame]
+        stop_time = stimulus_timestamps[min(end_frame + 1, len(stimulus_timestamps) - 1)]
+        res.append(
+            {
+                "start_time": start_time,
+                "stop_time": stop_time,
+                "start_frame": start_frame,
+                "end_frame": end_frame,
+                "duration": stop_time - start_time,
+                **dict(zip(dimnames, sweep_table[i])),
+            }
+        )
+    return res
+
+
+def _fingerprint_sweeps_from_repeats(
+    fingerprint_stim, sweep_frames, movie_start_index, stimulus_session_frame_indices, stimulus_timestamps
+) -> list[dict]:
+    """Build fingerprint sweeps as movie frames repeated `runs` times, for pickles without a sweep table."""
+    n_repeats = fingerprint_stim["runs"]
+    movie_length = int(len(sweep_frames) / n_repeats)
+    res = []
+    for repeat in range(n_repeats):
+        for frame in range(movie_length):
+            stimulus_frame_indices = np.array(sweep_frames[frame + repeat * movie_length]).astype(int)
+            valid_indices = np.clip(
+                stimulus_frame_indices + movie_start_index,
+                0,
+                len(stimulus_session_frame_indices) - 1,
+            )
+            start_frame, end_frame = stimulus_session_frame_indices[valid_indices]
+            start_time = stimulus_timestamps[start_frame]
+            stop_time = stimulus_timestamps[min(end_frame + 1, len(stimulus_timestamps) - 1)]
+            res.append(
+                {
+                    "movie_frame_index": frame,
+                    "movie_repeat": repeat,
+                    "start_time": start_time,
+                    "stop_time": stop_time,
+                    "start_frame": start_frame,
+                    "end_frame": end_frame,
+                    "duration": stop_time - start_time,
+                }
+            )
+    return res
 
 
 def clean_position_and_contrast(df):
@@ -1051,6 +1086,7 @@ def from_stimulus_file(
 
     df.drop(columns=["stim_block"], inplace=True, errors="ignore")
     df = df.drop(columns=["start_frame", "end_frame"], errors="ignore")
+    df = stim.reorder_by_stim_in_temporal_blocks(df)
 
     return (df, column_list)
 
@@ -1291,7 +1327,7 @@ def get_spontaneous_stimulus(
 
     res = pd.DataFrame(res)
 
-    return pd.concat([stimulus_presentations_table, res]).sort_values("start_frame")
+    return pd.concat([stimulus_presentations_table, res]).sort_values("start_frame", kind="stable")
 
 
 def make_spontaneous_stimulus(
@@ -1314,7 +1350,9 @@ def make_spontaneous_stimulus(
     """
 
     # Ensure the table is sorted by start time
-    stimulus_presentations_table = stimulus_presentations_table.sort_values("start_time").reset_index(drop=True)
+    stimulus_presentations_table = stimulus_presentations_table.sort_values("start_time", kind="stable").reset_index(
+        drop=True
+    )
 
     # Identify gaps between consecutive stimulus presentations
     gaps = (
@@ -1355,7 +1393,11 @@ def make_spontaneous_stimulus(
     ).astype(int)
 
     # Merge and return sorted table
-    return pd.concat([stimulus_presentations_table, spontaneous_df]).sort_values("start_frame").reset_index(drop=True)
+    return (
+        pd.concat([stimulus_presentations_table, spontaneous_df])
+        .sort_values("start_frame", kind="stable")
+        .reset_index(drop=True)
+    )
 
 
 def add_fingerprint_stimulus(

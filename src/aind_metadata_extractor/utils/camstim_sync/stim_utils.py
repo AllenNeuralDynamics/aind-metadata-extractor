@@ -280,13 +280,66 @@ def create_stim_table(
     for ii, stim_table in enumerate(stimulus_tables):
         stim_table[block_key] = ii
 
-    stimulus_tables.extend(spontaneous_activity_tabler(stimulus_tables))
-
     stim_table_full = pd.concat(stimulus_tables, ignore_index=True, sort=False)
-    stim_table_full.sort_values(by=[sort_key], inplace=True)
+    stim_table_full.sort_values(by=[sort_key], inplace=True, kind="stable")
     stim_table_full.reset_index(drop=True, inplace=True)
+    stim_table_full = reorder_by_stim_in_temporal_blocks(stim_table_full)
+
+    for spontaneous_table in spontaneous_activity_tabler(stimulus_tables):
+        for _, spontaneous_row in spontaneous_table.iterrows():
+            insert_pos = stim_table_full["start_time"].searchsorted(spontaneous_row["start_time"])
+            stim_table_full = pd.concat(
+                [
+                    stim_table_full.iloc[:insert_pos],
+                    pd.DataFrame([spontaneous_row]),
+                    stim_table_full.iloc[insert_pos:],
+                ]
+            ).reset_index(drop=True)
 
     return stim_table_full
+
+
+def reorder_by_stim_in_temporal_blocks(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Group simultaneous presentations so each stimulus forms a contiguous run.
+
+    Rows are sorted by start and stop time and grouped into blocks that share
+    both times. Consecutive blocks presenting the same set of stimuli form a
+    chunk, and rows within each chunk are ordered by first appearance of
+    their stim_name.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Stimulus presentations with start_time, stop_time and stim_name columns.
+
+    Returns
+    -------
+    pd.DataFrame
+        The presentations reordered by temporal block and stim_name.
+    """
+    df = df.sort_values(by=["start_time", "stop_time"]).reset_index(drop=True)
+    blocks = [group.reset_index(drop=True) for _, group in df.groupby(["start_time", "stop_time"], sort=False)]
+
+    chunks = []
+    current_chunk = [blocks[0]]
+    current_stims = set(blocks[0]["stim_name"])
+    for block in blocks[1:]:
+        block_stims = set(block["stim_name"])
+        if block_stims == current_stims:
+            current_chunk.append(block)
+        else:
+            chunks.append(current_chunk)
+            current_chunk = [block]
+            current_stims = block_stims
+    chunks.append(current_chunk)
+
+    output_blocks = []
+    for chunk in chunks:
+        combined = pd.concat(chunk, ignore_index=True)
+        for stim_name in combined["stim_name"].unique():
+            output_blocks.append(combined[combined["stim_name"] == stim_name])
+    return pd.concat(output_blocks, ignore_index=True)
 
 
 def make_spontaneous_activity_tables(
